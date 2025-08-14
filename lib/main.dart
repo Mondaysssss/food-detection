@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 void main() {
   runApp(const MyApp());
@@ -57,6 +59,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  XFile? _image; // images saved
 
   void _incrementCounter() {
     setState(() {
@@ -66,6 +69,14 @@ class _MyHomePageState extends State<MyHomePage> {
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
       _counter++;
+    });
+  }
+
+  Future<void> _openCamera() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    setState(() {
+      _image = pickedFile;
     });
   }
 
@@ -111,6 +122,19 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _openCamera,
+              child: const Text('open camera'),
+            ),
+            if (_image != null) ...[
+              const SizedBox(height: 20),
+              Image.file(
+                File(_image!.path),
+                width: 200,
+                height: 200,
+              ),
+            ],
           ],
         ),
       ),
