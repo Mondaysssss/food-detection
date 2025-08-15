@@ -390,58 +390,65 @@ class _AiCameraPageState extends State<AiCameraPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+Widget build(BuildContext context) {
+  final app = context.watch<AppState>();
 
-    return LayoutBuilder(
-      builder: (context, c) {
-        final isWide = c.maxWidth > 900;
+  return LayoutBuilder(
+    builder: (context, c) {
+      final isWide = c.maxWidth > 900;
+      final cardAspect = isWide ? (16 / 9) : (4 / 5); // 窄螢幕用較高比例
 
-        final content = Column(
+      // 左側相機區（卡片內可直向捲動）
+      final leftPanel = _glass(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                // 左側：相機卡片
-                Expanded(
-                  child: _glass(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _title('相機功能（示範，未接真相機）'),
-                        const SizedBox(height: 8),
-                        AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.black26,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white24),
-                            ),
-                            child: _cameraInner(app), // ↓ 就在下面這個方法
-                          ),
-                        ),
-                      ],
-                    ),
+            _title('相機功能（示範，未接真相機）'),
+            const SizedBox(height: 8),
+            AspectRatio(
+              aspectRatio: cardAspect,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  // ⭐ 卡片內部可捲動 → 不會再 BOTTOM OVERFLOWED
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: _cameraInner(app), // ← 你原本的 _cameraInner，不用改
                   ),
                 ),
-                if (isWide) const SizedBox(width: 12),
-                if (isWide) SizedBox(width: 340, child: _FoodListPanel(app: app)),
-              ],
+              ),
             ),
-            if (!isWide) const SizedBox(height: 12),
-            if (!isWide) _FoodListPanel(app: app),
           ],
-        );
+        ),
+      );
 
-        // ⭐ 小螢幕整頁可捲動，避免 BOTTOM OVERFLOWED
-        return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: content,
-        );
-      },
-    );
-  }
+      final content = Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: leftPanel),
+              if (isWide) const SizedBox(width: 12),
+              if (isWide) SizedBox(width: 340, child: _FoodListPanel(app: app)),
+            ],
+          ),
+          if (!isWide) const SizedBox(height: 12),
+          if (!isWide) _FoodListPanel(app: app),
+        ],
+      );
+
+      // ⭐ 整頁也可捲動，保險處理小螢幕
+      return SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: content,
+      );
+    },
+  );
+}
 
   // 把相機卡片裡的內容抽成一個方法，方便閱讀
   Widget _cameraInner(AppState app) {
