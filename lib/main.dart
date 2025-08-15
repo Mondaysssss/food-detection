@@ -495,14 +495,15 @@ Widget build(BuildContext context) {
           ],
         ),
         const SizedBox(height: 8),
-        const Text(
+/*         const Text(
           '要接真相機：稍後於 pubspec 新增 image_picker 或 camera，替換此段 TODO。',
           textAlign: TextAlign.center,
           softWrap: true,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(fontSize: 12, color: Colors.white60),
-        ),
+        ), */
+        SizedBox.shrink()//上面隱藏先要加
       ],
     );
   }
