@@ -452,59 +452,62 @@ Widget build(BuildContext context) {
 
   // 把相機卡片裡的內容抽成一個方法，方便閱讀
   Widget _cameraInner(AppState app) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.photo_camera, size: 48, color: Colors.white70),
-        const SizedBox(height: 8),
-        Text(_previewHint, style: const TextStyle(color: Colors.white70)),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => setState(() => _previewHint = '已擷取影像（示範圖）'),
-              icon: const Icon(Icons.photo_camera),
-              label: const Text('擷取影像（示範）'),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: () {
-                final res = _detectMock();
-                if (res.isNotEmpty) {
-                  showDialog(
-                    context: context,
-                    builder: (_) => _DetectionDialog(
-                      detections: res,
-                      onConfirm: () {
-                        app.addIngredients(res);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('即時辨識（模擬）'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => setState(() => _previewHint = '尚未擷取影像'),
-              icon: const Icon(Icons.refresh),
-              label: const Text('重拍'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-/*         const Text(
-          '要接真相機：稍後於 pubspec 新增 image_picker 或 camera，替換此段 TODO。',
-          textAlign: TextAlign.center,
-          softWrap: true,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12, color: Colors.white60),
-        ), */
-        SizedBox.shrink()//上面隱藏先要加
-      ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(Icons.photo_camera, size: 48, color: Colors.white70),
+          const SizedBox(height: 8),
+          Text(_previewHint, style: const TextStyle(color: Colors.white70)),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => setState(() => _previewHint = '已擷取影像（示範圖）'),
+                icon: const Icon(Icons.photo_camera),
+                label: const Text('擷取影像（示範）'),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: () {
+                  final res = _detectMock();
+                  if (res.isNotEmpty) {
+                    showDialog(
+                      context: context,
+                      builder: (_) => _DetectionDialog(
+                        detections: res,
+                        onConfirm: () {
+                          app.addIngredients(res);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('即時辨識（模擬）'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _previewHint = '尚未擷取影像'),
+                icon: const Icon(Icons.refresh),
+                label: const Text('重拍'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+  /*         const Text(
+            '要接真相機：稍後於 pubspec 新增 image_picker 或 camera，替換此段 TODO。',
+            textAlign: TextAlign.center,
+            softWrap: true,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: Colors.white60),
+          ), */
+          SizedBox.shrink()//上面隱藏先要加
+        ],
+      ),
     );
   }
 }
@@ -528,8 +531,9 @@ class _FoodListPanel extends StatelessWidget {
             )
           else
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center, // ← 新增
               children: [
                 for (final i in app.ingredients)
                   Chip(
