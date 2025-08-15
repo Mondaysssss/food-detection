@@ -396,10 +396,12 @@ class _AiCameraPageState extends State<AiCameraPage> {
     return LayoutBuilder(
       builder: (context, c) {
         final isWide = c.maxWidth > 900;
-        return Column(
+
+        final content = Column(
           children: [
             Row(
               children: [
+                // 左側：相機卡片
                 Expanded(
                   child: _glass(
                     child: Column(
@@ -416,62 +418,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: Colors.white24),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.photo_camera, size: 48, color: Colors.white70),
-                                const SizedBox(height: 8),
-                                Text(_previewHint, style: const TextStyle(color: Colors.white70)),
-                                const SizedBox(height: 16),
-                                Wrap(
-                                  spacing: 10,
-                                  runSpacing: 10,
-                                  children: [
-                                    ElevatedButton.icon(
-                                      onPressed: () {
-                                        setState(() {
-                                          _previewHint = '已擷取影像（示範圖）';
-                                        });
-                                      },
-                                      icon: const Icon(Icons.photo_camera),
-                                      label: const Text('擷取影像（示範）'),
-                                    ),
-                                    FilledButton.tonalIcon(
-                                      onPressed: () {
-                                        final res = _detectMock();
-                                        if (res.isNotEmpty) {
-                                          showDialog(
-                                            context: context,
-                                            builder: (_) => _DetectionDialog(
-                                              detections: res,
-                                              onConfirm: () {
-                                                app.addIngredients(res);
-                                                Navigator.pop(context);
-                                              },
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      icon: const Icon(Icons.auto_awesome),
-                                      label: const Text('即時辨識（模擬）'),
-                                    ),
-                                    OutlinedButton.icon(
-                                      onPressed: () {
-                                        setState(() => _previewHint = '尚未擷取影像');
-                                      },
-                                      icon: const Icon(Icons.refresh),
-                                      label: const Text('重拍'),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  '要接真相機：稍後於 pubspec 新增 `image_picker` 或 `camera`，替換此段 TODO。',
-                                  style: TextStyle(fontSize: 12, color: Colors.white60),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
+                            child: _cameraInner(app), // ↓ 就在下面這個方法
                           ),
                         ),
                       ],
@@ -479,18 +426,77 @@ class _AiCameraPageState extends State<AiCameraPage> {
                   ),
                 ),
                 if (isWide) const SizedBox(width: 12),
-                if (isWide)
-                  SizedBox(
-                    width: 340,
-                    child: _FoodListPanel(app: app),
-                  ),
+                if (isWide) SizedBox(width: 340, child: _FoodListPanel(app: app)),
               ],
             ),
             if (!isWide) const SizedBox(height: 12),
             if (!isWide) _FoodListPanel(app: app),
           ],
         );
+
+        // ⭐ 小螢幕整頁可捲動，避免 BOTTOM OVERFLOWED
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: content,
+        );
       },
+    );
+  }
+
+  // 把相機卡片裡的內容抽成一個方法，方便閱讀
+  Widget _cameraInner(AppState app) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.photo_camera, size: 48, color: Colors.white70),
+        const SizedBox(height: 8),
+        Text(_previewHint, style: const TextStyle(color: Colors.white70)),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => setState(() => _previewHint = '已擷取影像（示範圖）'),
+              icon: const Icon(Icons.photo_camera),
+              label: const Text('擷取影像（示範）'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: () {
+                final res = _detectMock();
+                if (res.isNotEmpty) {
+                  showDialog(
+                    context: context,
+                    builder: (_) => _DetectionDialog(
+                      detections: res,
+                      onConfirm: () {
+                        app.addIngredients(res);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('即時辨識（模擬）'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => setState(() => _previewHint = '尚未擷取影像'),
+              icon: const Icon(Icons.refresh),
+              label: const Text('重拍'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '要接真相機：稍後於 pubspec 新增 image_picker 或 camera，替換此段 TODO。',
+          textAlign: TextAlign.center,
+          softWrap: true,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: Colors.white60),
+        ),
+      ],
     );
   }
 }
@@ -578,89 +584,109 @@ class _RecommendPageState extends State<RecommendPage> {
   String search = '';
 
   @override
-  Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
-    final detected = app.ingredients;
+Widget build(BuildContext context) {
+  final app = context.watch<AppState>();
+  final detected = app.ingredients;
 
-    final list = kRecipes
-        .map((r) => (recipe: r, mr: computeMatch(r, detected)))
-        .toList()
-      ..sort((a, b) => a.mr.missing.length.compareTo(b.mr.missing.length));
+  final list = kRecipes
+      .map((r) => (recipe: r, mr: computeMatch(r, detected)))
+      .toList()
+    ..sort((a, b) => a.mr.missing.length.compareTo(b.mr.missing.length));
 
-    final types = ['全部', ...{for (final r in kRecipes) r.type}];
-    final tastes = ['全部', ...{for (final r in kRecipes) ...r.taste}];
+  final types = ['全部', ...{for (final r in kRecipes) r.type}];
+  final tastes = ['全部', ...{for (final r in kRecipes) ...r.taste}];
 
-    final filtered = list.where((e) {
-      if (typeFilter != '全部' && e.recipe.type != typeFilter) return false;
-      if (tasteFilter != '全部' && !e.recipe.taste.any((t) => t.contains(tasteFilter))) return false;
-      if (search.trim().isNotEmpty) {
-        final s = search.toLowerCase();
-        if (!e.recipe.name.toLowerCase().contains(s) &&
-            !e.recipe.ingredientsRequired.any((i) => i.toLowerCase().contains(s))) {
-          return false;
-        }
-      }
-      return true;
-    }).toList();
+  final filtered = list.where((e) {
+    if (typeFilter != '全部' && e.recipe.type != typeFilter) return false;
+    if (tasteFilter != '全部' && !e.recipe.taste.any((t) => t.contains(tasteFilter))) return false;
+    if (search.trim().isNotEmpty) {
+      final s = search.toLowerCase();
+      if (!e.recipe.name.toLowerCase().contains(s) &&
+          !e.recipe.ingredientsRequired.any((i) => i.toLowerCase().contains(s))) return false;
+    }
+    return true;
+  }).toList();
 
-    return Column(
-      children: [
-        Row(
+  return LayoutBuilder(
+    builder: (context, c) {
+      final w = c.maxWidth;
+      final isNarrow = w < 800;                      // ⭐ 手機直向
+      final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1; // ⭐ 自適應欄數
+
+      final filterPanel = _glass(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 320,
-              child: _glass(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _title('篩選'),
-                    const SizedBox(height: 8),
-                    _filterChips(
-                      label: '菜式類型',
-                      values: types,
-                      current: typeFilter,
-                      onChanged: (v) => setState(() => typeFilter = v),
-                    ),
-                    const SizedBox(height: 8),
-                    _filterChips(
-                      label: '口味',
-                      values: tastes,
-                      current: tasteFilter,
-                      onChanged: (v) => setState(() => tasteFilter = v),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      onChanged: (v) => setState(() => search = v),
-                      decoration: _inputDecoration('輸入食材或菜名', icon: Icons.search),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text('排序：先「食材齊全」，再依缺料數（少→多）。',
-                        style: TextStyle(color: Colors.white60, fontSize: 12)),
-                  ],
-                ),
-              ),
+            _title('篩選'),
+            const SizedBox(height: 8),
+            _filterChips(
+              label: '菜式類型',
+              values: types,
+              current: typeFilter,
+              onChanged: (v) => setState(() => typeFilter = v),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: GridView.builder(
-                padding: EdgeInsets.zero,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.86),
-                itemCount: filtered.length,
-                itemBuilder: (_, i) {
-                  final r = filtered[i].recipe;
-                  final mr = filtered[i].mr;
-                  return _RecipeCard(recipe: r, mr: mr);
-                },
-                shrinkWrap: true,
-              ),
+            const SizedBox(height: 8),
+            _filterChips(
+              label: '口味',
+              values: tastes,
+              current: tasteFilter,
+              onChanged: (v) => setState(() => tasteFilter = v),
             ),
+            const SizedBox(height: 8),
+            TextField(
+              onChanged: (v) => setState(() => search = v),
+              decoration: _inputDecoration('輸入食材或菜名', icon: Icons.search),
+            ),
+            const SizedBox(height: 8),
+            const Text('排序：先「食材齊全」，再依缺料數（少→多）。',
+                style: TextStyle(color: Colors.white60, fontSize: 12)),
           ],
         ),
-      ],
-    );
-  }
+      );
+
+      final grid = GridView.builder(
+        shrinkWrap: true,
+        primary: false, // ⭐ 交給外層 SingleChildScrollView 捲動
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: cols,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.86,
+        ),
+        itemCount: filtered.length,
+        itemBuilder: (_, i) => _RecipeCard(
+          recipe: filtered[i].recipe,
+          mr: filtered[i].mr,
+        ),
+      );
+
+      if (isNarrow) {
+        // ⭐ 手機：上下排列 + 可捲動
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            children: [
+              filterPanel,
+              const SizedBox(height: 12),
+              grid,
+            ],
+          ),
+        );
+      }
+
+      // ⭐ 寬螢幕：側欄 + Grid
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 320, child: filterPanel),
+          const SizedBox(width: 12),
+          Expanded(child: grid),
+        ],
+      );
+    },
+  );
+}
 
   Widget _filterChips({
     required String label,
