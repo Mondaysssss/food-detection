@@ -847,10 +847,15 @@ class _RecommendPageState extends State<RecommendPage> {
       builder: (context, c) {
         final w = c.maxWidth;
 
-        // ⭐ 一欄式：先篩選面板，再卡片 Grid
+        // 一欄式：上面篩選、下面 Grid
         final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1;
-        // ⭐ 依欄數調整卡片高度（ratio 越小越高）
-        final ratio = cols == 3 ? 0.70 : cols == 2 ? 0.82 : 0.98;
+
+        // ★ 計算每格寬/高（固定高度，避免卡片內容撐爆）
+        const spacing = 12.0;
+        final tileW = (w - (cols - 1) * spacing) / cols;
+        final coverH = tileW * 9 / 16;
+        final baseInfoH = cols == 1 ? 230.0 : (cols == 2 ? 220.0 : 210.0);
+        final tileH = coverH + baseInfoH;
 
         final filterPanel = _glass(
           child: Column(
@@ -877,21 +882,23 @@ class _RecommendPageState extends State<RecommendPage> {
                 decoration: _inputDecoration('輸入食材或菜名', icon: Icons.search),
               ),
               const SizedBox(height: 8),
-              const Text('排序：先「食材齊全」，再依缺料數（少→多）。',
-                  style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text(
+                '排序：先「食材齊全」，再依缺料數（少→多）。',
+                style: TextStyle(color: Colors.white60, fontSize: 12),
+              ),
             ],
           ),
         );
 
         final grid = GridView.builder(
           shrinkWrap: true,
-          primary: false, // 外層會捲動
+          primary: false, // 外層捲動
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: cols,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: ratio,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            mainAxisExtent: tileH, // ★ 固定卡片高度
           ),
           itemCount: filtered.length,
           itemBuilder: (_, i) => _RecipeCard(
