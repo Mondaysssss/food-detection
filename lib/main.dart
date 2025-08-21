@@ -34,6 +34,17 @@ class AppState extends ChangeNotifier {
   bool strictMode = true; // 嚴格模式：需跑完計時才能下一步
   int timeScale = 10; // 1 分鐘 = 10 秒（示範友好）
 
+  // --- 新增 setter，避免在 UI 直接呼叫 notifyListeners() ---
+  void setStrictMode(bool v) {
+    strictMode = v;
+    notifyListeners();
+  }
+
+  void setTimeScale(int v) {
+    timeScale = v;
+    notifyListeners();
+  }
+
   void addIngredients(Iterable<String> names) {
     final lower = names.map((e) => e.toLowerCase().trim());
     final set = _ingredients.map((e) => e.toLowerCase()).toSet();
@@ -118,6 +129,30 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const LoginScreen(),
+    );
+  }
+}
+
+/// === 共用外框：統一頁面最大寬度、置中、標準 Padding ===
+const double kPageMaxWidth = 1000; // 你可改成 960/1100 等
+
+class PageFrame extends StatelessWidget {
+  final Widget child;
+  const PageFrame({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kPageMaxWidth),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: child,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -207,14 +242,10 @@ class _HomeShellState extends State<HomeShell> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           title: Text(_titles[_index]),
-          actions: [
-            const SizedBox(width: 8),
-          ],
+          actions: const [SizedBox(width: 8)],
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: _pages[_index],
-        ),
+        // ⭐ 所有分頁都經過 PageFrame → 統一寬度、置中
+        body: PageFrame(child: _pages[_index]),
         bottomNavigationBar: NavigationBar(
           height: 64,
           selectedIndex: _index,
@@ -388,67 +419,66 @@ class _AiCameraPageState extends State<AiCameraPage> {
   }
 
   @override
-Widget build(BuildContext context) {
-  final app = context.watch<AppState>();
+  Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
 
-  return LayoutBuilder(
-    builder: (context, c) {
-      final isWide = c.maxWidth > 900;
-      final cardAspect = isWide ? (16 / 9) : (4 / 5); // 窄螢幕用較高比例
+    return LayoutBuilder(
+      builder: (context, c) {
+        final isWide = c.maxWidth > 900;
+        final cardAspect = isWide ? (16 / 9) : (4 / 5); // 窄螢幕用較高比例
 
-      // 左側相機區（卡片內可直向捲動）
-      final leftPanel = _glass(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _title('相機功能（示範，未接真相機）'),
-            const SizedBox(height: 8),
-            AspectRatio(
-              aspectRatio: cardAspect,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black26,
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  // ⭐ 卡片內部可捲動 → 不會再 BOTTOM OVERFLOWED
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    child: _cameraInner(app), // ← 你原本的 _cameraInner，不用改
+        // 左側相機區（卡片內可直向捲動）
+        final leftPanel = _glass(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _title('相機功能（示範，未接真相機）'),
+              const SizedBox(height: 8),
+              AspectRatio(
+                aspectRatio: cardAspect,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black26,
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    // ⭐ 卡片內部可直向捲動 → 不會再 BOTTOM OVERFLOWED
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: _cameraInner(app),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-
-      final content = Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: leftPanel),
-              if (isWide) const SizedBox(width: 12),
-              if (isWide) SizedBox(width: 340, child: _FoodListPanel(app: app)),
             ],
           ),
-          if (!isWide) const SizedBox(height: 12),
-          if (!isWide) _FoodListPanel(app: app),
-        ],
-      );
+        );
 
-      // ⭐ 整頁也可捲動，保險處理小螢幕
-      return SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: content,
-      );
-    },
-  );
-}
+        final content = Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: leftPanel),
+                if (isWide) const SizedBox(width: 12),
+                if (isWide) SizedBox(width: 340, child: _FoodListPanel(app: app)),
+              ],
+            ),
+            if (!isWide) const SizedBox(height: 12),
+            if (!isWide) _FoodListPanel(app: app),
+          ],
+        );
 
-  // 把相機卡片裡的內容抽成一個方法，方便閱讀
+        // ⭐ 整頁也可捲動，保險處理小螢幕
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: content,
+        );
+      },
+    );
+  }
+
   Widget _cameraInner(AppState app) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -462,6 +492,7 @@ Widget build(BuildContext context) {
           Wrap(
             spacing: 10,
             runSpacing: 10,
+            alignment: WrapAlignment.center,
             children: [
               ElevatedButton.icon(
                 onPressed: () => setState(() => _previewHint = '已擷取影像（示範圖）'),
@@ -495,15 +526,7 @@ Widget build(BuildContext context) {
             ],
           ),
           const SizedBox(height: 8),
-  /*         const Text(
-            '要接真相機：稍後於 pubspec 新增 image_picker 或 camera，替換此段 TODO。',
-            textAlign: TextAlign.center,
-            softWrap: true,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: Colors.white60),
-          ), */
-          SizedBox.shrink()//上面隱藏先要加
+          const SizedBox.shrink(), // 提示先隱藏
         ],
       ),
     );
@@ -531,7 +554,7 @@ class _FoodListPanel extends StatelessWidget {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              alignment: WrapAlignment.center, // ← 新增
+              alignment: WrapAlignment.center,
               children: [
                 for (final i in app.ingredients)
                   Chip(
@@ -547,20 +570,20 @@ class _FoodListPanel extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              // ← 新增：打開全螢幕多選清單
+              // 新增：打開全螢幕多選清單
               ElevatedButton.icon(
                 onPressed: () async {
                   final picked = await Navigator.push<List<String>>(
                     context,
                     MaterialPageRoute(
                       builder: (_) => IngredientPickerPage(
-                        all: kAllIngredients,                  // 全部可選食材
-                        existing: app.ingredients.toSet(),     // 已有的會顯示「已在清單中」
+                        all: kAllIngredients,
+                        existing: app.ingredients.toSet(),
                       ),
                     ),
                   );
                   if (picked != null && picked.isNotEmpty) {
-                    app.addIngredients(picked);               // 加入（內部已去重）
+                    app.addIngredients(picked);
                   }
                 },
                 icon: const Icon(Icons.add),
@@ -585,13 +608,12 @@ class _FoodListPanel extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              // 右邊：清空按鈕（保持原有功能）
+              // 右邊：清空按鈕
               FilledButton.tonalIcon(
                 onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
                 icon: const Icon(Icons.delete),
                 label: const Text('清空'),
                 style: FilledButton.styleFrom(
-                  // 如果你的 SDK 提示 withOpacity() 棄用，用 withValues()
                   backgroundColor: Colors.red.shade200.withValues(alpha: 0.2),
                 ),
               ),
@@ -774,109 +796,109 @@ class _RecommendPageState extends State<RecommendPage> {
   String search = '';
 
   @override
-Widget build(BuildContext context) {
-  final app = context.watch<AppState>();
-  final detected = app.ingredients;
+  Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+    final detected = app.ingredients;
 
-  final list = kRecipes
-      .map((r) => (recipe: r, mr: computeMatch(r, detected)))
-      .toList()
-    ..sort((a, b) => a.mr.missing.length.compareTo(b.mr.missing.length));
+    final list = kRecipes
+        .map((r) => (recipe: r, mr: computeMatch(r, detected)))
+        .toList()
+      ..sort((a, b) => a.mr.missing.length.compareTo(b.mr.missing.length));
 
-  final types = ['全部', ...{for (final r in kRecipes) r.type}];
-  final tastes = ['全部', ...{for (final r in kRecipes) ...r.taste}];
+    final types = ['全部', ...{for (final r in kRecipes) r.type}];
+    final tastes = ['全部', ...{for (final r in kRecipes) ...r.taste}];
 
-  final filtered = list.where((e) {
-    if (typeFilter != '全部' && e.recipe.type != typeFilter) return false;
-    if (tasteFilter != '全部' && !e.recipe.taste.any((t) => t.contains(tasteFilter))) return false;
-    if (search.trim().isNotEmpty) {
-      final s = search.toLowerCase();
-      if (!e.recipe.name.toLowerCase().contains(s) &&
-          !e.recipe.ingredientsRequired.any((i) => i.toLowerCase().contains(s))) return false;
-    }
-    return true;
-  }).toList();
+    final filtered = list.where((e) {
+      if (typeFilter != '全部' && e.recipe.type != typeFilter) return false;
+      if (tasteFilter != '全部' && !e.recipe.taste.any((t) => t.contains(tasteFilter))) return false;
+      if (search.trim().isNotEmpty) {
+        final s = search.toLowerCase();
+        if (!e.recipe.name.toLowerCase().contains(s) &&
+            !e.recipe.ingredientsRequired.any((i) => i.toLowerCase().contains(s))) return false;
+      }
+      return true;
+    }).toList();
 
-  return LayoutBuilder(
-    builder: (context, c) {
-      final w = c.maxWidth;
-      final isNarrow = w < 800;                      // 手機直向
-      final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1; // 自適應欄數
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        final isNarrow = w < 800;                      // 手機直向
+        final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1; // 自適應欄數
 
-      final filterPanel = _glass(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _title('篩選'),
-            const SizedBox(height: 8),
-            _filterChips(
-              label: '菜式類型',
-              values: types,
-              current: typeFilter,
-              onChanged: (v) => setState(() => typeFilter = v),
-            ),
-            const SizedBox(height: 8),
-            _filterChips(
-              label: '口味',
-              values: tastes,
-              current: tasteFilter,
-              onChanged: (v) => setState(() => tasteFilter = v),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              onChanged: (v) => setState(() => search = v),
-              decoration: _inputDecoration('輸入食材或菜名', icon: Icons.search),
-            ),
-            const SizedBox(height: 8),
-            const Text('排序：先「食材齊全」，再依缺料數（少→多）。',
-                style: TextStyle(color: Colors.white60, fontSize: 12)),
-          ],
-        ),
-      );
-
-      final grid = GridView.builder(
-        shrinkWrap: true,
-        primary: false, // ⭐ 交給外層 SingleChildScrollView 捲動
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: cols,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.86,
-        ),
-        itemCount: filtered.length,
-        itemBuilder: (_, i) => _RecipeCard(
-          recipe: filtered[i].recipe,
-          mr: filtered[i].mr,
-        ),
-      );
-
-      if (isNarrow) {
-        // ⭐ 手機：上下排列 + 可捲動
-        return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 16),
+        final filterPanel = _glass(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              filterPanel,
-              const SizedBox(height: 12),
-              grid,
+              _title('篩選'),
+              const SizedBox(height: 8),
+              _filterChips(
+                label: '菜式類型',
+                values: types,
+                current: typeFilter,
+                onChanged: (v) => setState(() => typeFilter = v),
+              ),
+              const SizedBox(height: 8),
+              _filterChips(
+                label: '口味',
+                values: tastes,
+                current: tasteFilter,
+                onChanged: (v) => setState(() => tasteFilter = v),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                onChanged: (v) => setState(() => search = v),
+                decoration: _inputDecoration('輸入食材或菜名', icon: Icons.search),
+              ),
+              const SizedBox(height: 8),
+              const Text('排序：先「食材齊全」，再依缺料數（少→多）。',
+                  style: TextStyle(color: Colors.white60, fontSize: 12)),
             ],
           ),
         );
-      }
 
-      // ⭐ 寬螢幕：側欄 + Grid
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 320, child: filterPanel),
-          const SizedBox(width: 12),
-          Expanded(child: grid),
-        ],
-      );
-    },
-  );
-}
+        final grid = GridView.builder(
+          shrinkWrap: true,
+          primary: false, // 交給外層 SingleChildScrollView 捲動
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.86,
+          ),
+          itemCount: filtered.length,
+          itemBuilder: (_, i) => _RecipeCard(
+            recipe: filtered[i].recipe,
+            mr: filtered[i].mr,
+          ),
+        );
+
+        if (isNarrow) {
+          // 手機：上下排列 + 可捲動
+          return SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              children: [
+                filterPanel,
+                const SizedBox(height: 12),
+                grid,
+              ],
+            ),
+          );
+        }
+
+        // 寬螢幕：側欄 + Grid
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: 320, child: filterPanel),
+            const SizedBox(width: 12),
+            Expanded(child: grid),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _filterChips({
     required String label,
@@ -1026,6 +1048,7 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
+// 菜單推介（可返回的全螢幕頁面；用 PageFrame 同步寬度）
 class RecommendScreen extends StatelessWidget {
   const RecommendScreen({super.key});
 
@@ -1035,44 +1058,47 @@ class RecommendScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButton(),               // ← 返回／上一頁
+        leading: const BackButton(),
         title: const Text('菜單推介'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
+      body: PageFrame(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ⭐ 頂部：顯示「食物紀錄表」的食材
-            _glass(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _title('目前食材（${ingredients.length}）'),
-                  if (ingredients.isEmpty)
-                    const Text('尚未加入任何食材，請回上一頁新增或偵測。',
-                        style: TextStyle(color: Colors.white70))
-                  else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final i in ingredients)
-                          Chip(
-                            label: Text(i),
-                            backgroundColor: Colors.white12,
-                            side: const BorderSide(color: Colors.white24),
-                            labelStyle: const TextStyle(color: Colors.white),
-                          ),
-                      ],
-                    ),
-                ],
+            // 頂部：顯示「食物紀錄表」的食材（寬度固定，高度隨內容）
+            SizedBox(
+              width: double.infinity,
+              child: _glass(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _title('目前食材（${ingredients.length}）'),
+                    if (ingredients.isEmpty)
+                      const Text(
+                        '尚未加入任何食材，請回上一頁新增或偵測。',
+                        style: TextStyle(color: Colors.white70),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.start,
+                        children: [
+                          for (final i in ingredients)
+                            Chip(
+                              label: Text(i),
+                              backgroundColor: Colors.white12,
+                              side: const BorderSide(color: Colors.white24),
+                              labelStyle: const TextStyle(color: Colors.white),
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            // 下方：你的原本「菜單推介」內容
-            const Expanded(
-              child: RecommendPage(),
-            ),
+            const Expanded(child: RecommendPage()),
           ],
         ),
       ),
@@ -1090,38 +1116,48 @@ class FavoritesPage extends StatelessWidget {
     if (favList.isEmpty) {
       return _glass(child: const Text('目前沒有最愛菜單。', style: TextStyle(color: Colors.white70)));
     }
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.86),
-      itemCount: favList.length,
-      itemBuilder: (_, i) {
-        final r = favList[i];
-        return _glass(
-          padding: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Image.network(r.cover, fit: BoxFit.cover),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text('${r.type} ・ ${r.taste.join('/ ')}',
-                        style: const TextStyle(fontSize: 12, color: Colors.white70)),
-                  ],
-                ),
-              ),
-            ],
+    return LayoutBuilder(
+      builder: (_, c) {
+        final w = c.maxWidth;                          // 已經經過 PageFrame 限制
+        final cols = w >= 1100 ? 3 : w >= 750 ? 2 : 1; // ⭐ 響應式欄數
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.86,
           ),
+          itemCount: favList.length,
+          itemBuilder: (_, i) {
+            final r = favList[i];
+            return _glass(
+              padding: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Image.network(r.cover, fit: BoxFit.cover),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 2),
+                        Text('${r.type} ・ ${r.taste.join('/ ')}',
+                            style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -1137,38 +1173,48 @@ class HistoryPage extends StatelessWidget {
     if (list.isEmpty) {
       return _glass(child: const Text('尚未完成任何菜單。', style: TextStyle(color: Colors.white70)));
     }
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.86),
-      itemCount: list.length,
-      itemBuilder: (_, i) {
-        final h = list[i];
-        return _glass(
-          padding: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Image.network(h.cover, fit: BoxFit.cover),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(h.title, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text('完成於 ${h.completedAt}',
-                        style: const TextStyle(fontSize: 12, color: Colors.white70)),
-                  ],
-                ),
-              ),
-            ],
+    return LayoutBuilder(
+      builder: (_, c) {
+        final w = c.maxWidth;
+        final cols = w >= 1100 ? 3 : w >= 750 ? 2 : 1; // ⭐ 響應式欄數
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.86,
           ),
+          itemCount: list.length,
+          itemBuilder: (_, i) {
+            final h = list[i];
+            return _glass(
+              padding: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Image.network(h.cover, fit: BoxFit.cover),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(h.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 2),
+                        Text('完成於 ${h.completedAt}',
+                            style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -1181,72 +1227,67 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
-    return Column(
-      children: [
-        _glass(
-          child: Row(
-            children: [
-              const Expanded(
-                child: ListTile(
-                  title: Text('嚴格模式'),
-                  subtitle: Text('需完成計時才能進入下一步'),
+    // 包可捲動，避免窄螢幕溢位
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _glass(
+            child: Row(
+              children: [
+                const Expanded(
+                  child: ListTile(
+                    title: Text('嚴格模式'),
+                    subtitle: Text('需完成計時才能進入下一步'),
+                  ),
                 ),
-              ),
-              Switch(
+                Switch(
                   value: app.strictMode,
-                  onChanged: (v) {
-                    final s = context.read<AppState>();
-                    s.strictMode = v;
-                    s.notifyListeners();
-                  },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _glass(
-          child: Row(
-            children: [
-              const Expanded(
-                child: ListTile(
-                  title: Text('示範時間倍率'),
-                  subtitle: Text('1 分鐘 = X 秒'),
+                  onChanged: context.read<AppState>().setStrictMode,
                 ),
-              ),
-              DropdownButton<int>(
-                value: app.timeScale,
-                items: const [
-                  DropdownMenuItem(value: 5, child: Text('5 秒/分')),
-                  DropdownMenuItem(value: 10, child: Text('10 秒/分')),
-                  DropdownMenuItem(value: 15, child: Text('15 秒/分')),
-                ],
-                onChanged: (v) {
-                  if (v != null) {
-                    final s = context.read<AppState>();
-                    s.timeScale = v;
-                    s.notifyListeners();
-                  }
-                },
-              ),
-              const SizedBox(width: 12),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _glass(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.tonalIcon(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade200.withOpacity(.2),
-              ),
-              onPressed: () => context.read<AppState>().resetAll(),
-              icon: const Icon(Icons.delete),
-              label: const Text('重置所有示範資料'),
+              ],
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          _glass(
+            child: Row(
+              children: [
+                const Expanded(
+                  child: ListTile(
+                    title: Text('示範時間倍率'),
+                    subtitle: Text('1 分鐘 = X 秒'),
+                  ),
+                ),
+                DropdownButton<int>(
+                  value: app.timeScale,
+                  items: const [
+                    DropdownMenuItem(value: 5, child: Text('5 秒/分')),
+                    DropdownMenuItem(value: 10, child: Text('10 秒/分')),
+                    DropdownMenuItem(value: 15, child: Text('15 秒/分')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) context.read<AppState>().setTimeScale(v);
+                  },
+                ),
+                const SizedBox(width: 12),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _glass(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.shade200.withValues(alpha: .2),
+                ),
+                onPressed: () => context.read<AppState>().resetAll(),
+                icon: const Icon(Icons.delete),
+                label: const Text('重置所有示範資料'),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1308,8 +1349,7 @@ class _CookingScreenState extends State<CookingScreen> {
       appBar: AppBar(
         title: Text('烹飪教學：${widget.recipe.name}'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
+      body: PageFrame(
         child: _glass(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1374,7 +1414,8 @@ Widget _glass({required Widget child, EdgeInsets padding = const EdgeInsets.all(
   return Container(
     padding: padding,
     decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.06),
+      // withOpacity → withValues，避免棄用警告
+      color: Colors.white.withValues(alpha: 0.06),
       borderRadius: BorderRadius.circular(18),
       border: Border.all(color: Colors.white24),
       boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20, spreadRadius: -8)],
