@@ -185,12 +185,11 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   final _pages = const [
     AiCameraPage(),
-    RecommendPage(),
     FavoritesPage(),
     HistoryPage(),
     SettingsPage(),
   ];
-  final _titles = const ['AI 攝影', '菜單推介', '最愛', '歷史', '設定'];
+  final _titles = const ['AI 攝影', '最愛', '歷史', '設定'];
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +221,6 @@ class _HomeShellState extends State<HomeShell> {
           onDestinationSelected: (i) => setState(() => _index = i),
           destinations: const [
             NavigationDestination(icon: Icon(Icons.photo_camera_outlined), selectedIcon: Icon(Icons.photo_camera), label: 'AI 攝影'),
-            NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: '推介'),
             NavigationDestination(icon: Icon(Icons.star_border), selectedIcon: Icon(Icons.star), label: '最愛'),
             NavigationDestination(icon: Icon(Icons.history), selectedIcon: Icon(Icons.history_toggle_off), label: '歷史'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: '設定'),
@@ -571,6 +569,22 @@ class _FoodListPanel extends StatelessWidget {
 
               const Spacer(),
 
+              // 「確定食材」按鈕：跳到菜單推介畫面
+              FilledButton.icon(
+                onPressed: app.ingredients.isEmpty
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const RecommendScreen()),
+                        );
+                      },
+                icon: const Icon(Icons.check),
+                label: const Text('確定食材'),
+              ),
+
+              const SizedBox(width: 8),
+
               // 右邊：清空按鈕（保持原有功能）
               FilledButton.tonalIcon(
                 onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
@@ -786,8 +800,8 @@ Widget build(BuildContext context) {
   return LayoutBuilder(
     builder: (context, c) {
       final w = c.maxWidth;
-      final isNarrow = w < 800;                      // ⭐ 手機直向
-      final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1; // ⭐ 自適應欄數
+      final isNarrow = w < 800;                      // 手機直向
+      final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1; // 自適應欄數
 
       final filterPanel = _glass(
         child: Column(
@@ -1007,6 +1021,27 @@ class _RecipeCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// 菜單推介（可返回的全螢幕頁面）
+class RecommendScreen extends StatelessWidget {
+  const RecommendScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        // 這個 BackButton 就是你要的『返回／上一頁』箭頭
+        leading: const BackButton(),
+        title: const Text('菜單推介'),
+      ),
+      body: const Padding(
+        padding: EdgeInsets.all(12.0),
+        // 直接重用既有的 RecommendPage 內容
+        child: RecommendPage(),
       ),
     );
   }
