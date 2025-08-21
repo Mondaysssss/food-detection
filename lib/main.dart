@@ -421,61 +421,44 @@ class _AiCameraPageState extends State<AiCameraPage> {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    const cardAspect = 4 / 5; // 手機優先：相機卡片稍高，避免擠爆
 
-    return LayoutBuilder(
-      builder: (context, c) {
-        final isWide = c.maxWidth > 900;
-        final cardAspect = isWide ? (16 / 9) : (4 / 5); // 窄螢幕用較高比例
-
-        // 左側相機區（卡片內可直向捲動）
-        final leftPanel = _glass(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _title('相機功能（示範，未接真相機）'),
-              const SizedBox(height: 8),
-              AspectRatio(
-                aspectRatio: cardAspect,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black26,
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    // ⭐ 卡片內部可直向捲動 → 不會再 BOTTOM OVERFLOWED
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: _cameraInner(app),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        children: [
+          // 相機卡片
+          _glass(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _title('相機功能（示範，未接真相機）'),
+                const SizedBox(height: 8),
+                AspectRatio(
+                  aspectRatio: cardAspect,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      // ⭐ 卡片內部可直向捲動
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: _cameraInner(app),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-
-        final content = Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: leftPanel),
-                if (isWide) const SizedBox(width: 12),
-                if (isWide) SizedBox(width: 340, child: _FoodListPanel(app: app)),
               ],
             ),
-            if (!isWide) const SizedBox(height: 12),
-            if (!isWide) _FoodListPanel(app: app),
-          ],
-        );
-
-        // ⭐ 整頁也可捲動，保險處理小螢幕
-        return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: content,
-        );
-      },
+          ),
+          const SizedBox(height: 12),
+          // 食物紀錄表（與相機卡片上下排）
+          _FoodListPanel(app: app),
+        ],
+      ),
     );
   }
 
@@ -536,6 +519,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
 class _FoodListPanel extends StatelessWidget {
   final AppState app;
   const _FoodListPanel({required this.app});
+
   @override
   Widget build(BuildContext context) {
     return _glass(
@@ -545,6 +529,7 @@ class _FoodListPanel extends StatelessWidget {
           _title('食物紀錄表'),
           const Text('僅保存名稱（不含數量）。同名自動去重。', style: TextStyle(color: Colors.white60, fontSize: 12)),
           const SizedBox(height: 10),
+
           if (app.ingredients.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
@@ -554,7 +539,6 @@ class _FoodListPanel extends StatelessWidget {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              alignment: WrapAlignment.center,
               children: [
                 for (final i in app.ingredients)
                   Chip(
@@ -567,58 +551,98 @@ class _FoodListPanel extends StatelessWidget {
                   ),
               ],
             ),
+
           const SizedBox(height: 12),
-          Row(
-            children: [
-              // 新增：打開全螢幕多選清單
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final picked = await Navigator.push<List<String>>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => IngredientPickerPage(
-                        all: kAllIngredients,
-                        existing: app.ingredients.toSet(),
-                      ),
-                    ),
+
+          // ⭐ 按鈕列：自適應寬度，必要時自動換行
+          LayoutBuilder(
+            builder: (context, c) {
+              final w = c.maxWidth;
+              // 依容器寬度決定每顆按鈕寬度：小螢幕 1 欄 / 中等 2 欄 / 大螢幕 3 欄
+              double btnW;
+              if (w < 340) {
+                btnW = w; // 1 欄，滿版
+              } else if (w < 520) {
+                btnW = (w - 8) / 2; // 2 欄
+              } else {
+                btnW = (w - 16) / 3; // 3 欄
+              }
+
+              ButtonStyle styleFor(bool filled) => (filled
+                      ? FilledButton.styleFrom
+                      : ElevatedButton.styleFrom)(
+                    minimumSize: Size(btnW, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   );
-                  if (picked != null && picked.isNotEmpty) {
-                    app.addIngredients(picked);
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('新增'),
-              ),
 
-              const Spacer(),
-
-              // 「確定食材」按鈕：跳到菜單推介畫面
-              FilledButton.icon(
-                onPressed: app.ingredients.isEmpty
-                    ? null
-                    : () {
-                        Navigator.push(
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.spaceBetween,
+                children: [
+                  // 新增
+                  SizedBox(
+                    width: btnW,
+                    child: ElevatedButton.icon(
+                      style: styleFor(false),
+                      onPressed: () async {
+                        final picked = await Navigator.push<List<String>>(
                           context,
-                          MaterialPageRoute(builder: (_) => const RecommendScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => IngredientPickerPage(
+                              all: kAllIngredients,
+                              existing: app.ingredients.toSet(),
+                            ),
+                          ),
                         );
+                        if (picked != null && picked.isNotEmpty) {
+                          app.addIngredients(picked);
+                        }
                       },
-                icon: const Icon(Icons.check),
-                label: const Text('確定食材'),
-              ),
+                      icon: const Icon(Icons.add),
+                      label: const Text('新增'),
+                    ),
+                  ),
 
-              const SizedBox(width: 8),
+                  // 確定食材 → 菜單推介
+                  SizedBox(
+                    width: btnW,
+                    child: FilledButton.icon(
+                      style: styleFor(true),
+                      onPressed: app.ingredients.isEmpty
+                          ? null
+                          : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RecommendScreen(),
+                                ),
+                              );
+                            },
+                      icon: const Icon(Icons.check),
+                      label: const Text('確定食材'),
+                    ),
+                  ),
 
-              // 右邊：清空按鈕
-              FilledButton.tonalIcon(
-                onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
-                icon: const Icon(Icons.delete),
-                label: const Text('清空'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.shade200.withValues(alpha: 0.2),
-                ),
-              ),
-            ],
+                  // 清空
+                  SizedBox(
+                    width: btnW,
+                    child: FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: Size(btnW, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        backgroundColor: Colors.red.shade200.withValues(alpha: 0.2),
+                      ),
+                      onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
+                      icon: const Icon(Icons.delete),
+                      label: const Text('清空'),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
+
         ],
       ),
     );
@@ -822,8 +846,11 @@ class _RecommendPageState extends State<RecommendPage> {
     return LayoutBuilder(
       builder: (context, c) {
         final w = c.maxWidth;
-        final isNarrow = w < 800;                      // 手機直向
-        final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1; // 自適應欄數
+
+        // ⭐ 一欄式：先篩選面板，再卡片 Grid
+        final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1;
+        // ⭐ 依欄數調整卡片高度（ratio 越小越高）
+        final ratio = cols == 3 ? 0.70 : cols == 2 ? 0.82 : 0.98;
 
         final filterPanel = _glass(
           child: Column(
@@ -858,13 +885,13 @@ class _RecommendPageState extends State<RecommendPage> {
 
         final grid = GridView.builder(
           shrinkWrap: true,
-          primary: false, // 交給外層 SingleChildScrollView 捲動
+          primary: false, // 外層會捲動
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: cols,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.86,
+            childAspectRatio: ratio,
           ),
           itemCount: filtered.length,
           itemBuilder: (_, i) => _RecipeCard(
@@ -873,32 +900,20 @@ class _RecommendPageState extends State<RecommendPage> {
           ),
         );
 
-        if (isNarrow) {
-          // 手機：上下排列 + 可捲動
-          return SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Column(
-              children: [
-                filterPanel,
-                const SizedBox(height: 12),
-                grid,
-              ],
-            ),
-          );
-        }
-
-        // 寬螢幕：側欄 + Grid
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(width: 320, child: filterPanel),
-            const SizedBox(width: 12),
-            Expanded(child: grid),
-          ],
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            children: [
+              filterPanel,
+              const SizedBox(height: 12),
+              grid,
+            ],
+          ),
         );
       },
     );
   }
+
 
   Widget _filterChips({
     required String label,
@@ -984,7 +999,12 @@ class _RecipeCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(recipe.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          Text(
+                            recipe.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                          ),
                           const SizedBox(height: 2),
                           Text('${recipe.type} ・ ${recipe.taste.join('/ ')}',
                               style: const TextStyle(fontSize: 12, color: Colors.white70)),
