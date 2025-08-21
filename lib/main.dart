@@ -3,6 +3,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as img;
+import 'package:yaml/yaml.dart' show loadYaml;
+import 'package:flutter/services.dart' show rootBundle;
 
 void main() {
   runApp(const MyApp());
@@ -32,18 +34,31 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   XFile? _image;
   List? _response;
   Interpreter? _interpreter;
   List<int>? _inputShape;
   List<int>? _outputShape;
+  List<String> classNames = [];
 
   @override
   void initState() {
     super.initState();
     print('initState called');
-    loadModel();
+    loadMetadata().then((_) => loadModel());
+  }
+
+  Future<void> loadMetadata() async {
+    try {
+      final yamlStr = await rootBundle.loadString('assets/metadata.yaml');
+      final yamlMap = loadYaml(yamlStr);
+      final namesMap = yamlMap['names'];
+      classNames = List.generate(namesMap.length, (i) => namesMap[i].toString());
+      print('Loaded class names: $classNames');
+    } catch (e) {
+      print('Metadata load error: $e');
+      classNames = [];
+    }
   }
 
   Future<void> loadModel() async {
@@ -58,12 +73,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
   Future<List<List<List<double>>>> preprocessImage(File imageFile, int inputSize) async {
     final bytes = await imageFile.readAsBytes();
     img.Image? image = img.decodeImage(bytes);
@@ -71,7 +80,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     img.Image resized = img.copyResize(image, width: inputSize, height: inputSize);
 
-    // shape: [height][width][3]
     return List.generate(
       inputSize,
       (y) => List.generate(
@@ -88,25 +96,17 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Future<void> _openCamera() async {
+  Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    final pickedFile = await picker.pickImage(source: source);
     setState(() {
       _image = pickedFile;
     });
     if (pickedFile != null && _interpreter != null && _inputShape != null && _outputShape != null) {
       final image = File(pickedFile.path);
-
-      // 自动获取输入尺寸
       final inputSize = _inputShape![1];
-
-      // 预处理图片
       final input = await preprocessImage(image, inputSize);
-
-      // 构造输入 shape: [1, height, width, 3]
       var inputTensor = [input];
-
-      // 构造输出 shape
       var output = List.generate(
         _outputShape![0],
         (_) => List.generate(
@@ -120,6 +120,37 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           _response = output;
         });
+
+        print('--- Model Output (Best Score Per Class) ---');
+        Map<String, Map<String, dynamic>> bestScores = {};
+        final int boxLen = output[0].length;
+        final int classProbStart = 5;
+        final int classCount = boxLen - classProbStart;
+        for (int i = 0; i < output[0][0].length; i++) {
+          List<double> box = [];
+          for (int j = 0; j < boxLen; j++) {
+            box.add(output[0][j][i]);
+          }
+          List<double> classScores = box.sublist(classProbStart, boxLen);
+          for (int k = 0; k < classScores.length; k++) {
+            double score = classScores[k];
+            if (!bestScores.containsKey(classNames[k]) || score > bestScores[classNames[k]]!['score']) {
+              bestScores[classNames[k]] = {
+                'box': box.sublist(0, 4),
+                'obj': box[4],
+                'score': score
+              };
+            }
+          }
+        }
+        bestScores.forEach((name, info) {
+          print(
+            '$name | Box: ${info['box'].map((v) => v.toStringAsFixed(1)).join(', ')} | '
+            'Obj: ${(info['obj'] as double).toStringAsFixed(2)} | '
+            'Score: ${(info['score'] as double).toStringAsFixed(2)}'
+          );
+        });
+        print('--- End Output ---');
       } catch (e) {
         print('Inference error: $e');
         setState(() {
@@ -137,18 +168,22 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _openCamera,
-              child: const Text('open camera'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => _pickImage(ImageSource.camera),
+                  child: const Text('take photo'),
+                ),
+                const SizedBox(width: 20),
+                ElevatedButton(
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                  child: const Text('choose from gallery'),
+                ),
+              ],
             ),
             if (_image != null) ...[
               const SizedBox(height: 20),
@@ -158,17 +193,50 @@ class _MyHomePageState extends State<MyHomePage> {
                 height: 200,
               ),
             ],
-            if (true) ...[
+            if (_response != null && classNames.isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text('Model response: ${_response.toString()}'),
+              const Text('Model response:'),
+              ...(() {
+                // record the best scores for each class
+                Map<String, Map<String, dynamic>> bestScores = {};
+                final int boxLen = _response![0].length; // 25
+                final int classProbStart = 5;
+                final int classProbEnd = boxLen; // 25
+                final int classCount = classNames.length;
+                for (int i = 0; i < _response![0][0].length; i++) {
+                  List<double> box = [];
+                  for (int j = 0; j < boxLen; j++) {
+                    box.add(_response![0][j][i]);
+                  }
+                  // only consider boxes with a valid object score
+                  List<double> classScores = box.sublist(classProbStart, classProbStart + classCount > boxLen ? boxLen : classProbStart + classCount);
+                  print('classNames.length: ${classNames.length}, classScores.length: ${classScores.length}');
+                  for (int k = 0; k < classScores.length; k++) {
+                    double score = classScores[k];
+                    if (!bestScores.containsKey(classNames[k]) || score > bestScores[classNames[k]]!['score']) {
+                      bestScores[classNames[k]] = {
+                        'box': box.sublist(0, 4),
+                        'obj': box[4],
+                        'score': score
+                      };
+                    }
+                  }
+                }
+                // output the best scores
+                return bestScores.entries.map((entry) {
+                  final name = entry.key;
+                  final info = entry.value;
+                  final idx = classNames.indexOf(name);
+                  return Text(
+                    '${name} (${idx}) | Box: ${info['box'].map((v) => v.toStringAsFixed(1)).join(', ')} | '
+                    'Obj: ${(info['obj'] as double).toStringAsFixed(2)} | '
+                    'Score: ${(info['score'] as double).toStringAsFixed(2)}'
+                  );
+                }).toList();
+              })(),
             ],
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
