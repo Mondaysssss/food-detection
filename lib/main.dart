@@ -547,16 +547,180 @@ class _FoodListPanel extends StatelessWidget {
               ],
             ),
           const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.tonalIcon(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade200.withOpacity(.2)),
-              onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
-              icon: const Icon(Icons.delete),
-              label: const Text('清空'),
+          Row(
+            children: [
+              // ← 新增：打開全螢幕多選清單
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final picked = await Navigator.push<List<String>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => IngredientPickerPage(
+                        all: kAllIngredients,                  // 全部可選食材
+                        existing: app.ingredients.toSet(),     // 已有的會顯示「已在清單中」
+                      ),
+                    ),
+                  );
+                  if (picked != null && picked.isNotEmpty) {
+                    app.addIngredients(picked);               // 加入（內部已去重）
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('新增'),
+              ),
+
+              const Spacer(),
+
+              // 右邊：清空按鈕（保持原有功能）
+              FilledButton.tonalIcon(
+                onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
+                icon: const Icon(Icons.delete),
+                label: const Text('清空'),
+                style: FilledButton.styleFrom(
+                  // 如果你的 SDK 提示 withOpacity() 棄用，用 withValues()
+                  backgroundColor: Colors.red.shade200.withValues(alpha: 0.2),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===================== 全螢幕多選清單：IngredientPickerPage =====================
+class IngredientPickerPage extends StatefulWidget {
+  final List<String> all;     // 全部可選食材
+  final Set<String> existing; // 已在清單中的（顯示為已有且不可選）
+
+  const IngredientPickerPage({
+    super.key,
+    required this.all,
+    required this.existing,
+  });
+
+  @override
+  State<IngredientPickerPage> createState() => _IngredientPickerPageState();
+}
+
+class _IngredientPickerPageState extends State<IngredientPickerPage> {
+  final Set<String> selected = {}; // 本頁選取中的
+  String query = '';
+
+  List<String> get _filtered {
+    if (query.trim().isEmpty) return widget.all;
+    final q = query.toLowerCase();
+    return widget.all.where((x) => x.toLowerCase().contains(q)).toList();
+  }
+
+  void _toggle(String name) {
+    if (widget.existing.contains(name)) return; // 已有的不能改
+    setState(() {
+      if (selected.contains(name)) {
+        selected.remove(name);
+      } else {
+        selected.add(name);
+      }
+    });
+  }
+
+  void _selectAllFiltered() {
+    setState(() {
+      for (final n in _filtered) {
+        if (!widget.existing.contains(n)) selected.add(n);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() => selected.clear());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('新增食物（已選 ${selected.length} 項）'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _clearSelection,
+            child: const Text('清除選取'),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // 搜尋框
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            child: TextField(
+              decoration: _inputDecoration('搜尋食材', icon: Icons.search),
+              onChanged: (v) => setState(() => query = v),
+            ),
+          ),
+          // 快速操作
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _selectAllFiltered,
+                  icon: const Icon(Icons.select_all),
+                  label: const Text('選取篩選結果'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _clearSelection,
+                  icon: const Icon(Icons.clear_all),
+                  label: const Text('清除選取'),
+                ),
+                const Spacer(),
+                Text('${_filtered.length} 筆',
+                    style: const TextStyle(color: Colors.white70)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // 清單
+          Expanded(
+            child: ListView.builder(
+              itemCount: _filtered.length,
+              itemBuilder: (_, i) {
+                final name = _filtered[i];
+                final disabled = widget.existing.contains(name);
+                final checked = selected.contains(name);
+                return CheckboxListTile(
+                  title: Text(name),
+                  subtitle: disabled
+                      ? const Text('已在清單中', style: TextStyle(color: Colors.white60))
+                      : null,
+                  value: disabled ? true : checked,
+                  onChanged: disabled ? null : (_) => _toggle(name),
+                  controlAffinity: ListTileControlAffinity.trailing,
+                  secondary: disabled
+                      ? const Icon(Icons.check_circle, color: Colors.greenAccent)
+                      : const Icon(Icons.add_circle_outline),
+                );
+              },
             ),
           ),
         ],
+      ),
+      // 底部「確定」按鈕（SafeArea）
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.all(12),
+        child: ElevatedButton.icon(
+          onPressed: selected.isEmpty
+              ? null
+              : () => Navigator.pop(context, selected.toList()),
+          icon: const Icon(Icons.check),
+          label: const Text('確定加入'),
+        ),
       ),
     );
   }
