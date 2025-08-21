@@ -1026,22 +1026,55 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
-// 菜單推介（可返回的全螢幕頁面）
 class RecommendScreen extends StatelessWidget {
   const RecommendScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final ingredients = context.watch<AppState>().ingredients;
+
     return Scaffold(
       appBar: AppBar(
-        // 這個 BackButton 就是你要的『返回／上一頁』箭頭
-        leading: const BackButton(),
+        leading: const BackButton(),               // ← 返回／上一頁
         title: const Text('菜單推介'),
       ),
-      body: const Padding(
-        padding: EdgeInsets.all(12.0),
-        // 直接重用既有的 RecommendPage 內容
-        child: RecommendPage(),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            // ⭐ 頂部：顯示「食物紀錄表」的食材
+            _glass(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _title('目前食材（${ingredients.length}）'),
+                  if (ingredients.isEmpty)
+                    const Text('尚未加入任何食材，請回上一頁新增或偵測。',
+                        style: TextStyle(color: Colors.white70))
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final i in ingredients)
+                          Chip(
+                            label: Text(i),
+                            backgroundColor: Colors.white12,
+                            side: const BorderSide(color: Colors.white24),
+                            labelStyle: const TextStyle(color: Colors.white),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // 下方：你的原本「菜單推介」內容
+            const Expanded(
+              child: RecommendPage(),
+            ),
+          ],
+        ),
       ),
     );
   }
