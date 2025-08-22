@@ -1066,10 +1066,8 @@ void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr)
   final difficulty = kRecipeDifficulty[recipe.menuId] ?? 2;
   final method = kRecipeMethod[recipe.menuId] ?? '—';
   final selling = kSellingPoints[recipe.menuId] ?? ['快速上桌', '材料易取得', '家常口味'];
-  final verbose = kStepsVerbose[recipe.menuId] ??
-      recipe.steps.map((e) => e.text).toList();
+  final verbose = kStepsVerbose[recipe.menuId] ?? recipe.steps.map((e) => e.text).toList();
 
-  // 將 required 食材分成主料／調味料，並帶入數量
   final mainIngr = <MapEntry<String, String>>[];
   final seasonings = <MapEntry<String, String>>[];
   for (final key in recipe.ingredientsRequired) {
@@ -1084,43 +1082,68 @@ void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr)
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    enableDrag: true,
+    isDismissible: true,
+    backgroundColor: Colors.transparent,                     // 底層容器透明
+    barrierColor: Colors.black.withValues(alpha: 0.7),       // ⭐ 更深的遮罩，不會透字
     builder: (ctx) {
       final h = MediaQuery.of(ctx).size.height;
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Container(
-            constraints: BoxConstraints(maxHeight: h * 0.92),
-            child: _glass(
-              padding: EdgeInsets.zero,
+            constraints: BoxConstraints(maxHeight: h * 0.94),
+            // ⭐ 詳細頁本體改成「實心深色」卡片（不再太透明）
+            decoration: BoxDecoration(
+              color: const Color(0xFF111318),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white24),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: .5), blurRadius: 20, offset: const Offset(0, 8)),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // 頂圖
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: Image.network(recipe.cover, fit: BoxFit.cover),
-                      ),
+                    // ===== 頂部封面 + 返回箭咀（左上角） =====
+                    Stack(
+                      children: [
+                        AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Image.network(recipe.cover, fit: BoxFit.cover),
+                        ),
+                        Positioned(
+                          left: 8, top: 8,
+                          child: Material(
+                            color: Colors.black.withValues(alpha: .45),
+                            shape: const CircleBorder(),
+                            child: IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Colors.white),
+                              onPressed: () => Navigator.pop(ctx),      // ⭐ 返回
+                              tooltip: '返回',
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+
+                    // ===== 內容 =====
                     Padding(
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 標題 + 星級
+                          // 標題 + 難度星星
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Expanded(
                                 child: Text(
                                   recipe.name,
                                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1, overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               Row(
@@ -1128,18 +1151,17 @@ void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr)
                                   5,
                                   (i) => Icon(
                                     i < difficulty ? Icons.star : Icons.star_border,
-                                    color: Colors.amber,
-                                    size: 18,
+                                    color: Colors.amber, size: 18,
                                   ),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
+
                           // 賣點
                           Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: 8, runSpacing: 8,
                             children: [
                               for (final s in selling)
                                 Chip(
@@ -1151,10 +1173,10 @@ void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr)
                             ],
                           ),
                           const SizedBox(height: 12),
+
                           // 基本資訊
                           Wrap(
-                            spacing: 12,
-                            runSpacing: 8,
+                            spacing: 12, runSpacing: 8,
                             children: [
                               _kv('菜式', recipe.type),
                               _kv('口味', recipe.taste.join(' / ')),
@@ -1166,16 +1188,19 @@ void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr)
                             ],
                           ),
                           const SizedBox(height: 14),
-                          // 食材（主料）
+
+                          // 主料
                           _sectionTitle('主料'),
                           const SizedBox(height: 6),
                           _qtyList(mainIngr),
                           const SizedBox(height: 12),
+
                           // 調味料
                           _sectionTitle('調味料'),
                           const SizedBox(height: 6),
                           _qtyList(seasonings),
                           const SizedBox(height: 14),
+
                           // 詳細步驟
                           _sectionTitle('詳細步驟'),
                           const SizedBox(height: 6),
