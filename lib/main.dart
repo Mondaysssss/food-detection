@@ -1443,22 +1443,39 @@ class _RecipeCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        // 減一（保持不變）
                         IconButton.filledTonal(
                           onPressed: count > 0 ? () => app.addToCart(recipe.menuId, -1) : null,
                           icon: const Icon(Icons.remove),
+                          tooltip: '減少 1',
+                          // 讓大小一致、易點（可選）
+                          style: IconButton.styleFrom(
+                            fixedSize: const Size(40, 40),
+                            padding: EdgeInsets.zero,
+                          ),
                         ),
+
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Text('$count', style: const TextStyle(fontWeight: FontWeight.w700)),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
                         ),
-                        ElevatedButton.icon(
-                          onPressed: () => app.addToCart(recipe.menuId, 1),
+
+                        // ⭐ 加一（改成只有 + 圖示的按鈕）
+                        IconButton.filled(
+                          onPressed: () => app.addToCart(recipe.menuId, 1), // 別寫 +1，寫 1
                           icon: const Icon(Icons.add),
-                          label: const Text('加入'),
+                          tooltip: '增加 1',
+                          style: IconButton.styleFrom(
+                            fixedSize: const Size(40, 40),
+                            padding: EdgeInsets.zero,
+                          ),
                         ),
                       ],
                     ),
-                  // （原本的「開始烹飪」按鈕已移除）
+                  // 原本的「開始烹飪」按鈕暫時移除
                 ],
               ),
             ),
