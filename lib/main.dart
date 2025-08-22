@@ -30,6 +30,35 @@ class AppState extends ChangeNotifier {
   UnmodifiableListView<CookHistory> get history =>
       UnmodifiableListView(_history);
 
+  // === Cart ===
+  final Map<String, int> _cart = {};               // menuId -> qty
+  UnmodifiableMapView<String, int> get cart =>
+      UnmodifiableMapView(_cart);
+
+  int cartCountOf(String menuId) => _cart[menuId] ?? 0;
+  int get cartTotalCount => _cart.values.fold(0, (s, v) => s + v);
+
+  void addToCart(String menuId, [int delta = 1]) {
+    final n = (_cart[menuId] ?? 0) + delta;
+    if (n <= 0) {
+      _cart.remove(menuId);
+    } else {
+      _cart[menuId] = n;
+    }
+    notifyListeners();
+  }
+
+  void setCartCount(String menuId, int count) {
+    if (count <= 0) _cart.remove(menuId);
+    else _cart[menuId] = count;
+    notifyListeners();
+  }
+
+  void clearCart() {
+    _cart.clear();
+    notifyListeners();
+  }
+
   // 教學模式設定
   bool strictMode = true; // 嚴格模式：需跑完計時才能下一步
   int timeScale = 10; // 1 分鐘 = 10 秒（示範友好）
@@ -354,6 +383,11 @@ const List<Recipe> kRecipes = [
     ],
   ),
 ];
+
+// 快速查表
+final Map<String, Recipe> kRecipeById = {
+  for (final r in kRecipes) r.menuId: r
+};
 
 /// 所有可能的食材（方便模擬偵測）
 final List<String> kAllIngredients = [
@@ -1275,21 +1309,34 @@ String _prettyName(String key) {
 class _RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final MatchResult mr;
-  const _RecipeCard({required this.recipe, required this.mr});
+  final bool readOnly;     // 購物車頁用 true → 不顯示 +/−
+  final int? qtyForCart;   // 購物車頁顯示數量徽章
+
+  const _RecipeCard({
+    required this.recipe,
+    required this.mr,
+    this.readOnly = false,
+    this.qtyForCart,
+  });
+
   @override
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
     final ratio = mr.match.length / recipe.ingredientsRequired.length;
+
+    final count = context.select<AppState, int>(
+      (s) => s.cartCountOf(recipe.menuId),
+    );
+
     return InkWell(
       borderRadius: BorderRadius.circular(18),
-      onLongPress: () => _showRecipeDetailSheet(context, recipe, mr), // ⭐ 長按開詳情
+      onLongPress: () => _showRecipeDetailSheet(context, recipe, mr), // ⭐ 長按詳情
       child: _glass(
         padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            //（你的封面圖 Stack，右上角有收藏星星，左上角齊全徽章）
-            // 下面這段保留你現有版本即可
+            // 封面 + 左上齊全徽章 + 右上收藏星星 +（購物車模式顯示 xN 徽章）
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
               child: Stack(
@@ -1313,12 +1360,24 @@ class _RecipeCard extends StatelessWidget {
                   ),
                   Positioned(
                     right: 8, top: 8,
-                    child: FavoriteStar(menuId: recipe.menuId), // ← 如果你已新增收藏星星
+                    child: FavoriteStar(menuId: recipe.menuId),
                   ),
+                  if (readOnly && (qtyForCart ?? 0) > 0)
+                    Positioned(
+                      right: 8, bottom: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black54, borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text('x${qtyForCart!}'),
+                      ),
+                    ),
                 ],
               ),
             ),
-            // info
+
+            // 資訊區
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
               child: Column(
@@ -1337,8 +1396,10 @@ class _RecipeCard extends StatelessWidget {
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 2),
-                            Text('${recipe.type} ・ ${recipe.taste.join('/ ')}',
-                                style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                            Text(
+                              '${recipe.type} ・ ${recipe.taste.join('/ ')}',
+                              style: const TextStyle(fontSize: 12, color: Colors.white70),
+                            ),
                           ],
                         ),
                       ),
@@ -1349,20 +1410,26 @@ class _RecipeCard extends StatelessWidget {
                     TextSpan(
                       children: [
                         const TextSpan(text: '已有：', style: TextStyle(fontSize: 12)),
-                        TextSpan(text: mr.match.join(', ').isEmpty ? '—' : mr.match.join(', '),
-                            style: const TextStyle(fontSize: 12, color: Color(0xFFBBF7D0))),
+                        TextSpan(
+                          text: mr.match.join(', ').isEmpty ? '—' : mr.match.join(', '),
+                          style: const TextStyle(fontSize: 12, color: Color(0xFFBBF7D0)),
+                        ),
                       ],
                     ),
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text.rich(
                     TextSpan(
                       children: [
                         const TextSpan(text: '缺少：', style: TextStyle(fontSize: 12)),
-                        TextSpan(text: mr.missing.join(', ').isEmpty ? '—' : mr.missing.join(', '),
-                            style: const TextStyle(fontSize: 12, color: Color(0xFFFECACA))),
+                        TextSpan(
+                          text: mr.missing.join(', ').isEmpty ? '—' : mr.missing.join(', '),
+                          style: const TextStyle(fontSize: 12, color: Color(0xFFFECACA)),
+                        ),
                       ],
                     ),
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 10),
                   ClipRRect(
@@ -1370,19 +1437,28 @@ class _RecipeCard extends StatelessWidget {
                     child: LinearProgressIndicator(value: ratio, minHeight: 8),
                   ),
                   const SizedBox(height: 10),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final done = await Navigator.push<bool>(
-                        context,
-                        MaterialPageRoute(builder: (_) => CookingScreen(recipe: recipe)),
-                      );
-                      if (done == true) {
-                        app.addHistory(recipe);
-                      }
-                    },
-                    icon: const Icon(Icons.restaurant_menu),
-                    label: const Text('開始烹飪'),
-                  ),
+
+                  // ⭐ 這裡用 +/− 控制數量；在購物車頁（readOnly=true）就不顯示
+                  if (!readOnly)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton.filledTonal(
+                          onPressed: count > 0 ? () => app.addToCart(recipe.menuId, -1) : null,
+                          icon: const Icon(Icons.remove),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('$count', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => app.addToCart(recipe.menuId, 1),
+                          icon: const Icon(Icons.add),
+                          label: const Text('加入'),
+                        ),
+                      ],
+                    ),
+                  // （原本的「開始烹飪」按鈕已移除）
                 ],
               ),
             ),
@@ -1446,6 +1522,79 @@ class RecommendScreen extends StatelessWidget {
             const Expanded(child: RecommendPage()),
           ],
         ),
+      ),
+      // ⭐ 新增購物車 FAB（圓形）
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          );
+        },
+        child: const Icon(Icons.shopping_cart),
+      ),
+    );
+  }
+}
+
+// 購物車頁
+class CartScreen extends StatelessWidget {
+  const CartScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+    final cart = app.cart;
+    final detected = app.ingredients;
+
+    final entries = [
+      for (final e in cart.entries)
+        (recipe: kRecipeById[e.key]!, qty: e.value, mr: computeMatch(kRecipeById[e.key]!, detected)),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: const Text('購物車'),
+      ),
+      body: PageFrame(
+        child: entries.isEmpty
+            ? _glass(child: const Text('尚未加入任何菜單。', style: TextStyle(color: Colors.white70)))
+            : LayoutBuilder(
+                builder: (_, c) {
+                  final w = c.maxWidth;
+                  final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1;
+                  const spacing = 12.0;
+                  final tileW = (w - (cols - 1) * spacing) / cols;
+                  final coverH = tileW * 9 / 16;
+                  final baseInfoH = cols == 1 ? 230.0 : (cols == 2 ? 220.0 : 210.0);
+                  final tileH = coverH + baseInfoH;
+
+                  final grid = GridView.builder(
+                    shrinkWrap: true,
+                    primary: false,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      crossAxisSpacing: spacing,
+                      mainAxisSpacing: spacing,
+                      mainAxisExtent: tileH,
+                    ),
+                    itemCount: entries.length,
+                    itemBuilder: (_, i) => _RecipeCard(
+                      recipe: entries[i].recipe,
+                      mr: entries[i].mr,
+                      readOnly: true,               // ⭐ 購物車頁：唯讀
+                      qtyForCart: entries[i].qty,   // 顯示 xN 徽章
+                    ),
+                  );
+
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Column(children: [grid]),
+                  );
+                },
+              ),
       ),
     );
   }
