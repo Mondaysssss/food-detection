@@ -377,6 +377,67 @@ final List<String> kAllIngredients = [
   }
 ].toList()..sort();
 
+// ---------- 額外資訊對照表
+const Map<String, int> kRecipeServings = {
+  'r1': 2, 'r2': 2, 'r3': 2, 'r4': 3, 'r5': 2,
+};
+
+const Map<String, int> kRecipeDifficulty = {
+  'r1': 2, 'r2': 3, 'r3': 1, 'r4': 3, 'r5': 2,
+};
+
+const Map<String, String> kRecipeMethod = {
+  'r1': '炒', 'r2': '煎／爆香', 'r3': '拌', 'r4': '炒', 'r5': '煮／拌',
+};
+
+/// 已知調味料 key（其餘視為主料）
+const Set<String> kSeasoningKeys = {
+  'salt', 'pepper', 'soy_sauce', 'sugar', 'vinegar', 'oil',
+};
+
+/// 食材預設數量（沒有列到的就顯示「適量」）
+const Map<String, String> kQtyDefaults = {
+  'egg': '2 顆',
+  'tomato': '2 顆（約300g）',
+  'lettuce': '150 g',
+  'cucumber': '100 g',
+  'shrimp': '200 g',
+  'butter': '20 g',
+  'garlic': '2 瓣',
+  'pepper': '少許',
+  'vinegar': '1 湯匙',
+  'sesame': '1 茶匙',
+  'pork': '200 g',
+  'chili': '1 條',
+  'soy_sauce': '1 湯匙',
+  'sugar': '1 茶匙',
+  'mushroom': '120 g',
+  'pasta': '200 g',
+  'basil': '一把',
+  'oil': '1 湯匙',
+  'salt': '1/2 茶匙',
+};
+
+/// 簡短賣點（可自由增修）
+const Map<String, List<String>> kSellingPoints = {
+  'r1': ['家常快手', '高蛋白低成本', '飯菜合一的神隊友'],
+  'r2': ['蒜香濃郁', '海陸雙享', '下酒／配飯皆宜'],
+  'r3': ['低卡清爽', '5分鐘完成', '佐餐開胃'],
+  'r4': ['香辣下飯', '九層塔香', '配白飯無敵'],
+  'r5': ['香草清新', '一鍋搞定', '快速晚餐'],
+};
+
+/// 詳細步驟（若無對應就用短步驟代替）
+const Map<String, List<String>> kStepsVerbose = {
+  'r1': [
+    '先把番茄洗凈，切大塊。',
+    '把雞蛋發打成蛋汁，加入少量清水（約2–3茶匙）拌勻。',
+    '燒熱油鑊，下蛋汁，以大火快炒把蛋煮至約七成熟，盛起備用。',
+    '下番茄炒片刻，加入鹽、水和糖同煮。',
+    '番茄煮到稍稔，加入茄膏和適量生粉水，再將已炒的雞蛋回鑊，快炒至熟透，即成。',
+  ],
+};
+
 /// 計算配料匹配/缺少
 MatchResult computeMatch(Recipe recipe, List<String> detected) {
   final set = detected.toSet();
@@ -998,6 +1059,194 @@ class FavoriteStar extends StatelessWidget {
   }
 }
 
+//-------顯示詳細頁-------start----------------
+void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr) {
+  final totalMin = recipe.steps.fold<int>(0, (s, st) => s + st.durationMin);
+  final servings = kRecipeServings[recipe.menuId] ?? 2;
+  final difficulty = kRecipeDifficulty[recipe.menuId] ?? 2;
+  final method = kRecipeMethod[recipe.menuId] ?? '—';
+  final selling = kSellingPoints[recipe.menuId] ?? ['快速上桌', '材料易取得', '家常口味'];
+  final verbose = kStepsVerbose[recipe.menuId] ??
+      recipe.steps.map((e) => e.text).toList();
+
+  // 將 required 食材分成主料／調味料，並帶入數量
+  final mainIngr = <MapEntry<String, String>>[];
+  final seasonings = <MapEntry<String, String>>[];
+  for (final key in recipe.ingredientsRequired) {
+    final qty = kQtyDefaults[key] ?? '適量';
+    if (kSeasoningKeys.contains(key)) {
+      seasonings.add(MapEntry(key, qty));
+    } else {
+      mainIngr.add(MapEntry(key, qty));
+    }
+  }
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      final h = MediaQuery.of(ctx).size.height;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Container(
+            constraints: BoxConstraints(maxHeight: h * 0.92),
+            child: _glass(
+              padding: EdgeInsets.zero,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 頂圖
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Image.network(recipe.cover, fit: BoxFit.cover),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 標題 + 星級
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  recipe.name,
+                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Row(
+                                children: List.generate(
+                                  5,
+                                  (i) => Icon(
+                                    i < difficulty ? Icons.star : Icons.star_border,
+                                    color: Colors.amber,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // 賣點
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final s in selling)
+                                Chip(
+                                  label: Text(s),
+                                  backgroundColor: Colors.white12,
+                                  side: const BorderSide(color: Colors.white24),
+                                  labelStyle: const TextStyle(color: Colors.white),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // 基本資訊
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 8,
+                            children: [
+                              _kv('菜式', recipe.type),
+                              _kv('口味', recipe.taste.join(' / ')),
+                              _kv('方法', method),
+                              _kv('難度', '$difficulty / 5'),
+                              _kv('份量', '$servings 人份'),
+                              _kv('總時間', '$totalMin 分'),
+                              _kv('材料齊全度', '${mr.match.length}/${recipe.ingredientsRequired.length}'),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          // 食材（主料）
+                          _sectionTitle('主料'),
+                          const SizedBox(height: 6),
+                          _qtyList(mainIngr),
+                          const SizedBox(height: 12),
+                          // 調味料
+                          _sectionTitle('調味料'),
+                          const SizedBox(height: 6),
+                          _qtyList(seasonings),
+                          const SizedBox(height: 14),
+                          // 詳細步驟
+                          _sectionTitle('詳細步驟'),
+                          const SizedBox(height: 6),
+                          for (int i = 0; i < verbose.length; i++)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Text('${i + 1}. ${verbose[i]}'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// 小工具：標題
+Widget _sectionTitle(String t) => Text(
+      t,
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    );
+
+// 小工具：key-value 標籤
+Widget _kv(String k, String v) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white12,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Text('$k：$v', style: const TextStyle(fontSize: 12)),
+    );
+
+// 小工具：數量清單
+Widget _qtyList(List<MapEntry<String, String>> items) {
+  if (items.isEmpty) {
+    return const Text('—', style: TextStyle(color: Colors.white70));
+  }
+  return Column(
+    children: [
+      for (final e in items)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(child: Text(_prettyName(e.key))),
+              Text(e.value, style: const TextStyle(color: Colors.white70)),
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
+// 把 key 變得好看一點
+String _prettyName(String key) {
+  switch (key) {
+    case 'soy_sauce': return '醬油';
+    case 'sesame': return '芝麻';
+    case 'pasta': return '意粉';
+    default: return key.replaceAll('_', ' ');
+  }
+}
+//-------顯示詳細頁-------end----------------
+
 class _RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final MatchResult mr;
@@ -1006,114 +1255,114 @@ class _RecipeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
     final ratio = mr.match.length / recipe.ingredientsRequired.length;
-    return _glass(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // cover
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            child: Stack(
-              children: [
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Image.network(recipe.cover, fit: BoxFit.cover),
-                ),
-                // 左上角：齊全徽章
-                Positioned(
-                  left: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '${mr.match.length}/${recipe.ingredientsRequired.length} 齊全',
-                      style: const TextStyle(fontSize: 12),
-                    ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onLongPress: () => _showRecipeDetailSheet(context, recipe, mr), // ⭐ 長按開詳情
+      child: _glass(
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            //（你的封面圖 Stack，右上角有收藏星星，左上角齊全徽章）
+            // 下面這段保留你現有版本即可
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              child: Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Image.network(recipe.cover, fit: BoxFit.cover),
                   ),
-                ),
-                // 右上角：收藏星星
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: FavoriteStar(menuId: recipe.menuId),
-                ),
-              ],
-            ),
-          ),
-          // info
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            recipe.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 2),
-                          Text('${recipe.type} ・ ${recipe.taste.join('/ ')}',
-                              style: const TextStyle(fontSize: 12, color: Colors.white70)),
-                        ],
+                  Positioned(
+                    left: 8, top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black54, borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${mr.match.length}/${recipe.ingredientsRequired.length} 齊全',
+                        style: const TextStyle(fontSize: 12),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      const TextSpan(text: '已有：', style: TextStyle(fontSize: 12)),
-                      TextSpan(text: mr.match.join(', ').isEmpty ? '—' : mr.match.join(', '),
-                          style: const TextStyle(fontSize: 12, color: Color(0xFFBBF7D0))),
-                    ],
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      const TextSpan(text: '缺少：', style: TextStyle(fontSize: 12)),
-                      TextSpan(text: mr.missing.join(', ').isEmpty ? '—' : mr.missing.join(', '),
-                          style: const TextStyle(fontSize: 12, color: Color(0xFFFECACA))),
-                    ],
+                  Positioned(
+                    right: 8, top: 8,
+                    child: FavoriteStar(menuId: recipe.menuId), // ← 如果你已新增收藏星星
                   ),
-                ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(value: ratio, minHeight: 8),
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final done = await Navigator.push<bool>(
-                      context,
-                      MaterialPageRoute(builder: (_) => CookingScreen(recipe: recipe)),
-                    );
-                    if (done == true) {
-                      app.addHistory(recipe);
-                    }
-                  },
-                  icon: const Icon(Icons.restaurant_menu),
-                  label: const Text('開始烹飪'),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            // info
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              recipe.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 2),
+                            Text('${recipe.type} ・ ${recipe.taste.join('/ ')}',
+                                style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(text: '已有：', style: TextStyle(fontSize: 12)),
+                        TextSpan(text: mr.match.join(', ').isEmpty ? '—' : mr.match.join(', '),
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFBBF7D0))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(text: '缺少：', style: TextStyle(fontSize: 12)),
+                        TextSpan(text: mr.missing.join(', ').isEmpty ? '—' : mr.missing.join(', '),
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFFECACA))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(value: ratio, minHeight: 8),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final done = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(builder: (_) => CookingScreen(recipe: recipe)),
+                      );
+                      if (done == true) {
+                        app.addHistory(recipe);
+                      }
+                    },
+                    icon: const Icon(Icons.restaurant_menu),
+                    label: const Text('開始烹飪'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
