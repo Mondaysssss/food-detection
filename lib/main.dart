@@ -220,11 +220,10 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   final _pages = const [
     AiCameraPage(),
-    FavoritesPage(),
     HistoryPage(),
     SettingsPage(),
   ];
-  final _titles = const ['AI 攝影', '最愛', '歷史', '設定'];
+  final _titles = const ['AI 攝影', '歷史', '設定'];
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +251,6 @@ class _HomeShellState extends State<HomeShell> {
           onDestinationSelected: (i) => setState(() => _index = i),
           destinations: const [
             NavigationDestination(icon: Icon(Icons.photo_camera_outlined), selectedIcon: Icon(Icons.photo_camera), label: 'AI 攝影'),
-            NavigationDestination(icon: Icon(Icons.star_border), selectedIcon: Icon(Icons.star), label: '最愛'),
             NavigationDestination(icon: Icon(Icons.history), selectedIcon: Icon(Icons.history_toggle_off), label: '歷史'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: '設定'),
           ],
@@ -818,6 +816,7 @@ class _RecommendPageState extends State<RecommendPage> {
   String typeFilter = '全部';
   String tasteFilter = '全部';
   String search = '';
+  bool onlyFav = false; // 只顯示最愛
 
   @override
   Widget build(BuildContext context) {
@@ -831,6 +830,8 @@ class _RecommendPageState extends State<RecommendPage> {
 
     final types = ['全部', ...{for (final r in kRecipes) r.type}];
     final tastes = ['全部', ...{for (final r in kRecipes) ...r.taste}];
+    // 最愛集合（即時跟隨變更）
+    final favSet = context.watch<AppState>().favorites;
 
     final filtered = list.where((e) {
       if (typeFilter != '全部' && e.recipe.type != typeFilter) return false;
@@ -840,6 +841,9 @@ class _RecommendPageState extends State<RecommendPage> {
         if (!e.recipe.name.toLowerCase().contains(s) &&
             !e.recipe.ingredientsRequired.any((i) => i.toLowerCase().contains(s))) return false;
       }
+      // 勾了「只顯示最愛」時，只保留在最愛清單中的菜單
+      if (onlyFav && !favSet.contains(e.recipe.menuId)) return false;
+
       return true;
     }).toList();
 
@@ -875,6 +879,21 @@ class _RecommendPageState extends State<RecommendPage> {
                 values: tastes,
                 current: tasteFilter,
                 onChanged: (v) => setState(() => tasteFilter = v),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  FilterChip(
+                    label: const Text('只顯示最愛'),
+                    selected: onlyFav,
+                    onSelected: (v) => setState(() => onlyFav = v),
+                    selectedColor: Colors.amber.withValues(alpha: .2),
+                    checkmarkColor: Colors.amber,
+                    side: const BorderSide(color: Colors.white24),
+                    labelStyle: const TextStyle(color: Colors.white),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               TextField(
@@ -954,6 +973,31 @@ class _RecommendPageState extends State<RecommendPage> {
   }
 }
 
+// 右上角收藏星星（灰白＝未收藏；黃色＝已收藏）
+class FavoriteStar extends StatelessWidget {
+  final String menuId;
+  const FavoriteStar({super.key, required this.menuId});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.read<AppState>().toggleFavorite(menuId),
+      child: Selector<AppState, bool>(
+        selector: (_, s) => s.favorites.contains(menuId),
+        builder: (_, fav, __) => CircleAvatar(
+          radius: 16,
+          backgroundColor: fav ? Colors.black45 : Colors.black26,
+          child: Icon(
+            fav ? Icons.star : Icons.star_border,
+            color: fav ? Colors.amber : Colors.white70,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final MatchResult mr;
@@ -976,8 +1020,9 @@ class _RecipeCard extends StatelessWidget {
                   aspectRatio: 16 / 9,
                   child: Image.network(recipe.cover, fit: BoxFit.cover),
                 ),
+                // 左上角：齊全徽章
                 Positioned(
-                  right: 8,
+                  left: 8,
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -990,6 +1035,12 @@ class _RecipeCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
+                ),
+                // 右上角：收藏星星
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: FavoriteStar(menuId: recipe.menuId),
                 ),
               ],
             ),
@@ -1016,13 +1067,6 @@ class _RecipeCard extends StatelessWidget {
                           Text('${recipe.type} ・ ${recipe.taste.join('/ ')}',
                               style: const TextStyle(fontSize: 12, color: Colors.white70)),
                         ],
-                      ),
-                    ),
-                    IconButton.filledTonal(
-                      onPressed: () => app.toggleFavorite(recipe.menuId),
-                      icon: Selector<AppState, bool>(
-                        selector: (_, s) => s.favorites.contains(recipe.menuId),
-                        builder: (_, fav, __) => Icon(fav ? Icons.star : Icons.star_border),
                       ),
                     ),
                   ],
