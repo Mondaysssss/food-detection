@@ -1492,7 +1492,17 @@ class RecommendScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ingredients = context.watch<AppState>().ingredients;
+    final app = context.watch<AppState>();
+    final ingredients = app.ingredients;
+
+    // 先找出購物車中所有（數量 > 0）的菜單所用到的食材集合
+    final usedIngredients = <String>{};
+    app.cart.forEach((menuId, qty) {
+      if (qty > 0) {
+        final r = kRecipeById[menuId]; // ← 如果你已建立過這個 map
+        if (r != null) usedIngredients.addAll(r.ingredientsRequired);
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -1524,10 +1534,22 @@ class RecommendScreen extends StatelessWidget {
                         children: [
                           for (final i in ingredients)
                             Chip(
-                              label: Text(i),
-                              backgroundColor: Colors.white12,
-                              side: const BorderSide(color: Colors.white24),
-                              labelStyle: const TextStyle(color: Colors.white),
+                              label: Text(
+                                i,
+                                style: TextStyle(
+                                  // 被任何「已加入購物車（數量>0）」的菜單使用 → 綠色；否則紅色
+                                  color: usedIngredients.contains(i) ? Colors.greenAccent : Colors.redAccent,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              backgroundColor: usedIngredients.contains(i)
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : Colors.red.withValues(alpha: 0.15),
+                              side: BorderSide(
+                                color: usedIngredients.contains(i)
+                                    ? Colors.green.withValues(alpha: 0.4)
+                                    : Colors.red.withValues(alpha: 0.4),
+                              ),
                             ),
                         ],
                       ),
