@@ -35,6 +35,19 @@ class AppState extends ChangeNotifier {
   UnmodifiableMapView<String, int> get cart =>
       UnmodifiableMapView(_cart);
 
+  // === Cook Sessions（由購物車生成的多菜歷史） ===
+  final List<CookSession> _sessions = [];
+  UnmodifiableListView<CookSession> get sessions => UnmodifiableListView(_sessions);
+
+  void addSessionFromCartSnapshot(Map<String, int> snapshot, int totalMinutes) {
+    _sessions.insert(0, CookSession(
+      completedAt: DateTime.now(),
+      items: Map<String, int>.from(snapshot), // 存副本
+      totalMinutes: totalMinutes,
+    ));
+    notifyListeners();
+  }
+
   int cartCountOf(String menuId) => _cart[menuId] ?? 0;
   int get cartTotalCount => _cart.values.fold(0, (s, v) => s + v);
 
@@ -122,6 +135,17 @@ class AppState extends ChangeNotifier {
     timeScale = 10;
     notifyListeners();
   }
+}
+
+class CookSession {
+  final DateTime completedAt;
+  final Map<String, int> items; // menuId -> qty
+  final int totalMinutes;
+  CookSession({
+    required this.completedAt,
+    required this.items,
+    required this.totalMinutes,
+  });
 }
 
 class CookHistory {
@@ -450,6 +474,16 @@ const Map<String, String> kQtyDefaults = {
   'basil': '一把',
   'oil': '1 湯匙',
   'salt': '1/2 茶匙',
+};
+
+/// 單份菜單所需調味料折算（「茶匙」為單位）
+const Map<String, double> kSeasoningTeaspoons = {
+  'salt': 0.5,
+  'pepper': 0.25,
+  'soy_sauce': 3.0, // 1 湯匙 = 3 茶匙
+  'sugar': 1.0,
+  'vinegar': 3.0,   // 1 湯匙
+  'oil': 3.0,       // 1 湯匙
 };
 
 /// 簡短賣點（可自由增修）
@@ -1591,11 +1625,135 @@ class CartScreen extends StatelessWidget {
         (recipe: kRecipeById[e.key]!, qty: e.value, mr: computeMatch(kRecipeById[e.key]!, detected)),
     ];
 
+    // === 底部「生成」按鈕（空購物車時禁用） ===
+    void onGeneratePressed() {
+      // 計算彙總
+      final snapshot = Map<String, int>.from(app.cart); // 拍快照
+      final totalDishes = snapshot.values.fold<int>(0, (s, v) => s + v);
+      int totalMinutes = 0;
+
+      // 主料（唯一集合）與調味料（茶匙彙總）
+      final Set<String> mainAll = {};
+      final Map<String, double> seasonTsp = {};
+
+      snapshot.forEach((menuId, qty) {
+        final r = kRecipeById[menuId]!;
+        totalMinutes += qty * r.steps.fold<int>(0, (s, st) => s + st.durationMin);
+        for (final ing in r.ingredientsRequired) {
+          if (kSeasoningKeys.contains(ing)) {
+            final add = (kSeasoningTeaspoons[ing] ?? 1.0) * qty;
+            seasonTsp[ing] = (seasonTsp[ing] ?? 0) + add;
+          } else {
+            mainAll.add(ing);
+          }
+        }
+      });
+
+      // 顏色邏輯：使用者食材紀錄表（擁有 = 綠；缺少 = 紅）
+      final have = app.ingredients.toSet();
+      final mainGreen = [for (final m in mainAll) if (have.contains(m)) m]..sort();
+      final mainRed   = [for (final m in mainAll) if (!have.contains(m)) m]..sort();
+
+      final seasonKeys = seasonTsp.keys.toList()..sort();
+      final seasonGreen = [for (final s in seasonKeys) if (have.contains(s)) s];
+      final seasonRed   = [for (final s in seasonKeys) if (!have.contains(s)) s];
+
+      final totalSeasonTsp = seasonTsp.values.fold<double>(0, (s, v) => s + v);
+
+      // 顯示確認彈窗
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: const Text('生成確認'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 彙總統計
+                  _kv('菜單總數', '$totalDishes 道'),
+                  const SizedBox(height: 4),
+                  _kv('總時間', '$totalMinutes 分'),
+                  const SizedBox(height: 4),
+                  _kv('總食材種類', '${mainAll.length} 種'),
+                  const SizedBox(height: 4),
+                  _kv('總調味料（茶匙）', totalSeasonTsp.toStringAsFixed(1)),
+                  const SizedBox(height: 12),
+
+                  // 主料：綠在上、紅在下
+                  _sectionTitle('主料'),
+                  const SizedBox(height: 6),
+                  if (mainGreen.isNotEmpty)
+                    Text('已具備：${mainGreen.map(_prettyName).join(', ')}',
+                        style: const TextStyle(color: Colors.greenAccent)),
+                  if (mainRed.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text('缺少：${mainRed.map(_prettyName).join(', ')}',
+                          style: const TextStyle(color: Colors.redAccent)),
+                    ),
+                  const SizedBox(height: 12),
+
+                  // 調味料：帶茶匙數，綠在上、紅在下
+                  _sectionTitle('調味料（茶匙）'),
+                  const SizedBox(height: 6),
+                  if (seasonGreen.isNotEmpty)
+                    Text(
+                      '已具備：' +
+                          seasonGreen
+                              .map((k) => '${_prettyName(k)} ${seasonTsp[k]!.toStringAsFixed(1)}tsp')
+                              .join(', '),
+                      style: const TextStyle(color: Colors.greenAccent),
+                    ),
+                  if (seasonRed.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '缺少：' +
+                            seasonRed
+                                .map((k) => '${_prettyName(k)} ${seasonTsp[k]!.toStringAsFixed(1)}tsp')
+                                .join(', '),
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  const Text('（以上為估算單位）', style: TextStyle(fontSize: 12, color: Colors.white60)),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx), // 取消 → 回購物車頁
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx); // 關彈窗
+
+                  // 1) 建立 Session 歷史
+                  context.read<AppState>().addSessionFromCartSnapshot(snapshot, totalMinutes);
+
+                  // 2) 清空購物車與食材紀錄表
+                  context.read<AppState>().clearCart();
+                  context.read<AppState>().clearIngredients();
+
+                  // 3) 進入「歷史詳細頁」顯示本次內容
+                  final session = context.read<AppState>().sessions.first;
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => SessionDetailScreen(session: session)),
+                  );
+                },
+                child: const Text('確認生成'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text('購物車'),
-      ),
+      appBar: AppBar(leading: const BackButton(), title: const Text('購物車')),
       body: PageFrame(
         child: entries.isEmpty
             ? _glass(child: const Text('尚未加入任何菜單。', style: TextStyle(color: Colors.white70)))
@@ -1623,8 +1781,8 @@ class CartScreen extends StatelessWidget {
                     itemBuilder: (_, i) => _RecipeCard(
                       recipe: entries[i].recipe,
                       mr: entries[i].mr,
-                      readOnly: true,               // ⭐ 購物車頁：唯讀
-                      qtyForCart: entries[i].qty,   // 顯示 xN 徽章
+                      readOnly: true,
+                      qtyForCart: entries[i].qty,
                     ),
                   );
 
@@ -1635,10 +1793,99 @@ class CartScreen extends StatelessWidget {
                 },
               ),
       ),
+      // ⭐ 底部生成按鈕（空購物車時禁用）
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.all(12),
+        child: ElevatedButton.icon(
+          onPressed: app.cart.isEmpty ? null : onGeneratePressed,
+          icon: const Icon(Icons.playlist_add_check),
+          label: const Text('生成'),
+        ),
+      ),
     );
   }
 }
 
+//--新增的「歷史詳細頁」
+class SessionDetailScreen extends StatelessWidget {
+  final CookSession session;
+  const SessionDetailScreen({super.key, required this.session});
+
+  @override
+  Widget build(BuildContext context) {
+    final detected = context.watch<AppState>().ingredients; // 此時通常已清空
+    final entries = [
+      for (final e in session.items.entries)
+        (recipe: kRecipeById[e.key]!, qty: e.value, mr: computeMatch(kRecipeById[e.key]!, detected)),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: Text('歷史詳情｜${entries.fold<int>(0, (s, e) => s + e.qty)} 道・${session.totalMinutes} 分'),
+      ),
+      body: PageFrame(
+        child: LayoutBuilder(
+          builder: (_, c) {
+            final w = c.maxWidth;
+            final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1;
+            const spacing = 12.0;
+            final tileW = (w - (cols - 1) * spacing) / cols;
+            final coverH = tileW * 9 / 16;
+            final baseInfoH = cols == 1 ? 230.0 : (cols == 2 ? 220.0 : 210.0);
+            final tileH = coverH + baseInfoH;
+
+            final grid = GridView.builder(
+              shrinkWrap: true,
+              primary: false,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                mainAxisExtent: tileH,
+              ),
+              itemCount: entries.length,
+              itemBuilder: (_, i) => _RecipeCard(
+                recipe: entries[i].recipe,
+                mr: entries[i].mr,
+                readOnly: true,
+                qtyForCart: entries[i].qty,
+              ),
+            );
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _glass(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _title('本次摘要'),
+                        Text(
+                          '完成於：${session.completedAt}',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Text(
+                          '菜單數：${entries.fold<int>(0, (s, e) => s + e.qty)} 道，總時間：${session.totalMinutes} 分',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  grid,
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 /// --------------------------- Page: Favorites ------------------------------
 class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key});
@@ -1700,8 +1947,70 @@ class FavoritesPage extends StatelessWidget {
 /// --------------------------- Page: History --------------------------------
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final sessions = context.watch<AppState>().sessions;
+    if (sessions.isNotEmpty) {
+      return ListView.separated(
+        itemCount: sessions.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (_, i) {
+          final s = sessions[i];
+          final totalMenus = s.items.values.fold<int>(0, (sum, v) => sum + v);
+          // 取第一道菜的封面當縮圖（若有）
+          String? cover;
+          if (s.items.isNotEmpty) {
+            final firstId = s.items.keys.first;
+            cover = kRecipeById[firstId]?.cover;
+          }
+          return InkWell(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SessionDetailScreen(session: s)),
+            ),
+            child: _glass(
+              padding: EdgeInsets.zero,
+              child: Row(
+                children: [
+                  if (cover != null)
+                    ClipRRect(
+                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+                      child: SizedBox(
+                        width: 140,
+                        height: 90,
+                        child: Image.network(cover!, fit: BoxFit.cover),
+                      ),
+                    ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('烹飪紀錄', style: TextStyle(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 4),
+                          Text('完成於：${s.completedAt}',
+                              style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                          Text('菜單：$totalMenus 道 ・ 總時間：${s.totalMinutes} 分',
+                              style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8),
+                    child: Icon(Icons.chevron_right),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    // 若沒有 Session 歷史，回退到你原本的單菜歷史 UI
     final list = context.watch<AppState>().history;
     if (list.isEmpty) {
       return _glass(child: const Text('尚未完成任何菜單。', style: TextStyle(color: Colors.white70)));
@@ -1709,7 +2018,7 @@ class HistoryPage extends StatelessWidget {
     return LayoutBuilder(
       builder: (_, c) {
         final w = c.maxWidth;
-        final cols = w >= 1100 ? 3 : w >= 750 ? 2 : 1; // ⭐ 響應式欄數
+        final cols = w >= 1100 ? 3 : w >= 750 ? 2 : 1;
         return GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: cols,
