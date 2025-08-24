@@ -264,13 +264,23 @@ class LoginScreen extends StatelessWidget {
 
 /// --------------------------- Home + BottomNav ----------------------------
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  final int initialIndex;                         // ⭐ 新增
+  const HomeShell({super.key, this.initialIndex = 0});
+
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
 
+
 class _HomeShellState extends State<HomeShell> {
-  int _index = 0;
+  late int _index;                                // ⭐ 改用 late
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialIndex;                 // ⭐ 用參數初始化
+  }
+
   final _pages = const [
     AiCameraPage(),
     HistoryPage(),
@@ -1730,18 +1740,27 @@ class CartScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(ctx); // 關彈窗
 
-                  // 1) 建立 Session 歷史
-                  context.read<AppState>().addSessionFromCartSnapshot(snapshot, totalMinutes);
+                  // a) 拍下購物車快照 + 計總分鐘
+                  final snapshot = Map<String, int>.from(app.cart);
+                  final int totalMinutesPlanned = snapshot.entries.fold(0, (sum, e) {
+                    final r = kRecipeById[e.key]!;
+                    final per = r.steps.fold<int>(0, (s, st) => s + st.durationMin);
+                    return sum + per * e.value;
+                  });
 
-                  // 2) 清空購物車與食材紀錄表
+                  // b) 立刻清空購物車與食材紀錄表（依你的要求）
                   context.read<AppState>().clearCart();
                   context.read<AppState>().clearIngredients();
 
-                  // 3) 進入「歷史詳細頁」顯示本次內容
-                  final session = context.read<AppState>().sessions.first;
+                  // c) 進入「多菜同步逐步教學」頁
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => SessionDetailScreen(session: session)),
+                    MaterialPageRoute(
+                      builder: (_) => MultiCookScreen(
+                        snapshot: snapshot,                // menuId -> qty
+                        totalPlannedMinutes: totalMinutesPlanned,
+                      ),
+                    ),
                   );
                 },
                 child: const Text('確認生成'),
@@ -1801,6 +1820,307 @@ class CartScreen extends StatelessWidget {
           icon: const Icon(Icons.playlist_add_check),
           label: const Text('生成'),
         ),
+      ),
+    );
+  }
+}
+
+// ===================== MultiCookScreen：多菜同步逐步教學 =====================
+class MultiCookScreen extends StatefulWidget {
+  final Map<String, int> snapshot;          // menuId -> qty（已拍快照）
+  final int totalPlannedMinutes;            // 預估總時間（分）
+  const MultiCookScreen({
+    super.key,
+    required this.snapshot,
+    required this.totalPlannedMinutes,
+  });
+
+  @override
+  State<MultiCookScreen> createState() => _MultiCookScreenState();
+}
+
+enum TaskStatus { waiting, running, paused, done }
+
+class _PlanTask {
+  final String id;                 // 唯一id
+  final String recipeId;
+  final String recipeName;
+  final int copyIndex;             // 第幾份（1..qty）
+  final int stepIndex;             // 第幾步（0-based）
+  final String text;
+  final int secondsTotal;          // 總秒數
+  int secondsLeft;                 // 剩餘秒數
+  TaskStatus status;
+  Timer? timer;
+
+  _PlanTask({
+    required this.id,
+    required this.recipeId,
+    required this.recipeName,
+    required this.copyIndex,
+    required this.stepIndex,
+    required this.text,
+    required this.secondsTotal,
+  })  : secondsLeft = secondsTotal,
+        status = TaskStatus.waiting;
+}
+
+class _MultiCookScreenState extends State<MultiCookScreen> {
+  final List<_PlanTask> _tasks = [];
+  bool _allCompletedSnackShown = false;
+
+  AppState get app => context.read<AppState>();
+  int get scale => context.read<AppState>().timeScale; // 1分=scale秒
+
+  @override
+  void initState() {
+    super.initState();
+    _buildPlan();
+  }
+
+  @override
+  void dispose() {
+    for (final t in _tasks) {
+      t.timer?.cancel();
+    }
+    super.dispose();
+  }
+
+  void _buildPlan() {
+    // 依 snapshot 展開所有菜單與數量 → 任務清單（每份菜的每一步都成為一個任務）
+    int seq = 0;
+    widget.snapshot.forEach((menuId, qty) {
+      final r = kRecipeById[menuId]!;
+      for (int c = 1; c <= qty; c++) {
+        for (int i = 0; i < r.steps.length; i++) {
+          final st = r.steps[i];
+          final secs = max(1, st.durationMin * scale);
+          _tasks.add(_PlanTask(
+            id: 't${seq++}',
+            recipeId: r.menuId,
+            recipeName: r.name,
+            copyIndex: c,
+            stepIndex: i,
+            text: st.text,
+            secondsTotal: secs,
+          ));
+        }
+      }
+    });
+    // 預設不排序，維持「先展開的先顯示」。你也可以改排序規則。
+    setState(() {});
+  }
+
+  void _startTask(_PlanTask t) {
+    if (t.status == TaskStatus.running) return;
+    t.timer?.cancel();
+    t.status = TaskStatus.running;
+    t.timer = Timer.periodic(const Duration(seconds: 1), (tm) {
+      if (!mounted) return;
+      if (t.secondsLeft <= 0) {
+        tm.cancel();
+        t.status = TaskStatus.done;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已完成：${t.recipeName} #${t.copyIndex}｜步驟 ${t.stepIndex + 1}')),
+        );
+        setState(() {});
+        _checkAllDone();
+      } else {
+        setState(() => t.secondsLeft--);
+      }
+    });
+    setState(() {});
+  }
+
+  void _pauseTask(_PlanTask t) {
+    if (t.status != TaskStatus.running) return;
+    t.timer?.cancel();
+    t.status = TaskStatus.paused;
+    setState(() {});
+  }
+
+  void _resetTask(_PlanTask t) {
+    t.timer?.cancel();
+    t.secondsLeft = t.secondsTotal;
+    t.status = TaskStatus.waiting;
+    setState(() {});
+  }
+
+  void _completeTask(_PlanTask t) {
+    t.timer?.cancel();
+    t.secondsLeft = 0;
+    t.status = TaskStatus.done;
+    setState(() {});
+    _checkAllDone();
+  }
+
+  void _checkAllDone() {
+    if (_tasks.every((t) => t.status == TaskStatus.done)) {
+      if (_allCompletedSnackShown) return;
+      _allCompletedSnackShown = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('所有步驟已完成！可點擊「完成教學」結束本次烹飪。')),
+      );
+    }
+  }
+
+  int get _runningCount => _tasks.where((t) => t.status == TaskStatus.running).length;
+  int get _waitingCount => _tasks.where((t) => t.status == TaskStatus.waiting).length;
+  int get _doneCount    => _tasks.where((t) => t.status == TaskStatus.done).length;
+
+  Future<void> _finishAndSaveHistory() async {
+    // 產生「Session 歷史」：使用原本 snapshot（在進入頁面前已清空 AppState.cart/ingredients）
+    app.addSessionFromCartSnapshot(widget.snapshot, widget.totalPlannedMinutes);
+
+    // 回到 AI 攝影（用 HomeShell 的 initialIndex=0）
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 0)),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final waiting = _tasks.where((t) => t.status == TaskStatus.waiting).toList();
+    final running = _tasks.where((t) => t.status == TaskStatus.running || t.status == TaskStatus.paused).toList();
+    final done    = _tasks.where((t) => t.status == TaskStatus.done).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: const Text('同步逐步教學'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: Text('待:${_waitingCount}｜跑:${_runningCount}｜完:${_doneCount}',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
+            ),
+          ),
+        ],
+      ),
+      body: PageFrame(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            children: [
+              _glass(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _title('說明'),
+                    const Text(
+                      '這裡支援同時進行多個步驟：例如「煲水」計時進行中，你仍可啟動「切菜」；'
+                      '任一計時完成會提醒你點擊完成。全部步驟完成後，點「完成教學」結束本次烹飪。',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // 正在進行 / 已暫停
+              if (running.isNotEmpty) ...[
+                _title('進行中'),
+                const SizedBox(height: 6),
+                for (final t in running) _taskCard(t, running: true),
+                const SizedBox(height: 12),
+              ],
+
+              // 待開始
+              _title('待開始'),
+              const SizedBox(height: 6),
+              if (waiting.isEmpty)
+                _glass(child: const Text('沒有待開始的步驟', style: TextStyle(color: Colors.white70)))
+              else
+                for (final t in waiting) _taskCard(t),
+
+              const SizedBox(height: 12),
+
+              // 已完成（可收納）
+              if (done.isNotEmpty) ...[
+                _title('已完成'),
+                const SizedBox(height: 6),
+                for (final t in done) _taskCard(t, done: true),
+              ],
+            ],
+          ),
+        ),
+      ),
+
+      // 底部大按鈕
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.all(12),
+        child: ElevatedButton.icon(
+          onPressed: _tasks.isNotEmpty && _tasks.every((t) => t.status == TaskStatus.done)
+              ? _finishAndSaveHistory
+              : null,
+          icon: const Icon(Icons.flag),
+          label: const Text('完成教學'),
+        ),
+      ),
+    );
+  }
+
+  Widget _taskCard(_PlanTask t, {bool running = false, bool done = false}) {
+    Color barColor;
+    if (done) {
+      barColor = Colors.greenAccent;
+    } else if (running) {
+      barColor = Colors.amber;
+    } else {
+      barColor = Colors.white24;
+    }
+
+    final progress = 1 - (t.secondsLeft / max(1, t.secondsTotal));
+
+    return _glass(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${t.recipeName} #${t.copyIndex}｜步驟 ${t.stepIndex + 1}',
+              style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(t.text),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(value: progress, minHeight: 8, color: barColor),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text('剩餘：${t.secondsLeft}s', style: const TextStyle(color: Colors.white70)),
+              const Spacer(),
+              if (!running && !done)
+                ElevatedButton.icon(
+                  onPressed: () => _startTask(t),
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('開始'),
+                ),
+              if (running && !done) ...[
+                IconButton.filledTonal(
+                  onPressed: () => _pauseTask(t),
+                  icon: const Icon(Icons.pause),
+                  tooltip: '暫停',
+                ),
+                IconButton.filledTonal(
+                  onPressed: () => _resetTask(t),
+                  icon: const Icon(Icons.replay),
+                  tooltip: '重置',
+                ),
+                IconButton.filled(
+                  onPressed: () => _completeTask(t),
+                  icon: const Icon(Icons.check),
+                  tooltip: '完成',
+                ),
+              ],
+              if (done)
+                const Icon(Icons.check_circle, color: Colors.greenAccent),
+            ],
+          ),
+        ],
       ),
     );
   }
