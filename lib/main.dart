@@ -861,25 +861,71 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
             ),
           ),
           // 快速操作
+          // 快速操作（✅ 解法 A：Wrap + LayoutBuilder，自動換行不爆版）
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _selectAllFiltered,
-                  icon: const Icon(Icons.select_all),
-                  label: const Text('Select filtered results'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _clearSelection,
-                  icon: const Icon(Icons.clear_all),
-                  label: const Text('Clear Selection'),
-                ),
-                const Spacer(),
-                Text('${_filtered.length} items',
-                    style: const TextStyle(color: Colors.white70)),
-              ],
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final w = c.maxWidth;
+                // 依寬度決定每顆按鈕的寬度：1 / 2 / 3 欄
+                double btnW;
+                if (w < 360) {
+                  btnW = w;                     // 一欄（滿版）
+                } else if (w < 560) {
+                  btnW = (w - 8) / 2;           // 兩欄
+                } else {
+                  btnW = (w - 16) / 3;          // 三欄
+                }
+
+                final outlinedStyle = OutlinedButton.styleFrom(
+                  minimumSize: Size(btnW, 44),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: const StadiumBorder(),
+                );
+
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    SizedBox(
+                      width: btnW,
+                      child: OutlinedButton.icon(
+                        style: outlinedStyle,
+                        onPressed: _selectAllFiltered,
+                        icon: const Icon(Icons.select_all),
+                        // 長字串避免擠爆：單行＋省略號
+                        label: const Text(
+                          'Select filtered results',
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: btnW,
+                      child: OutlinedButton.icon(
+                        style: outlinedStyle,
+                        onPressed: _clearSelection,
+                        icon: const Icon(Icons.clear_all),
+                        label: const Text(
+                          'Clear Selection',
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    // 顯示目前結果數（同樣佔一格，必要時會換行）
+                    SizedBox(
+                      width: btnW,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '${_filtered.length} items',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const Divider(height: 1),
