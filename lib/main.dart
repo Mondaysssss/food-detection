@@ -242,7 +242,7 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 16),
               const Text('FoodLens', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              const Text('AI 食材辨識・離線菜單・逐步教學', style: TextStyle(color: Colors.white70)),
+              const Text('AI Ingredient Recognition • Offline Menu • Step-by-Step', style: TextStyle(color: Colors.white70)),
               const SizedBox(height: 28),
               ElevatedButton.icon(
                 onPressed: () {
@@ -252,7 +252,7 @@ class LoginScreen extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.login),
-                label: const Text('使用 Google 登入（示範）'),
+                label: const Text('Sign in with Google (Demo) '),
               ),
             ],
           ),
@@ -286,7 +286,7 @@ class _HomeShellState extends State<HomeShell> {
     HistoryPage(),
     SettingsPage(),
   ];
-  final _titles = const ['AI 攝影', '歷史', '設定'];
+  final _titles = const ['AI Camera', 'History', 'Settings'];
 
   @override
   Widget build(BuildContext context) {
@@ -313,9 +313,9 @@ class _HomeShellState extends State<HomeShell> {
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),
           destinations: const [
-            NavigationDestination(icon: Icon(Icons.photo_camera_outlined), selectedIcon: Icon(Icons.photo_camera), label: 'AI 攝影'),
-            NavigationDestination(icon: Icon(Icons.history), selectedIcon: Icon(Icons.history_toggle_off), label: '歷史'),
-            NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: '設定'),
+            NavigationDestination(icon: Icon(Icons.photo_camera_outlined), selectedIcon: Icon(Icons.photo_camera), label: 'AI Camera'),
+            NavigationDestination(icon: Icon(Icons.history), selectedIcon: Icon(Icons.history_toggle_off), label: 'History'),
+            NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
           ],
         ),
       ),
@@ -352,68 +352,68 @@ class RecipeStep {
 const List<Recipe> kRecipes = [
   Recipe(
     menuId: 'r1',
-    name: '番茄炒蛋',
-    type: '中式',
-    taste: ['鮮', '微甜'],
+    name: 'Tomato & Egg Stir-fry',
+    type: 'Chinese',
+    taste: ['Savory', 'Slightly Sweet'],
     ingredientsRequired: ['tomato', 'egg', 'salt', 'oil'],
     cover: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('切番茄', 3),
-      RecipeStep('熱鍋下油', 2),
-      RecipeStep('下蛋快炒', 2),
-      RecipeStep('加番茄調味', 3),
+      RecipeStep('Cut tomatoes', 3),
+      RecipeStep('Heat pan, add oil', 2),
+      RecipeStep('Add eggs and stir-fry', 2),
+      RecipeStep('Add tomatoes & season', 3),
     ],
   ),
   Recipe(
     menuId: 'r2',
-    name: '蒜香牛油蝦',
-    type: '西式',
-    taste: ['香', '鹹'],
+    name: 'Garlic Butter Shrimp',
+    type: 'Western',
+    taste: ['Aromatic', 'Salty'],
     ingredientsRequired: ['shrimp', 'garlic', 'butter', 'salt', 'pepper'],
     cover: 'https://images.unsplash.com/photo-1604908178196-1c9c1c9d9c36?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('解凍去腸線', 4),
-      RecipeStep('牛油熱鍋爆香蒜蓉', 2),
-      RecipeStep('下蝦煎至轉色', 4),
+      RecipeStep('Thaw & devein', 4),
+      RecipeStep('Heat butter, sauté minced garlic', 2),
+      RecipeStep('Add shrimp and cook until color changes', 4),
     ],
   ),
   Recipe(
     menuId: 'r3',
-    name: '和風沙律',
-    type: '日式',
-    taste: ['清爽', '酸甜'],
+    name: 'Japanese-Style Salad',
+    type: 'Japanese',
+    taste: ['Refreshing', 'Sweet & Sour'],
     ingredientsRequired: ['lettuce', 'tomato', 'cucumber', 'sesame', 'soy_sauce', 'vinegar', 'oil'],
     cover: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('洗切菜', 3),
-      RecipeStep('調和和風汁', 2),
-      RecipeStep('拌勻撒芝麻', 2),
+      RecipeStep('Wash & cut veggies', 3),
+      RecipeStep('Mix wafu dressing', 2),
+      RecipeStep('Toss and sprinkle sesame', 2),
     ],
   ),
   Recipe(
     menuId: 'r4',
-    name: '泰式打拋豬',
-    type: '泰式',
-    taste: ['辣', '香'],
+    name: 'Thai Basil Pork',
+    type: 'Thai',
+    taste: ['Spicy', 'Aromatic'],
     ingredientsRequired: ['pork', 'basil', 'garlic', 'chili', 'soy_sauce', 'sugar', 'oil'],
     cover: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('爆香蒜辣椒', 2),
-      RecipeStep('下豬肉炒散', 4),
-      RecipeStep('調味加九層塔拌勻', 2),
+      RecipeStep('Sauté garlic and chili', 2),
+      RecipeStep('Add pork and stir-fry until crumbly', 4),
+      RecipeStep('Season, add Thai basil and toss', 2),
     ],
   ),
   Recipe(
     menuId: 'r5',
-    name: '青醬蘑菇意粉',
-    type: '西式',
-    taste: ['香草', '鹹'],
+    name: 'Pesto Mushroom Pasta',
+    type: 'Western',
+    taste: ['Herbs', 'Salty'],
     ingredientsRequired: ['pasta', 'mushroom', 'basil', 'garlic', 'oil', 'salt'],
     cover: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('煮意粉', 6),
-      RecipeStep('炒香蒜蓉蘑菇', 3),
-      RecipeStep('加入青醬拌勻', 2),
+      RecipeStep('Cook pasta', 6),
+      RecipeStep('Sauté garlic and mushrooms', 3),
+      RecipeStep('Add pesto and toss', 2),
     ],
   ),
 ];
@@ -455,7 +455,7 @@ const Map<String, int> kRecipeDifficulty = {
 };
 
 const Map<String, String> kRecipeMethod = {
-  'r1': '炒', 'r2': '煎／爆香', 'r3': '拌', 'r4': '炒', 'r5': '煮／拌',
+  'r1': 'Stir-fry', 'r2': 'Sear/Sauté', 'r3': 'Tossed', 'r4': 'Stir-fry', 'r5': 'Boil/Toss',
 };
 
 /// 已知調味料 key（其餘視為主料）
@@ -465,25 +465,25 @@ const Set<String> kSeasoningKeys = {
 
 /// 食材預設數量（沒有列到的就顯示「適量」）
 const Map<String, String> kQtyDefaults = {
-  'egg': '2 顆',
-  'tomato': '2 顆（約300g）',
+  'egg': '2 pieces',
+  'tomato': '2 pieces (about 300g)',
   'lettuce': '150 g',
   'cucumber': '100 g',
   'shrimp': '200 g',
   'butter': '20 g',
-  'garlic': '2 瓣',
-  'pepper': '少許',
-  'vinegar': '1 湯匙',
-  'sesame': '1 茶匙',
+  'garlic': '2 cloves',
+  'pepper': 'a pinch',
+  'vinegar': '1 tbsp',
+  'sesame': '1 tsp',
   'pork': '200 g',
-  'chili': '1 條',
-  'soy_sauce': '1 湯匙',
-  'sugar': '1 茶匙',
+  'chili': '1 piece',
+  'soy_sauce': '1 tbsp',
+  'sugar': '1 tsp',
   'mushroom': '120 g',
   'pasta': '200 g',
-  'basil': '一把',
-  'oil': '1 湯匙',
-  'salt': '1/2 茶匙',
+  'basil': 'a handful',
+  'oil': '1 tbsp',
+  'salt': '1/2 tsp',
 };
 
 /// 單份菜單所需調味料折算（「茶匙」為單位）
@@ -498,21 +498,21 @@ const Map<String, double> kSeasoningTeaspoons = {
 
 /// 簡短賣點（可自由增修）
 const Map<String, List<String>> kSellingPoints = {
-  'r1': ['家常快手', '高蛋白低成本', '飯菜合一的神隊友'],
-  'r2': ['蒜香濃郁', '海陸雙享', '下酒／配飯皆宜'],
-  'r3': ['低卡清爽', '5分鐘完成', '佐餐開胃'],
-  'r4': ['香辣下飯', '九層塔香', '配白飯無敵'],
-  'r5': ['香草清新', '一鍋搞定', '快速晚餐'],
+  'r1': ['Quick Home-Style', 'High-Protein, Low-Cost', 'One-pan meal'],
+  'r2': ['Garlicky & Rich', 'Surf & Turf', 'Great with drinks or rice'],
+  'r3': ['Low-cal & Refreshing', 'Done in 5 minutes', 'Appetizing side'],
+  'r4': ['Spicy & great with rice', 'Fragrant Thai basil', 'Perfect with white rice'],
+  'r5': ['Herb-fresh', 'One-pot', 'Quick Dinner'],
 };
 
 /// 詳細步驟（若無對應就用短步驟代替）
 const Map<String, List<String>> kStepsVerbose = {
   'r1': [
-    '先把番茄洗凈，切大塊。',
-    '把雞蛋發打成蛋汁，加入少量清水（約2–3茶匙）拌勻。',
-    '燒熱油鑊，下蛋汁，以大火快炒把蛋煮至約七成熟，盛起備用。',
-    '下番茄炒片刻，加入鹽、水和糖同煮。',
-    '番茄煮到稍稔，加入茄膏和適量生粉水，再將已炒的雞蛋回鑊，快炒至熟透，即成。',
+    'Wash tomatoes and cut into large chunks.',
+    'Beat the eggs, add a little water (about 2–3 tsp) and mix.',
+    'Heat wok with oil, pour in egg mixture and stir-fry on high heat until about 70% done. Set aside.',
+    'Stir-fry tomatoes briefly, then add salt, water and sugar to cook.',
+    'When tomatoes soften, add tomato paste and a bit of cornstarch slurry, return eggs and stir-fry until cooked.',
   ],
 };
 
@@ -545,7 +545,7 @@ class AiCameraPage extends StatefulWidget {
 }
 
 class _AiCameraPageState extends State<AiCameraPage> {
-  String _previewHint = '尚未擷取影像';
+  String _previewHint = 'No image captured';
 
   // 模擬偵測：隨機取 1~4 個食材
   List<String> _detectMock() {
@@ -569,7 +569,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _title('相機功能（示範，未接真相機）'),
+                _title('Camera (Demo, not connected)）'),
                 const SizedBox(height: 8),
                 AspectRatio(
                   aspectRatio: cardAspect,
@@ -615,9 +615,9 @@ class _AiCameraPageState extends State<AiCameraPage> {
             alignment: WrapAlignment.center,
             children: [
               ElevatedButton.icon(
-                onPressed: () => setState(() => _previewHint = '已擷取影像（示範圖）'),
+                onPressed: () => setState(() => _previewHint = 'Image captured (demo)'),
                 icon: const Icon(Icons.photo_camera),
-                label: const Text('擷取影像（示範）'),
+                label: const Text('Capture image (demo)'),
               ),
               FilledButton.tonalIcon(
                 onPressed: () {
@@ -636,12 +636,12 @@ class _AiCameraPageState extends State<AiCameraPage> {
                   }
                 },
                 icon: const Icon(Icons.auto_awesome),
-                label: const Text('即時辨識（模擬）'),
+                label: const Text('Realtime recognition (mock)'),
               ),
               OutlinedButton.icon(
-                onPressed: () => setState(() => _previewHint = '尚未擷取影像'),
+                onPressed: () => setState(() => _previewHint = 'No image captured'),
                 icon: const Icon(Icons.refresh),
-                label: const Text('重拍'),
+                label: const Text('Retake'),
               ),
             ],
           ),
@@ -663,14 +663,14 @@ class _FoodListPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _title('食物紀錄表'),
-          const Text('僅保存名稱（不含數量）。同名自動去重。', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          _title('Food Log'),
+          const Text('Names only (no quantity). Duplicates removed automatically.', style: TextStyle(color: Colors.white60, fontSize: 12)),
           const SizedBox(height: 10),
 
           if (app.ingredients.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text('尚未有紀錄', style: TextStyle(color: Colors.white70)),
+              child: Text('No records yet', style: TextStyle(color: Colors.white70)),
             )
           else
             Wrap(
@@ -737,7 +737,7 @@ class _FoodListPanel extends StatelessWidget {
                         }
                       },
                       icon: const Icon(Icons.add),
-                      label: const Text('新增'),
+                      label: const Text('Add'),
                     ),
                   ),
 
@@ -757,7 +757,7 @@ class _FoodListPanel extends StatelessWidget {
                               );
                             },
                       icon: const Icon(Icons.check),
-                      label: const Text('確定食材'),
+                      label: const Text('Confirm Ingredients'),
                     ),
                   ),
 
@@ -772,7 +772,7 @@ class _FoodListPanel extends StatelessWidget {
                       ),
                       onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
                       icon: const Icon(Icons.delete),
-                      label: const Text('清空'),
+                      label: const Text('Clear'),
                     ),
                   ),
                 ],
@@ -838,7 +838,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('新增食物（已選 ${selected.length} 項）'),
+        title: Text('Add Items (selected ${selected.length} ）'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
@@ -846,7 +846,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
         actions: [
           TextButton(
             onPressed: _clearSelection,
-            child: const Text('清除選取'),
+            child: const Text('Clear Selection'),
           ),
         ],
       ),
@@ -856,7 +856,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
             child: TextField(
-              decoration: _inputDecoration('搜尋食材', icon: Icons.search),
+              decoration: _inputDecoration('Search ingredients', icon: Icons.search),
               onChanged: (v) => setState(() => query = v),
             ),
           ),
@@ -868,16 +868,16 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
                 OutlinedButton.icon(
                   onPressed: _selectAllFiltered,
                   icon: const Icon(Icons.select_all),
-                  label: const Text('選取篩選結果'),
+                  label: const Text('Select filtered results'),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: _clearSelection,
                   icon: const Icon(Icons.clear_all),
-                  label: const Text('清除選取'),
+                  label: const Text('Clear Selection'),
                 ),
                 const Spacer(),
-                Text('${_filtered.length} 筆',
+                Text('${_filtered.length} items',
                     style: const TextStyle(color: Colors.white70)),
               ],
             ),
@@ -894,7 +894,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
                 return CheckboxListTile(
                   title: Text(name),
                   subtitle: disabled
-                      ? const Text('已在清單中', style: TextStyle(color: Colors.white60))
+                      ? const Text('Already in list', style: TextStyle(color: Colors.white60))
                       : null,
                   value: disabled ? true : checked,
                   onChanged: disabled ? null : (_) => _toggle(name),
@@ -916,7 +916,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
               ? null
               : () => Navigator.pop(context, selected.toList()),
           icon: const Icon(Icons.check),
-          label: const Text('確定加入'),
+          label: const Text('Add Selected'),
         ),
       ),
     );
@@ -930,15 +930,15 @@ class _DetectionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('偵測結果（模擬）'),
+      title: const Text('Detection Result (Mock)'),
       content: Wrap(
         spacing: 8,
         runSpacing: 8,
         children: [for (final d in detections) Chip(label: Text(d))],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('重拍')),
-        ElevatedButton(onPressed: onConfirm, child: const Text('確認加入')),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Retake')),
+        ElevatedButton(onPressed: onConfirm, child: const Text('Confirm')),
       ],
     );
   }
@@ -952,8 +952,8 @@ class RecommendPage extends StatefulWidget {
 }
 
 class _RecommendPageState extends State<RecommendPage> {
-  String typeFilter = '全部';
-  String tasteFilter = '全部';
+  String typeFilter = 'All';
+  String tasteFilter = 'All';
   String search = '';
   bool onlyFav = false; // 只顯示最愛
 
@@ -967,14 +967,14 @@ class _RecommendPageState extends State<RecommendPage> {
         .toList()
       ..sort((a, b) => a.mr.missing.length.compareTo(b.mr.missing.length));
 
-    final types = ['全部', ...{for (final r in kRecipes) r.type}];
-    final tastes = ['全部', ...{for (final r in kRecipes) ...r.taste}];
+    final types = ['All', ...{for (final r in kRecipes) r.type}];
+    final tastes = ['All', ...{for (final r in kRecipes) ...r.taste}];
     // 最愛集合（即時跟隨變更）
     final favSet = context.watch<AppState>().favorites;
 
     final filtered = list.where((e) {
-      if (typeFilter != '全部' && e.recipe.type != typeFilter) return false;
-      if (tasteFilter != '全部' && !e.recipe.taste.any((t) => t.contains(tasteFilter))) return false;
+      if (typeFilter != 'All' && e.recipe.type != typeFilter) return false;
+      if (tasteFilter != 'All' && !e.recipe.taste.any((t) => t.contains(tasteFilter))) return false;
       if (search.trim().isNotEmpty) {
         final s = search.toLowerCase();
         if (!e.recipe.name.toLowerCase().contains(s) &&
@@ -1004,17 +1004,17 @@ class _RecommendPageState extends State<RecommendPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _title('篩選'),
+              _title('Filters'),
               const SizedBox(height: 8),
               _filterChips(
-                label: '菜式類型',
+                label: 'Cuisine Type',
                 values: types,
                 current: typeFilter,
                 onChanged: (v) => setState(() => typeFilter = v),
               ),
               const SizedBox(height: 8),
               _filterChips(
-                label: '口味',
+                label: 'Taste',
                 values: tastes,
                 current: tasteFilter,
                 onChanged: (v) => setState(() => tasteFilter = v),
@@ -1024,7 +1024,7 @@ class _RecommendPageState extends State<RecommendPage> {
                 spacing: 8,
                 children: [
                   FilterChip(
-                    label: const Text('只顯示最愛'),
+                    label: const Text('Show Favorites Only'),
                     selected: onlyFav,
                     onSelected: (v) => setState(() => onlyFav = v),
                     selectedColor: Colors.amber.withValues(alpha: .2),
@@ -1037,11 +1037,11 @@ class _RecommendPageState extends State<RecommendPage> {
               const SizedBox(height: 8),
               TextField(
                 onChanged: (v) => setState(() => search = v),
-                decoration: _inputDecoration('輸入食材或菜名', icon: Icons.search),
+                decoration: _inputDecoration('Enter ingredient or dish', icon: Icons.search),
               ),
               const SizedBox(height: 8),
               const Text(
-                '排序：先「食材齊全」，再依缺料數（少→多）。',
+                'Sort: "All ingredients available" first, then by missing count (few → many).',
                 style: TextStyle(color: Colors.white60, fontSize: 12),
               ),
             ],
@@ -1143,13 +1143,13 @@ void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr)
   final servings = kRecipeServings[recipe.menuId] ?? 2;
   final difficulty = kRecipeDifficulty[recipe.menuId] ?? 2;
   final method = kRecipeMethod[recipe.menuId] ?? '—';
-  final selling = kSellingPoints[recipe.menuId] ?? ['快速上桌', '材料易取得', '家常口味'];
+  final selling = kSellingPoints[recipe.menuId] ?? ['Quick to Table', 'Easy-to-find Ingredients', 'Home-style Flavor'];
   final verbose = kStepsVerbose[recipe.menuId] ?? recipe.steps.map((e) => e.text).toList();
 
   final mainIngr = <MapEntry<String, String>>[];
   final seasonings = <MapEntry<String, String>>[];
   for (final key in recipe.ingredientsRequired) {
-    final qty = kQtyDefaults[key] ?? '適量';
+    final qty = kQtyDefaults[key] ?? 'to taste';
     if (kSeasoningKeys.contains(key)) {
       seasonings.add(MapEntry(key, qty));
     } else {
@@ -1201,7 +1201,7 @@ void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr)
                             child: IconButton(
                               icon: const Icon(Icons.arrow_back, color: Colors.white),
                               onPressed: () => Navigator.pop(ctx),      // ⭐ 返回
-                              tooltip: '返回',
+                              tooltip: 'Back',
                             ),
                           ),
                         ),
@@ -1256,31 +1256,31 @@ void _showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr)
                           Wrap(
                             spacing: 12, runSpacing: 8,
                             children: [
-                              _kv('菜式', recipe.type),
-                              _kv('口味', recipe.taste.join(' / ')),
-                              _kv('方法', method),
-                              _kv('難度', '$difficulty / 5'),
-                              _kv('份量', '$servings 人份'),
-                              _kv('總時間', '$totalMin 分'),
-                              _kv('材料齊全度', '${mr.match.length}/${recipe.ingredientsRequired.length}'),
+                              _kv('Cuisine', recipe.type),
+                              _kv('Taste', recipe.taste.join(' / ')),
+                              _kv('Method', method),
+                              _kv('Difficulty', '$difficulty / 5'),
+                              _kv('Servings', '$servings servings'),
+                              _kv('Total Time', '$totalMin min'),
+                              _kv('Ingredient Completeness', '${mr.match.length}/${recipe.ingredientsRequired.length}'),
                             ],
                           ),
                           const SizedBox(height: 14),
 
                           // 主料
-                          _sectionTitle('主料'),
+                          _sectionTitle('Main Ingredients'),
                           const SizedBox(height: 6),
                           _qtyList(mainIngr),
                           const SizedBox(height: 12),
 
                           // 調味料
-                          _sectionTitle('調味料'),
+                          _sectionTitle('Seasoning'),
                           const SizedBox(height: 6),
                           _qtyList(seasonings),
                           const SizedBox(height: 14),
 
                           // 詳細步驟
-                          _sectionTitle('詳細步驟'),
+                          _sectionTitle('Detailed Steps'),
                           const SizedBox(height: 6),
                           for (int i = 0; i < verbose.length; i++)
                             Padding(
@@ -1342,9 +1342,9 @@ Widget _qtyList(List<MapEntry<String, String>> items) {
 // 把 key 變得好看一點
 String _prettyName(String key) {
   switch (key) {
-    case 'soy_sauce': return '醬油';
-    case 'sesame': return '芝麻';
-    case 'pasta': return '意粉';
+    case 'soy_sauce': return 'Soy sauce';
+    case 'sesame': return 'Sesame';
+    case 'pasta': return 'Pasta';
     default: return key.replaceAll('_', ' ');
   }
 }
@@ -1397,7 +1397,7 @@ class _RecipeCard extends StatelessWidget {
                         color: Colors.black54, borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        '${mr.match.length}/${recipe.ingredientsRequired.length} 齊全',
+                        '${mr.match.length}/${recipe.ingredientsRequired.length} complete',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),
@@ -1453,7 +1453,7 @@ class _RecipeCard extends StatelessWidget {
                   Text.rich(
                     TextSpan(
                       children: [
-                        const TextSpan(text: '已有：', style: TextStyle(fontSize: 12)),
+                        const TextSpan(text: 'Already：', style: TextStyle(fontSize: 12)),
                         TextSpan(
                           text: mr.match.join(', ').isEmpty ? '—' : mr.match.join(', '),
                           style: const TextStyle(fontSize: 12, color: Color(0xFFBBF7D0)),
@@ -1466,7 +1466,7 @@ class _RecipeCard extends StatelessWidget {
                   Text.rich(
                     TextSpan(
                       children: [
-                        const TextSpan(text: '缺少：', style: TextStyle(fontSize: 12)),
+                        const TextSpan(text: 'Missing：', style: TextStyle(fontSize: 12)),
                         TextSpan(
                           text: mr.missing.join(', ').isEmpty ? '—' : mr.missing.join(', '),
                           style: const TextStyle(fontSize: 12, color: Color(0xFFFECACA)),
@@ -1491,7 +1491,7 @@ class _RecipeCard extends StatelessWidget {
                         IconButton.filledTonal(
                           onPressed: count > 0 ? () => app.addToCart(recipe.menuId, -1) : null,
                           icon: const Icon(Icons.remove),
-                          tooltip: '減少 1',
+                          tooltip: 'Decrease 1',
                           // 讓大小一致、易點（可選）
                           style: IconButton.styleFrom(
                             fixedSize: const Size(40, 40),
@@ -1511,7 +1511,7 @@ class _RecipeCard extends StatelessWidget {
                         IconButton.filled(
                           onPressed: () => app.addToCart(recipe.menuId, 1), // 別寫 +1，寫 1
                           icon: const Icon(Icons.add),
-                          tooltip: '增加 1',
+                          tooltip: 'Increase 1',
                           style: IconButton.styleFrom(
                             fixedSize: const Size(40, 40),
                             padding: EdgeInsets.zero,
@@ -1551,7 +1551,7 @@ class RecommendScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text('菜單推介'),
+        title: const Text('Menu Suggestions'),
       ),
       body: PageFrame(
         child: Column(
@@ -1564,10 +1564,10 @@ class RecommendScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _title('目前食材（${ingredients.length}）'),
+                    _title('Current ingredients（${ingredients.length}）'),
                     if (ingredients.isEmpty)
                       const Text(
-                        '尚未加入任何食材，請回上一頁新增或偵測。',
+                        'No ingredients added yet. Please go back to add or detect.',
                         style: TextStyle(color: Colors.white70),
                       )
                     else
@@ -1675,41 +1675,41 @@ class CartScreen extends StatelessWidget {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: const Text('生成確認'),
+            title: const Text('Confirm Generation'),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 彙總統計
-                  _kv('菜單總數', '$totalDishes 道'),
+                  _kv('Total Menus', '$totalDishes dishes'),
                   const SizedBox(height: 4),
-                  _kv('總時間', '$totalMinutes 分'),
+                  _kv('Total Time', '$totalMinutes min'),
                   const SizedBox(height: 4),
-                  _kv('總食材種類', '${mainAll.length} 種'),
+                  _kv('Total ingredient types', '${mainAll.length} types'),
                   const SizedBox(height: 4),
-                  _kv('總調味料（茶匙）', totalSeasonTsp.toStringAsFixed(1)),
+                  _kv('Total seasoning (tsp)', totalSeasonTsp.toStringAsFixed(1)),
                   const SizedBox(height: 12),
 
                   // 主料：綠在上、紅在下
-                  _sectionTitle('主料'),
+                  _sectionTitle('Main Ingredients'),
                   const SizedBox(height: 6),
                   if (mainGreen.isNotEmpty)
-                    Text('已具備：${mainGreen.map(_prettyName).join(', ')}',
+                    Text('Have:${mainGreen.map(_prettyName).join(', ')}',
                         style: const TextStyle(color: Colors.greenAccent)),
                   if (mainRed.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text('缺少：${mainRed.map(_prettyName).join(', ')}',
+                      child: Text('Missing:${mainRed.map(_prettyName).join(', ')}',
                           style: const TextStyle(color: Colors.redAccent)),
                     ),
                   const SizedBox(height: 12),
 
                   // 調味料：帶茶匙數，綠在上、紅在下
-                  _sectionTitle('調味料（茶匙）'),
+                  _sectionTitle('Seasoning (tsp)'),
                   const SizedBox(height: 6),
                   if (seasonGreen.isNotEmpty)
                     Text(
-                      '已具備：' +
+                      'Have:' +
                           seasonGreen
                               .map((k) => '${_prettyName(k)} ${seasonTsp[k]!.toStringAsFixed(1)}tsp')
                               .join(', '),
@@ -1719,7 +1719,7 @@ class CartScreen extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        '缺少：' +
+                        'Missing:' +
                             seasonRed
                                 .map((k) => '${_prettyName(k)} ${seasonTsp[k]!.toStringAsFixed(1)}tsp')
                                 .join(', '),
@@ -1727,14 +1727,14 @@ class CartScreen extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 4),
-                  const Text('（以上為估算單位）', style: TextStyle(fontSize: 12, color: Colors.white60)),
+                  const Text('(Amounts are estimated)', style: TextStyle(fontSize: 12, color: Colors.white60)),
                 ],
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx), // 取消 → 回購物車頁
-                child: const Text('取消'),
+                child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -1763,7 +1763,7 @@ class CartScreen extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text('確認生成'),
+                child: const Text('Confirm'),
               ),
             ],
           );
@@ -1772,10 +1772,10 @@ class CartScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(leading: const BackButton(), title: const Text('購物車')),
+      appBar: AppBar(leading: const BackButton(), title: const Text('Cart')),
       body: PageFrame(
         child: entries.isEmpty
-            ? _glass(child: const Text('尚未加入任何菜單。', style: TextStyle(color: Colors.white70)))
+            ? _glass(child: const Text('No menu items added yet.', style: TextStyle(color: Colors.white70)))
             : LayoutBuilder(
                 builder: (_, c) {
                   final w = c.maxWidth;
@@ -1818,7 +1818,7 @@ class CartScreen extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: app.cart.isEmpty ? null : onGeneratePressed,
           icon: const Icon(Icons.playlist_add_check),
-          label: const Text('生成'),
+          label: const Text('Generate'),
         ),
       ),
     );
@@ -1921,7 +1921,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
         tm.cancel();
         t.status = TaskStatus.done;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已完成：${t.recipeName} #${t.copyIndex}｜步驟 ${t.stepIndex + 1}')),
+          SnackBar(content: Text('Done:${t.recipeName} #${t.copyIndex}｜ Step ${t.stepIndex + 1}')),
         );
         setState(() {});
         _checkAllDone();
@@ -1959,7 +1959,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
       if (_allCompletedSnackShown) return;
       _allCompletedSnackShown = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('所有步驟已完成！可點擊「完成教學」結束本次烹飪。')),
+        const SnackBar(content: Text('All steps complete! Tap "Finish Lesson" to end this session.')),
       );
     }
   }
@@ -1989,12 +1989,12 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text('同步逐步教學'),
+        title: const Text('Sync Step-by-Step'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Center(
-              child: Text('待:${_waitingCount}｜跑:${_runningCount}｜完:${_doneCount}',
+              child: Text('Wait:${_waitingCount}｜Run:${_runningCount}｜Done:${_doneCount}',
                   style: const TextStyle(fontSize: 12, color: Colors.white70)),
             ),
           ),
@@ -2009,10 +2009,10 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _title('說明'),
+                    _title('Help'),
                     const Text(
-                      '這裡支援同時進行多個步驟：例如「煲水」計時進行中，你仍可啟動「切菜」；'
-                      '任一計時完成會提醒你點擊完成。全部步驟完成後，點「完成教學」結束本次烹飪。',
+                      'You can run multiple timers: e.g. while "Boiling water" runs, you can start "Chopping";'
+                      'You\'ll be prompted when any timer completes. When all steps are done, tap "Finish Lesson" to end.',
                       style: TextStyle(color: Colors.white70),
                     ),
                   ],
@@ -2022,17 +2022,17 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
 
               // 正在進行 / 已暫停
               if (running.isNotEmpty) ...[
-                _title('進行中'),
+                _title('Running'),
                 const SizedBox(height: 6),
                 for (final t in running) _taskCard(t, running: true),
                 const SizedBox(height: 12),
               ],
 
               // 待開始
-              _title('待開始'),
+              _title('Waiting'),
               const SizedBox(height: 6),
               if (waiting.isEmpty)
-                _glass(child: const Text('沒有待開始的步驟', style: TextStyle(color: Colors.white70)))
+                _glass(child: const Text('No steps waiting to start', style: TextStyle(color: Colors.white70)))
               else
                 for (final t in waiting) _taskCard(t),
 
@@ -2040,7 +2040,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
 
               // 已完成（可收納）
               if (done.isNotEmpty) ...[
-                _title('已完成'),
+                _title('Done'),
                 const SizedBox(height: 6),
                 for (final t in done) _taskCard(t, done: true),
               ],
@@ -2057,7 +2057,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
               ? _finishAndSaveHistory
               : null,
           icon: const Icon(Icons.flag),
-          label: const Text('完成教學'),
+          label: const Text('Finish Lesson'),
         ),
       ),
     );
@@ -2079,7 +2079,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${t.recipeName} #${t.copyIndex}｜步驟 ${t.stepIndex + 1}',
+          Text('${t.recipeName} #${t.copyIndex}｜Step ${t.stepIndex + 1}',
               style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(t.text),
@@ -2091,29 +2091,29 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
           const SizedBox(height: 6),
           Row(
             children: [
-              Text('剩餘：${t.secondsLeft}s', style: const TextStyle(color: Colors.white70)),
+              Text('Left：${t.secondsLeft}s', style: const TextStyle(color: Colors.white70)),
               const Spacer(),
               if (!running && !done)
                 ElevatedButton.icon(
                   onPressed: () => _startTask(t),
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('開始'),
+                  label: const Text('Start'),
                 ),
               if (running && !done) ...[
                 IconButton.filledTonal(
                   onPressed: () => _pauseTask(t),
                   icon: const Icon(Icons.pause),
-                  tooltip: '暫停',
+                  tooltip: 'Pause',
                 ),
                 IconButton.filledTonal(
                   onPressed: () => _resetTask(t),
                   icon: const Icon(Icons.replay),
-                  tooltip: '重置',
+                  tooltip: 'Reset',
                 ),
                 IconButton.filled(
                   onPressed: () => _completeTask(t),
                   icon: const Icon(Icons.check),
-                  tooltip: '完成',
+                  tooltip: 'Finish',
                 ),
               ],
               if (done)
@@ -2142,7 +2142,7 @@ class SessionDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text('歷史詳情｜${entries.fold<int>(0, (s, e) => s + e.qty)} 道・${session.totalMinutes} 分'),
+        title: Text('History Details｜${entries.fold<int>(0, (s, e) => s + e.qty)} dishes・${session.totalMinutes} min'),
       ),
       body: PageFrame(
         child: LayoutBuilder(
@@ -2183,13 +2183,13 @@ class SessionDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _title('本次摘要'),
+                        _title('Summary'),
                         Text(
-                          '完成於：${session.completedAt}',
+                          'Completed at：${session.completedAt}',
                           style: const TextStyle(color: Colors.white70),
                         ),
                         Text(
-                          '菜單數：${entries.fold<int>(0, (s, e) => s + e.qty)} 道，總時間：${session.totalMinutes} 分',
+                          'Menu count：${entries.fold<int>(0, (s, e) => s + e.qty)} dishes, total time：${session.totalMinutes} min',
                           style: const TextStyle(color: Colors.white70),
                         ),
                       ],
@@ -2214,7 +2214,7 @@ class FavoritesPage extends StatelessWidget {
     final favIds = context.watch<AppState>().favorites;
     final favList = kRecipes.where((r) => favIds.contains(r.menuId)).toList();
     if (favList.isEmpty) {
-      return _glass(child: const Text('目前沒有最愛菜單。', style: TextStyle(color: Colors.white70)));
+      return _glass(child: const Text('No favorite menus yet.', style: TextStyle(color: Colors.white70)));
     }
     return LayoutBuilder(
       builder: (_, c) {
@@ -2308,11 +2308,11 @@ class HistoryPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('烹飪紀錄', style: TextStyle(fontWeight: FontWeight.w700)),
+                          const Text('Cooking Log', style: TextStyle(fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
-                          Text('完成於：${s.completedAt}',
+                          Text('Completed at：${s.completedAt}',
                               style: const TextStyle(fontSize: 12, color: Colors.white70)),
-                          Text('菜單：$totalMenus 道 ・ 總時間：${s.totalMinutes} 分',
+                          Text('Menu：$totalMenus dishes • Total time：${s.totalMinutes} min',
                               style: const TextStyle(fontSize: 12, color: Colors.white70)),
                         ],
                       ),
@@ -2333,7 +2333,7 @@ class HistoryPage extends StatelessWidget {
     // 若沒有 Session 歷史，回退到你原本的單菜歷史 UI
     final list = context.watch<AppState>().history;
     if (list.isEmpty) {
-      return _glass(child: const Text('尚未完成任何菜單。', style: TextStyle(color: Colors.white70)));
+      return _glass(child: const Text('No menus completed yet.', style: TextStyle(color: Colors.white70)));
     }
     return LayoutBuilder(
       builder: (_, c) {
@@ -2368,7 +2368,7 @@ class HistoryPage extends StatelessWidget {
                       children: [
                         Text(h.title, style: const TextStyle(fontWeight: FontWeight.w700)),
                         const SizedBox(height: 2),
-                        Text('完成於 ${h.completedAt}',
+                        Text('Finished on ${h.completedAt}',
                             style: const TextStyle(fontSize: 12, color: Colors.white70)),
                       ],
                     ),
@@ -2444,7 +2444,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 onPressed: () => context.read<AppState>().resetAll(),
                 icon: const Icon(Icons.delete),
-                label: const Text('重置所有示範資料'),
+                label: const Text('Reset all demo data'),
               ),
             ),
           ),
@@ -2509,18 +2509,18 @@ class _CookingScreenState extends State<CookingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('烹飪教學：${widget.recipe.name}'),
+        title: Text('Cooking Lesson：${widget.recipe.name}'),
       ),
       body: PageFrame(
         child: _glass(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('步驟 ${index + 1} / $total', style: const TextStyle(fontWeight: FontWeight.w700)),
+              Text('Step ${index + 1} / $total', style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Text(step.text, style: const TextStyle(fontSize: 16)),
               const SizedBox(height: 8),
-              Text('建議 ${step.durationMin} 分鐘（示範倍率 ${app.timeScale} 秒/分）',
+              Text('Suggested ${step.durationMin} min (demo scale ${app.timeScale} sec/min）',
                   style: const TextStyle(color: Colors.white70)),
               const SizedBox(height: 10),
               ClipRRect(
@@ -2532,16 +2532,16 @@ class _CookingScreenState extends State<CookingScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text('剩餘時間：${secondsLeft}s', style: const TextStyle(color: Colors.white70)),
+              Text('Time left：${secondsLeft}s', style: const TextStyle(color: Colors.white70)),
               const Spacer(),
               Wrap(
                 spacing: 10,
                 children: [
-                  ElevatedButton(onPressed: _start, child: const Text('開始')),
-                  OutlinedButton(onPressed: _pause, child: const Text('暫停')),
+                  ElevatedButton(onPressed: _start, child: const Text('Start')),
+                  OutlinedButton(onPressed: _pause, child: const Text('Pause')),
                   OutlinedButton(
                     onPressed: index == 0 ? null : () => setState(() => _loadStep(index - 1)),
-                    child: const Text('上一步'),
+                    child: const Text('Previous'),
                   ),
                   ElevatedButton(
                     onPressed: canNext
@@ -2553,14 +2553,14 @@ class _CookingScreenState extends State<CookingScreen> {
                             }
                           }
                         : null,
-                    child: Text(index + 1 < total ? '下一步' : '完成'),
+                    child: Text(index + 1 < total ? 'Next' : 'Finish'),
                   ),
                 ],
               ),
               if (!canNext)
                 const Padding(
                   padding: EdgeInsets.only(top: 6),
-                  child: Text('（嚴格模式：需完成當前計時才能進入下一步）',
+                  child: Text('（Strict mode: finish current timer before next step）',
                       style: TextStyle(fontSize: 12, color: Colors.white60)),
                 ),
             ],
