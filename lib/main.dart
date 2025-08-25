@@ -2388,53 +2388,53 @@ class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+    // final app = context.watch<AppState>();
     // 包可捲動，避免窄螢幕溢位
     return SingleChildScrollView(
       child: Column(
         children: [
-          _glass(
-            child: Row(
-              children: [
-                const Expanded(
-                  child: ListTile(
-                    title: Text('嚴格模式'),
-                    subtitle: Text('需完成計時才能進入下一步'),
-                  ),
-                ),
-                Switch(
-                  value: app.strictMode,
-                  onChanged: context.read<AppState>().setStrictMode,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _glass(
-            child: Row(
-              children: [
-                const Expanded(
-                  child: ListTile(
-                    title: Text('示範時間倍率'),
-                    subtitle: Text('1 分鐘 = X 秒'),
-                  ),
-                ),
-                DropdownButton<int>(
-                  value: app.timeScale,
-                  items: const [
-                    DropdownMenuItem(value: 5, child: Text('5 秒/分')),
-                    DropdownMenuItem(value: 10, child: Text('10 秒/分')),
-                    DropdownMenuItem(value: 15, child: Text('15 秒/分')),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) context.read<AppState>().setTimeScale(v);
-                  },
-                ),
-                const SizedBox(width: 12),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+          // _glass(
+          //   child: Row(
+          //     children: [
+          //       const Expanded(
+          //         child: ListTile(
+          //           title: Text('嚴格模式'),
+          //           subtitle: Text('需完成計時才能進入下一步'),
+          //         ),
+          //       ),
+          //       Switch(
+          //         value: app.strictMode,
+          //         onChanged: context.read<AppState>().setStrictMode,
+          //       ),
+          //     ],
+          //   ),
+          // ),
+          // const SizedBox(height: 12),
+          // _glass(
+          //   child: Row(
+          //     children: [
+          //       const Expanded(
+          //         child: ListTile(
+          //           title: Text('示範時間倍率'),
+          //           subtitle: Text('1 分鐘 = X 秒'),
+          //         ),
+          //       ),
+          //       DropdownButton<int>(
+          //         value: app.timeScale,
+          //         items: const [
+          //           DropdownMenuItem(value: 5, child: Text('5 秒/分')),
+          //           DropdownMenuItem(value: 10, child: Text('10 秒/分')),
+          //           DropdownMenuItem(value: 15, child: Text('15 秒/分')),
+          //         ],
+          //         onChanged: (v) {
+          //           if (v != null) context.read<AppState>().setTimeScale(v);
+          //         },
+          //       ),
+          //       const SizedBox(width: 12),
+          //     ],
+          //   ),
+          // ),
+          // const SizedBox(height: 12),
           _glass(
             child: Align(
               alignment: Alignment.centerLeft,
