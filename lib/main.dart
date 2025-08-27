@@ -211,50 +211,131 @@ class PageFrame extends StatelessWidget {
 }
 
 /// --------------------------- Login --------------------------------------
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  void _goHome() {
+    // 若你沒有 HomeShell，改成：MaterialPageRoute(builder: (_) => const AiCameraPage())
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 0)),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment(-0.8, -1.0),
-          radius: 1.2,
-          colors: [Color(0xFF1E293B), Color(0xFF0B0F14)],
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF22D3EE), Color(0xFFA78BFA)],
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(Icons.restaurant_menu, size: 72, color: Colors.white70),
+                  const SizedBox(height: 12),
+                  const Text('Welcome',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 16),
+
+                  // Email / Password 表單
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _email,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.username, AutofillHints.email],
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email_outlined),
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Please enter email';
+                            final re = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                            if (!re.hasMatch(v.trim())) return 'Invalid email';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _password,
+                          obscureText: _obscure,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.password],
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              onPressed: () => setState(() => _obscure = !_obscure),
+                              icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                              tooltip: _obscure ? 'Show' : 'Hide',
+                            ),
+                          ),
+                          validator: (v) =>
+                              (v == null || v.length < 4) ? 'At least 4 characters' : null,
+                          onFieldSubmitted: (_) {
+                            if (_formKey.currentState!.validate()) _goHome();
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: const Icon(Icons.restaurant_menu, size: 48, color: Colors.white),
+
+                  const SizedBox(height: 16),
+
+                  // Email/Password Login
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        _goHome(); // 模擬登入成功
+                      }
+                    },
+                    icon: const Icon(Icons.login),
+                    label: const Text('Log in'),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Google Login（示範，未串真登入）
+                  OutlinedButton.icon(
+                    onPressed: _goHome, // 同樣進入 App
+                    icon: const Icon(Icons.account_circle),
+                    label: const Text('Continue with Google'),
+                  ),
+
+                  const SizedBox(height: 12),
+                  const Text(
+                    'This login is a UI demo only (no real auth).',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.white60),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text('FoodLens', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              const Text('AI Ingredient Recognition • Offline Menu • Step-by-Step', style: TextStyle(color: Colors.white70)),
-              const SizedBox(height: 28),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HomeShell()),
-                  );
-                },
-                icon: const Icon(Icons.login),
-                label: const Text('Sign in with Google (Demo) '),
-              ),
-            ],
+            ),
           ),
         ),
       ),
