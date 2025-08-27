@@ -838,7 +838,7 @@ class _FoodListPanel extends StatelessWidget {
                               );
                             },
                       icon: const Icon(Icons.check),
-                      label: const Text('Confirm Ingredients'),
+                      label: const Text('Menu Suggestions'),
                     ),
                   ),
 
