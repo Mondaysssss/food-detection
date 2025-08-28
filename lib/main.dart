@@ -232,10 +232,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _goHome() {
-    // 若你沒有 HomeShell，改成：MaterialPageRoute(builder: (_) => const AiCameraPage())
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 0)),
+    );
+  }
+
+  void _comingSoon(String what) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$what — coming soon')),
     );
   }
 
@@ -258,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 16),
 
-                  // Email / Password 表單
+                  // Email / Password
                   Form(
                     key: _formKey,
                     child: Column(
@@ -312,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ElevatedButton.icon(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        _goHome(); // 模擬登入成功
+                        _goHome(); // demo: login success
                       }
                     },
                     icon: const Icon(Icons.login),
@@ -323,12 +328,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // Google Login（示範，未串真登入）
                   OutlinedButton.icon(
-                    onPressed: _goHome, // 同樣進入 App
+                    onPressed: _goHome,
                     icon: const Icon(Icons.account_circle),
                     label: const Text('Continue with Google'),
                   ),
 
                   const SizedBox(height: 12),
+
+                  // --- New: secondary actions (pure UI) ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => _comingSoon('Create new account'),
+                        child: const Text('Create new account'),
+                      ),
+                      TextButton(
+                        onPressed: () => _comingSoon('Find password'),
+                        child: const Text('Find password'),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
                   const Text(
                     'This login is a UI demo only (no real auth).',
                     textAlign: TextAlign.center,
