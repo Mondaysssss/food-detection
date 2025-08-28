@@ -1484,6 +1484,10 @@ class _RecipeCard extends StatelessWidget {
   final int? qtyForCart;   // 購物車頁顯示數量徽章
   final bool showMatchLines;  // ⭐ 是否顯示「Already/Missing」
   final bool showProgress;    // ⭐ 是否顯示進度條
+  // 封面長寬比（預設 16:9）
+  final double coverAspect;
+  // 緊湊模式（縮小內邊距/間距）
+  final bool compact;
 
   const _RecipeCard({
     required this.recipe,
@@ -1492,6 +1496,8 @@ class _RecipeCard extends StatelessWidget {
     this.qtyForCart,
     this.showMatchLines = true,   // 預設顯示
     this.showProgress = true,     // 預設顯示
+    this.coverAspect = 16 / 9, // 預設不變
+    this.compact = false,      // 預設關閉
   });
 
   @override
@@ -1517,7 +1523,7 @@ class _RecipeCard extends StatelessWidget {
               child: Stack(
                 children: [
                   AspectRatio(
-                    aspectRatio: 16 / 9,
+                    aspectRatio: coverAspect,
                     child: Image.network(recipe.cover, fit: BoxFit.cover),
                   ),
                   Positioned(
@@ -1554,7 +1560,9 @@ class _RecipeCard extends StatelessWidget {
 
             // 資訊區
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              padding: compact
+                ? const EdgeInsets.fromLTRB(12, 6, 12, 8)   //  緊湊
+                : const EdgeInsets.fromLTRB(12, 10, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -2296,8 +2304,15 @@ class SessionDetailScreen extends StatelessWidget {
             final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1;
             const spacing = 12.0;
             final tileW = (w - (cols - 1) * spacing) / cols;
-            final coverH = tileW * 9 / 16;
-            final baseInfoH = cols == 1 ? 170.0 : (cols == 2 ? 160.0 : 150.0);
+
+            //  改用更扁的封面比例（21:9），讓封面更矮
+            const aspect = 21 / 9;
+            final coverH = tileW / aspect;
+
+            //  已拿掉 Already/Missing + 進度條，資訊區可以很小
+            final baseInfoH = cols == 1 ? 110.0 : (cols == 2 ? 104.0 : 98.0);
+
+            // 固定卡片高度（避免各裝置溢位）
             final tileH = coverH + baseInfoH;
 
             final grid = GridView.builder(
@@ -2308,7 +2323,7 @@ class SessionDetailScreen extends StatelessWidget {
                 crossAxisCount: cols,
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
-                mainAxisExtent: tileH,
+                mainAxisExtent: tileH, // 用上面算好的更矮高度
               ),
               itemCount: entries.length,
               itemBuilder: (_, i) => _RecipeCard(
@@ -2316,8 +2331,10 @@ class SessionDetailScreen extends StatelessWidget {
                 mr: entries[i].mr,
                 readOnly: true,
                 qtyForCart: entries[i].qty,
-                showMatchLines: false,   //  不顯示 Already/Missing
-                showProgress: false,     //  不顯示進度條
+                showMatchLines: false,   // 歷史頁不顯示
+                showProgress: false,     // 歷史頁不顯示
+                coverAspect: aspect,     // 傳入更扁的比例
+                compact: true,           // 開啟緊湊模式（縮 padding）
               ),
             );
 
