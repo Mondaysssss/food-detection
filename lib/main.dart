@@ -1482,12 +1482,16 @@ class _RecipeCard extends StatelessWidget {
   final MatchResult mr;
   final bool readOnly;     // 購物車頁用 true → 不顯示 +/−
   final int? qtyForCart;   // 購物車頁顯示數量徽章
+  final bool showMatchLines;  // ⭐ 是否顯示「Already/Missing」
+  final bool showProgress;    // ⭐ 是否顯示進度條
 
   const _RecipeCard({
     required this.recipe,
     required this.mr,
     this.readOnly = false,
     this.qtyForCart,
+    this.showMatchLines = true,   // 預設顯示
+    this.showProgress = true,     // 預設顯示
   });
 
   @override
@@ -1577,37 +1581,51 @@ class _RecipeCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        const TextSpan(text: 'Already：', style: TextStyle(fontSize: 12)),
-                        TextSpan(
-                          text: mr.match.join(', ').isEmpty ? '—' : mr.match.join(', '),
-                          style: const TextStyle(fontSize: 12, color: Color(0xFFBBF7D0)),
-                        ),
-                      ],
+                  // Already 行
+                  if (showMatchLines) ...[
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'Already: ', style: TextStyle(fontSize: 12)),
+                          TextSpan(
+                            text: mr.match.join(', ').isEmpty ? '—' : mr.match.join(', '),
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFBBF7D0)),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2, overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        const TextSpan(text: 'Missing：', style: TextStyle(fontSize: 12)),
-                        TextSpan(
-                          text: mr.missing.join(', ').isEmpty ? '—' : mr.missing.join(', '),
-                          style: const TextStyle(fontSize: 12, color: Color(0xFFFECACA)),
-                        ),
-                      ],
+                    const SizedBox(height: 2),
+                  ],
+                  //  Missing 行
+                  if (showMatchLines) ...[
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'Missing: ', style: TextStyle(fontSize: 12)),
+                          TextSpan(
+                            text: mr.missing.join(', ').isEmpty ? '—' : mr.missing.join(', '),
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFFECACA)),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2, overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(value: ratio, minHeight: 8),
-                  ),
-                  const SizedBox(height: 10),
+                  ],
+                  if (showMatchLines) const SizedBox(height: 10),
+                  //  進度條
+                  if (showProgress) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: mr.match.length / recipe.ingredientsRequired.length,
+                        minHeight: 8,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
                   // ⭐ 這裡用 +/− 控制數量；在購物車頁（readOnly=true）就不顯示
                   if (!readOnly)
@@ -2279,7 +2297,7 @@ class SessionDetailScreen extends StatelessWidget {
             const spacing = 12.0;
             final tileW = (w - (cols - 1) * spacing) / cols;
             final coverH = tileW * 9 / 16;
-            final baseInfoH = cols == 1 ? 230.0 : (cols == 2 ? 220.0 : 210.0);
+            final baseInfoH = cols == 1 ? 170.0 : (cols == 2 ? 160.0 : 150.0);
             final tileH = coverH + baseInfoH;
 
             final grid = GridView.builder(
@@ -2298,6 +2316,8 @@ class SessionDetailScreen extends StatelessWidget {
                 mr: entries[i].mr,
                 readOnly: true,
                 qtyForCart: entries[i].qty,
+                showMatchLines: false,   //  不顯示 Already/Missing
+                showProgress: false,     //  不顯示進度條
               ),
             );
 
