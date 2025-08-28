@@ -1091,7 +1091,7 @@ class _DetectionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Detection Result (Mock)'),
+      title: const Text('Detection Result'),
       content: Wrap(
         spacing: 8,
         runSpacing: 8,
