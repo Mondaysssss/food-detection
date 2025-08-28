@@ -355,8 +355,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: const Text('Create new account'),
                       ),
                       TextButton(
-                        onPressed: () => _comingSoon('Find password'),
-                        child: const Text('Find password'),
+                        onPressed: () => _comingSoon('Forgot password'),
+                        child: const Text('Forgot password'),
                       ),
                     ],
                   ),
