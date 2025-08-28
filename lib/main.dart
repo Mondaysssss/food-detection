@@ -258,11 +258,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const Icon(Icons.restaurant_menu, size: 72, color: Colors.white70),
                   const SizedBox(height: 12),
+                  //  App 名稱
+                  const Text(
+                    'CookCam AI',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  //  App 名稱 end
+                  const SizedBox(height: 6),
                   const Text('Welcome',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 16),
-
                   // Email / Password
                   Form(
                     key: _formKey,
