@@ -162,6 +162,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final seed = const Color(0xFF22C55E);
     return MaterialApp(
+      debugShowCheckedModeBanner: false, // ← 關掉右上角 DEBUG 標籤
       title: 'FoodLens',
       theme: ThemeData(
         useMaterial3: true,
