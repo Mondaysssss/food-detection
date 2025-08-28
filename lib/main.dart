@@ -260,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 12),
                   //  App 名稱
                   const Text(
-                    'CookCam AI',
+                    'DishMind',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
