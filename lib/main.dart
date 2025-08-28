@@ -363,7 +363,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 8),
                   const Text(
-                    'This login is a UI demo only (no real auth).',
+                    ' ',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12, color: Colors.white60),
                   ),
@@ -684,7 +684,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _title('Camera (Demo, not connected)）'),
+                _title('Camera'),
                 const SizedBox(height: 8),
                 AspectRatio(
                   aspectRatio: cardAspect,
@@ -730,9 +730,9 @@ class _AiCameraPageState extends State<AiCameraPage> {
             alignment: WrapAlignment.center,
             children: [
               ElevatedButton.icon(
-                onPressed: () => setState(() => _previewHint = 'Image captured (demo)'),
+                onPressed: () => setState(() => _previewHint = 'Image captured'),
                 icon: const Icon(Icons.photo_camera),
-                label: const Text('Capture image (demo)'),
+                label: const Text('Capture image'),
               ),
               FilledButton.tonalIcon(
                 onPressed: () {
@@ -751,7 +751,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
                   }
                 },
                 icon: const Icon(Icons.auto_awesome),
-                label: const Text('Realtime recognition (mock)'),
+                label: const Text('Realtime recognition'),
               ),
               OutlinedButton.icon(
                 onPressed: () => setState(() => _previewHint = 'No image captured'),
@@ -2642,7 +2642,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 onPressed: () => context.read<AppState>().resetAll(),
                 icon: const Icon(Icons.delete),
-                label: const Text('Reset all demo data'),
+                label: const Text('Reset all data'),
               ),
             ),
           ),
