@@ -714,56 +714,86 @@ class _AiCameraPageState extends State<AiCameraPage> {
     );
   }
 
+  // 相機卡片內部：上方預覽 + 三顆按鈕（已把 Realtime Recognition 改名）
   Widget _cameraInner(AppState app) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Icon(Icons.photo_camera, size: 48, color: Colors.white70),
-          const SizedBox(height: 8),
-          Text(_previewHint, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: WrapAlignment.center,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () => setState(() => _previewHint = 'Image captured'),
-                icon: const Icon(Icons.photo_camera),
-                label: const Text('Capture image'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: () {
-                  final res = _detectMock();
-                  if (res.isNotEmpty) {
-                    showDialog(
-                      context: context,
-                      builder: (_) => _DetectionDialog(
-                        detections: res,
-                        onConfirm: () {
-                          app.addIngredients(res);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('Realtime recognition'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => setState(() => _previewHint = 'No image captured'),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retake'),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ─── 預覽區（為未接相機先留空間） ───
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 180,                    // ← 這行決定往下推多少空間（可改 160–220）
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.image, size: 48, color: Colors.white30),
+                const SizedBox(height: 6),
+                Text(
+                  _previewHint,            // 你原本的提示字串（No preview / Captured ...）
+                  style: const TextStyle(color: Colors.white60),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          const SizedBox.shrink(), // 提示先隱藏
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+
+        // ─── 功能按鈕 ───
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            // Capture（示範）
+            ElevatedButton.icon(
+              onPressed: () => setState(() => _previewHint = 'Captured'),
+              icon: const Icon(Icons.photo_camera),
+              label: const Text('Capture'),
+            ),
+
+            // ⭐ 由「Realtime Recognition」→ 改名「Food Detection」
+            FilledButton.tonalIcon(
+              onPressed: () {
+                final res = _detectMock();
+                if (res.isNotEmpty) {
+                  showDialog(
+                    context: context,
+                    builder: (_) => _DetectionDialog(
+                      detections: res,
+                      onConfirm: () {
+                        app.addIngredients(res);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Food Detection'),
+            ),
+
+            // Retake
+            OutlinedButton.icon(
+              onPressed: () => setState(() => _previewHint = 'No preview yet'),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retake'),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 8),
+        //（如需保留你那行提示，可留著；不想要也可刪掉）
+        // const Text('To connect a real camera later, replace this block with camera plugin UI.',
+        //   textAlign: TextAlign.center,
+        //   style: TextStyle(fontSize: 12, color: Colors.white60),
+        // ),
+      ],
     );
   }
 }
