@@ -647,12 +647,14 @@ class MatchResult {
   const MatchResult(this.match, this.missing);
 }
 
-// ⭐ 調味料視為已擁有；且不把調味料算進「需要配對」的清單
+// 只把「非調味料」納入配對；調味料一律忽略
 MatchResult computeMatch(Recipe r, List<String> detected) {
   final have = detected.toSet();
+
+  // 只留主料
   final requiredMain = <String>[
     for (final x in r.ingredientsRequired)
-      if (!kSeasoningKeys.contains(x)) x,                // ⭐ 只比對主料
+      if (!kSeasoningKeys.contains(x)) x,
   ];
 
   final match = <String>[];
@@ -1587,7 +1589,8 @@ class _RecipeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
     final reqCount = (mr.match.length + mr.missing.length);
-    final ratio = reqCount == 0 ? 1.0 : mr.match.length / reqCount;   // ⭐ 以主料為分母  
+    final mainCount = mr.match.length + mr.missing.length;      // 只算主料
+    final ratio = mainCount == 0 ? 1.0 : mr.match.length / mainCount;
 
     final count = context.select<AppState, int>(
       (s) => s.cartCountOf(recipe.menuId),
@@ -1618,7 +1621,7 @@ class _RecipeCard extends StatelessWidget {
                         color: Colors.black54, borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        '${mr.match.length}/${recipe.ingredientsRequired.length} complete',
+                        '${mr.match.length}/${mainCount} complete',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),
