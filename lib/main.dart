@@ -87,18 +87,27 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addIngredients(Iterable<String> names) {
-    final lower = names.map((e) => e.toLowerCase().trim());
-    final set = _ingredients.map((e) => e.toLowerCase()).toSet();
-    bool changed = false;
-    for (final n in lower) {
-      if (!set.contains(n)) {
-        _ingredients.add(n);
-        changed = true;
-      }
-    }
-    if (changed) notifyListeners();
+// 單筆
+void addIngredient(String name) {
+  if (kSeasoningKeys.contains(name)) return;              // ⭐ 濾掉調味料
+  if (!_ingredients.contains(name)) {
+    _ingredients.add(name);
+    notifyListeners();
   }
+}
+
+// 多筆
+void addIngredients(Iterable<String> names) {
+  bool changed = false;
+  for (final n in names) {
+    if (kSeasoningKeys.contains(n)) continue;             // ⭐ 濾掉調味料
+    if (!_ingredients.contains(n)) {
+      _ingredients.add(n);
+      changed = true;
+    }
+  }
+  if (changed) notifyListeners();
+}
 
   void removeIngredient(String name) {
     _ingredients.remove(name);
@@ -632,24 +641,26 @@ const Map<String, List<String>> kStepsVerbose = {
 };
 
 /// 計算配料匹配/缺少
-MatchResult computeMatch(Recipe recipe, List<String> detected) {
-  final set = detected.toSet();
-  final match = <String>[];
-  final missing = <String>[];
-  for (final i in recipe.ingredientsRequired) {
-    if (set.contains(i)) {
-      match.add(i);
-    } else {
-      missing.add(i);
-    }
-  }
-  return MatchResult(match: match, missing: missing);
-}
-
 class MatchResult {
   final List<String> match;
   final List<String> missing;
-  const MatchResult({required this.match, required this.missing});
+  const MatchResult(this.match, this.missing);
+}
+
+// ⭐ 調味料視為已擁有；且不把調味料算進「需要配對」的清單
+MatchResult computeMatch(Recipe r, List<String> detected) {
+  final have = detected.toSet();
+  final requiredMain = <String>[
+    for (final x in r.ingredientsRequired)
+      if (!kSeasoningKeys.contains(x)) x,                // ⭐ 只比對主料
+  ];
+
+  final match = <String>[];
+  final missing = <String>[];
+  for (final x in requiredMain) {
+    (have.contains(x) ? match : missing).add(x);
+  }
+  return MatchResult(match, missing);
 }
 
 /// --------------------------- Page: AI Camera ------------------------------
@@ -663,11 +674,16 @@ class _AiCameraPageState extends State<AiCameraPage> {
   String _previewHint = 'No image captured';
 
   // 模擬偵測：隨機取 1~4 個食材
+  // List<String> _detectMock() {
+  //   final rnd = Random();
+  //   final count = 1 + rnd.nextInt(4);
+  //   final list = [...kAllIngredients]..shuffle(rnd);
+  //   return list.take(count).toList();
+  // }
+
   List<String> _detectMock() {
-    final rnd = Random();
-    final count = 1 + rnd.nextInt(4);
-    final list = [...kAllIngredients]..shuffle(rnd);
-    return list.take(count).toList();
+  final raw = <String>['egg', 'tomato']; // 範例
+  return raw.where((x) => !kSeasoningKeys.contains(x)).toList();  // ⭐ 濾掉調味料
   }
 
   @override
@@ -950,11 +966,14 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
   final Set<String> selected = {}; // 本頁選取中的
   String query = '';
 
-  List<String> get _filtered {
-    if (query.trim().isEmpty) return widget.all;
-    final q = query.toLowerCase();
-    return widget.all.where((x) => x.toLowerCase().contains(q)).toList();
-  }
+List<String> get _allFoodOnly =>
+    widget.all.where((x) => !kSeasoningKeys.contains(x)).toList();
+
+List<String> get _filtered {
+  if (query.trim().isEmpty) return _allFoodOnly;
+  final q = query.toLowerCase();
+  return _allFoodOnly.where((x) => x.toLowerCase().contains(q)).toList();
+}
 
   void _toggle(String name) {
     if (widget.existing.contains(name)) return; // 已有的不能改
@@ -1567,7 +1586,8 @@ class _RecipeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
-    final ratio = mr.match.length / recipe.ingredientsRequired.length;
+    final reqCount = (mr.match.length + mr.missing.length);
+    final ratio = reqCount == 0 ? 1.0 : mr.match.length / reqCount;   // ⭐ 以主料為分母  
 
     final count = context.select<AppState, int>(
       (s) => s.cartCountOf(recipe.menuId),
@@ -1760,8 +1780,12 @@ class RecommendScreen extends StatelessWidget {
     final usedIngredients = <String>{};
     app.cart.forEach((menuId, qty) {
       if (qty > 0) {
-        final r = kRecipeById[menuId]; // ← 如果你已建立過這個 map
-        if (r != null) usedIngredients.addAll(r.ingredientsRequired);
+        final r = kRecipeById[menuId];
+        if (r != null) {
+          for (final ing in r.ingredientsRequired) {
+            if (!kSeasoningKeys.contains(ing)) usedIngredients.add(ing);  // ⭐ 去掉調味料
+          }
+        }
       }
     });
 
@@ -1881,9 +1905,9 @@ class CartScreen extends StatelessWidget {
       final mainGreen = [for (final m in mainAll) if (have.contains(m)) m]..sort();
       final mainRed   = [for (final m in mainAll) if (!have.contains(m)) m]..sort();
 
-      final seasonKeys = seasonTsp.keys.toList()..sort();
-      final seasonGreen = [for (final s in seasonKeys) if (have.contains(s)) s];
-      final seasonRed   = [for (final s in seasonKeys) if (!have.contains(s)) s];
+      final seasonKeys  = seasonTsp.keys.toList()..sort();
+      final seasonGreen = seasonKeys;   // ⭐ 調味料一律視為擁有
+      // 不要再宣告 seasonRed
 
       final totalSeasonTsp = seasonTsp.values.fold<double>(0, (s, v) => s + v);
 
@@ -1926,23 +1950,14 @@ class CartScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   if (seasonGreen.isNotEmpty)
                     Text(
-                      'Have:' +
+                      'Have: ' +
                           seasonGreen
                               .map((k) => '${_prettyName(k)} ${seasonTsp[k]!.toStringAsFixed(1)}tsp')
                               .join(', '),
                       style: const TextStyle(color: Colors.greenAccent),
                     ),
-                  if (seasonRed.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Missing:' +
-                            seasonRed
-                                .map((k) => '${_prettyName(k)} ${seasonTsp[k]!.toStringAsFixed(1)}tsp')
-                                .join(', '),
-                        style: const TextStyle(color: Colors.redAccent),
-                      ),
-                    ),
+                  // 不再顯示 Missing 調味料
+                  
                   const SizedBox(height: 4),
                   const Text('(Amounts are estimated)', style: TextStyle(fontSize: 12, color: Colors.white60)),
                 ],
