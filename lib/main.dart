@@ -410,7 +410,7 @@ class _HomeShellState extends State<HomeShell> {
     HistoryPage(),
     SettingsPage(),
   ];
-  final _titles = const ['Scan', 'History', 'Settings'];
+  final _titles = const ['Ingredient Scanner', 'History', 'Settings'];
 
   @override
   Widget build(BuildContext context) {
@@ -437,7 +437,7 @@ class _HomeShellState extends State<HomeShell> {
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),
           destinations: const [
-            NavigationDestination(icon: Icon(Icons.photo_camera_outlined), selectedIcon: Icon(Icons.photo_camera), label: 'Ingredient Scanner'),
+            NavigationDestination(icon: Icon(Icons.photo_camera_outlined), selectedIcon: Icon(Icons.photo_camera), label: 'Scan'),
             NavigationDestination(icon: Icon(Icons.history), selectedIcon: Icon(Icons.history_toggle_off), label: 'History'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
           ],
