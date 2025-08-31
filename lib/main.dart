@@ -1922,7 +1922,7 @@ class CartScreen extends StatelessWidget {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: const Text('Confirm Generation'),
+            title: const Text('Cooking Info'),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2056,7 +2056,7 @@ class CartScreen extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: app.cart.isEmpty ? null : onGeneratePressed,
           icon: const Icon(Icons.playlist_add_check),
-          label: const Text('Generate'),
+          label: const Text('Start Cooking'),
         ),
       ),
     );
@@ -2197,7 +2197,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
       if (_allCompletedSnackShown) return;
       _allCompletedSnackShown = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All steps complete! Tap "Finish Lesson" to end this session.')),
+        const SnackBar(content: Text('All steps complete! Tap "Finish Cooking" to end this session.')),
       );
     }
   }
@@ -2227,7 +2227,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text('Sync Step-by-Step'),
+        title: const Text('Cooking Guide'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -2250,7 +2250,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
                     _title('Help'),
                     const Text(
                       'You can run multiple timers: e.g. while "Boiling water" runs, you can start "Chopping";'
-                      'You\'ll be prompted when any timer completes. When all steps are done, tap "Finish Lesson" to end.',
+                      'You\'ll be prompted when any timer completes. When all steps are done, tap "Finish Cooking" to end.',
                       style: TextStyle(color: Colors.white70),
                     ),
                   ],
@@ -2295,7 +2295,7 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
               ? _finishAndSaveHistory
               : null,
           icon: const Icon(Icons.flag),
-          label: const Text('Finish Lesson'),
+          label: const Text('Finish Cooking'),
         ),
       ),
     );
