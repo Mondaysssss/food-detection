@@ -797,11 +797,14 @@ class _AiCameraPageState extends State<AiCameraPage> {
             ),
 
             // Retake
-            OutlinedButton.icon(
-              onPressed: () => setState(() => _previewHint = 'No preview yet'),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retake'),
-            ),
+            Visibility(
+              visible: false,
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() => _previewHint = 'No preview yet'),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retake'),
+              ),
+            )
           ],
         ),
 
