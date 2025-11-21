@@ -453,7 +453,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
 
   // ---- Q2: Age（數字 Wheel Picker）----
   Widget _qAge() {
-    final items = List<int>.generate(90, (i) => i + 10); // 10..99
+    final items = List<int>.generate(80, (i) => i + 13); // 10..99
     return SizedBox(
       height: 180,
       child: CupertinoPicker(
