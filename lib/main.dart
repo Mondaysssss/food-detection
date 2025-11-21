@@ -192,7 +192,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const StartEntryPage(),
+      home: const IntroStartScreen(),
     );
   }
 }
@@ -221,74 +221,73 @@ class PageFrame extends StatelessWidget {
   }
 }
 
-// ====== StartEntryPage：開場引導（Start using / Login） ======
-class StartEntryPage extends StatelessWidget {
-  const StartEntryPage({super.key});
+// --------------------------- Page: Intro (Start using / Login) -------------------------------
+class IntroStartScreen extends StatelessWidget {
+  const IntroStartScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 24),
-                // 食物圖示
-                Icon(
-                  Icons.restaurant_menu,
-                  size: 96,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Start your cooking journey',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Answer a few quick questions to personalize your recipes, or go straight to login.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                // 按鈕們
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PersonalizationPage(),
+            padding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 食物圖（先用內建圖示；之後可換成你 AI 相機的預設圖片）
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1f2937), Color(0xFF0b1220)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: const [
+                        Icon(Icons.fastfood, size: 96, color: Colors.white70),
+                        SizedBox(height: 12),
+                        Text(
+                          'Start your cooking journey',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                         ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 主要行動：Start using
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PersonaWizardScreen()),
                       );
                     },
                     child: const Text('Start using'),
                   ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
+
+                  const SizedBox(height: 12),
+
+                  // 次要行動：Login
+                  OutlinedButton(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const LoginScreen(),
-                        ),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
                       );
                     },
                     child: const Text('Login'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -298,359 +297,257 @@ class StartEntryPage extends StatelessWidget {
 }
 
 
-// ====== PersonalizationPage：多步驟個人化問卷 ======
-class PersonalizationPage extends StatefulWidget {
-  const PersonalizationPage({super.key});
-
+// --------------------------- Page: Personalization Wizard -------------------------------
+class PersonaWizardScreen extends StatefulWidget {
+  const PersonaWizardScreen({super.key});
   @override
-  State<PersonalizationPage> createState() => _PersonalizationPageState();
+  State<PersonaWizardScreen> createState() => _PersonaWizardScreenState();
 }
 
-class _PersonalizationPageState extends State<PersonalizationPage> {
-  // 目前第幾步（0-based）
-  int _currentStep = 0;
+// 題目型別
+enum QType { genderButtons, ageWheel, applianceDropdowns, allergyCheckboxes }
 
-  // Q1: Gender
-  String? _gender;
+// 問卷定義
+class _QuestionDef {
+  final String id;
+  final String title;
+  final QType type;
+  const _QuestionDef({required this.id, required this.title, required this.type});
+}
 
-  // Q2: Age
-  static const int _minAge = 10;
-  static const int _maxAge = 80;
-  int _age = 25;
-  late FixedExtentScrollController _ageController;
-
-  // Q3: Appliances 數量
-  int _cookwareCount = 0;
-  int _stoveCount = 0;
-  int _electricCount = 0;
-  int _bakingCount = 0;
-
-  // Q4: Food allergies
-  final Set<String> _allergies = <String>{};
-
-  // 問題 builder 清單（每一題對應一個 Widget builder）
-  late final List<Widget Function()> _steps;
-
-  static const List<String> _genderOptions = [
-    'Male',
-    'Female',
-    'Other',
-    'Prefer not to say',
+class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
+  // ===== 你可以在這裡增刪問題（依序顯示） =====
+  final List<_QuestionDef> _questions = const [
+    _QuestionDef(id: 'gender',   title: 'Gender',                       type: QType.genderButtons),
+    _QuestionDef(id: 'age',      title: 'Age',                          type: QType.ageWheel),
+    _QuestionDef(id: 'appliance',title: 'Which kitchen appliances do you own?', type: QType.applianceDropdowns),
+    _QuestionDef(id: 'allergy',  title: 'Food Allergies',               type: QType.allergyCheckboxes),
   ];
 
-  static const List<String> _allergyOptions = [
-    'Peanuts',
-    'Tree nuts (walnuts, almonds, cashews, etc.)',
-    'Milk / Dairy',
-    'Eggs',
-    'Fish',
-    'Shellfish (shrimp, crab, lobster)',
-    'Wheat (gluten)',
-    'Soy (soybeans / soy products)',
-    'Mango',
-    'Kiwi',
-    'Avocado',
-    'Sesame / Sesame oil',
-    'Coconut',
-    'Tomato',
-    'Beef / Pork',
-    'Taro',
-  ];
+  int _index = 0;
 
-  int get _totalSteps => _steps.length;
-  bool get _isLastStep => _currentStep == _totalSteps - 1;
+  // ====== 回答狀態（可依需要改為存到 AppState） ======
+  String? _gender;                       // Male/Female/Other/Prefer not to say
+  int _age = 18;                         // 10~99
+  final Map<String, int> _appliances = { // 每類 0~4
+    'cookware': 0,
+    'stove': 0,
+    'electric': 0,
+    'bake': 0,
+  };
+  final Set<String> _allergies = {};     // 多選
+
+  // ====== Age wheel 需要 controller 方便定位 ======
+  late FixedExtentScrollController _ageCtl;
 
   @override
   void initState() {
     super.initState();
-    _ageController = FixedExtentScrollController(initialItem: _age - _minAge);
-    _steps = [
-      _buildGenderQuestion,
-      _buildAgeQuestion,
-      _buildApplianceQuestion,
-      _buildAllergyQuestion,
-      // 將來要新增問題，只要在這裡加一個 builder 即可
-      // 例如: _buildCookingLevelQuestion,
-    ];
+    _ageCtl = FixedExtentScrollController(initialItem: (_age - 10).clamp(0, 89));
   }
 
   @override
   void dispose() {
-    _ageController.dispose();
+    _ageCtl.dispose();
     super.dispose();
   }
 
-  void _goNext() {
-    if (_isLastStep) {
-      // TODO: 在這裡可以把答案丟去 AppState / 儲存
-      Navigator.of(context).pop(); // 回到 LoginPage
+  // 進度
+  double get _progress => (_index + 1) / _questions.length;
+
+  // 下一步 / 完成
+  void _nextOrFinish() {
+    if (_index < _questions.length - 1) {
+      setState(() => _index++);
     } else {
-      setState(() {
-        _currentStep++;
-      });
+      // 完成 → 回登入頁
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
     }
   }
 
-  void _goPrev() {
-    if (_currentStep == 0) return;
-    setState(() {
-      _currentStep--;
-    });
-  }
+  // 是否為最後一題
+  bool get _isLast => _index == _questions.length - 1;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final progress = (_currentStep + 1) / _totalSteps;
+    final q = _questions[_index];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Personalization settings'),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // 進度條
-              LinearProgressIndicator(value: progress),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Step ${_currentStep + 1} of $_totalSteps',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // 問題內容區（一次只顯示一題）
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: KeyedSubtree(
-                    key: ValueKey<int>(_currentStep),
-                    child: _steps[_currentStep](),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // 底部按鈕列：Back / Next step / Finish
-              Row(
-                children: [
-                  if (_currentStep > 0)
-                    TextButton(
-                      onPressed: _goPrev,
-                      child: const Text('Back'),
-                    ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: _goNext,
-                    child: Text(_isLastStep ? 'Finish' : 'Next step'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        title: const Text('Personalization'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+          tooltip: 'Close',
         ),
       ),
-    );
-  }
-
-  // ---------- Question Builders ----------
-
-  // Q1: Gender
-  Widget _buildGenderQuestion() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '1. Gender',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _genderOptions.map((g) {
-            final selected = _gender == g;
-            return ChoiceChip(
-              label: Text(g),
-              selected: selected,
-              onSelected: (_) {
-                setState(() {
-                  _gender = g;
-                });
-              },
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  // Q2: Age（number wheel picker）
-  Widget _buildAgeQuestion() {
-    final theme = Theme.of(context);
-    final itemCount = _maxAge - _minAge + 1;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '2. Age',
-          style: theme.textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Use the wheel to pick your age.',
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: SizedBox(
-            height: 160,
-            child: CupertinoPicker(
-              scrollController: _ageController,
-              itemExtent: 32,
-              onSelectedItemChanged: (index) {
-                setState(() {
-                  _age = _minAge + index;
-                });
-              },
-              children: List<Widget>.generate(itemCount, (index) {
-                final value = _minAge + index;
-                return Center(child: Text('$value'));
-              }),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: Text(
-            'Selected age: $_age',
-            style: theme.textTheme.bodyMedium,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Q3: Kitchen appliances（0-4 dropdown）
-  Widget _buildApplianceQuestion() {
-    final theme = Theme.of(context);
-
-    Widget buildRow(String title, String subtitle, int value, ValueChanged<int?> onChanged) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
+      body: PageFrame( // 若你沒有 PageFrame，就改為 Padding(...)
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: theme.textTheme.bodyLarge),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-              ),
+            // 進度條
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(value: _progress, minHeight: 8),
             ),
-            const SizedBox(width: 8),
-            DropdownButton<int>(
-              value: value,
-              items: List<DropdownMenuItem<int>>.generate(
-                5,
-                (i) => DropdownMenuItem(
-                  value: i,
-                  child: Text('$i'),
-                ),
-              ),
-              onChanged: onChanged,
+            const SizedBox(height: 16),
+
+            // 題目標題
+            Text(q.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+
+            // 題目內容
+            _buildQuestion(q),
+
+            const Spacer(),
+
+            // 下一步 / 完成
+            ElevatedButton(
+              onPressed: _nextOrFinish,
+              child: Text(_isLast ? 'Finish' : 'Next step'),
             ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // 根據題型產生 UI（單頁僅顯示一題）
+  Widget _buildQuestion(_QuestionDef q) {
+    switch (q.type) {
+      case QType.genderButtons:
+        return _qGender();
+      case QType.ageWheel:
+        return _qAge();
+      case QType.applianceDropdowns:
+        return _qAppliance();
+      case QType.allergyCheckboxes:
+        return _qAllergy();
+    }
+  }
+
+  // ---- Q1: Gender（四顆按鈕）----
+  Widget _qGender() {
+    final opts = const [
+      ('Male', Icons.male),
+      ('Female', Icons.female),
+      ('Other', Icons.transgender),
+      ('Prefer not to say', Icons.help_outline),
+    ];
+    return Wrap(
+      spacing: 8, runSpacing: 8,
+      children: [
+        for (final o in opts)
+          ChoiceChip(
+            label: Text(o.$1),
+            avatar: Icon(o.$2, size: 18),
+            selected: _gender == o.$1,
+            onSelected: (_) => setState(() => _gender = o.$1),
+          ),
+      ],
+    );
+  }
+
+  // ---- Q2: Age（數字 Wheel Picker）----
+  Widget _qAge() {
+    final items = List<int>.generate(90, (i) => i + 10); // 10..99
+    return SizedBox(
+      height: 180,
+      child: CupertinoPicker(
+        scrollController: _ageCtl,
+        itemExtent: 36,
+        onSelectedItemChanged: (i) => setState(() => _age = items[i]),
         children: [
-          Text(
-            '3. Which kitchen appliances do you own?',
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          buildRow(
-            'Cookware',
-            '(wok, soup pot, frying pan, steamer pot, sauté pan, stew pot, pressure cooker)',
-            _cookwareCount,
-            (v) => setState(() => _cookwareCount = v ?? 0),
-          ),
-          buildRow(
-            'Stove / Cooktop',
-            '(induction cooker, gas stove)',
-            _stoveCount,
-            (v) => setState(() => _stoveCount = v ?? 0),
-          ),
-          buildRow(
-            'Electric Cooking Appliances',
-            '(rice cooker, slow cooker, electric skillet)',
-            _electricCount,
-            (v) => setState(() => _electricCount = v ?? 0),
-          ),
-          buildRow(
-            'Baking / Air Frying Appliances',
-            '(oven, air fryer)',
-            _bakingCount,
-            (v) => setState(() => _bakingCount = v ?? 0),
-          ),
+          for (final v in items) Center(child: Text('$v')),
         ],
       ),
     );
   }
 
-  // Q4: Food Allergies（multi-select checkbox）
-  Widget _buildAllergyQuestion() {
-    final theme = Theme.of(context);
+  // ---- Q3: Appliances（四項 0~4 下拉）----
+  Widget _qAppliance() {
+    // label → key 的對應
+    final rows = const [
+      ('Cookware (wok, soup pot, frying pan, steamer, sauté, stew, pressure cooker)', 'cookware'),
+      ('Stove / Cooktop (induction, gas stove)', 'stove'),
+      ('Electric Cooking (rice cooker, slow cooker, electric skillet)', 'electric'),
+      ('Baking / Air Frying (oven, air fryer)', 'bake'),
+    ];
+    final ddItems = List<DropdownMenuItem<int>>.generate(
+      5, (i) => DropdownMenuItem(value: i, child: Text(i.toString())),
+    );
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '4. Food allergies',
-          style: theme.textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _allergyOptions.length,
-            itemBuilder: (context, index) {
-              final label = _allergyOptions[index];
-              final selected = _allergies.contains(label);
-              return CheckboxListTile(
-                value: selected,
-                onChanged: (v) {
-                  setState(() {
-                    if (v == true) {
-                      _allergies.add(label);
-                    } else {
-                      _allergies.remove(label);
-                    }
-                  });
-                },
-                title: Text(label),
-                dense: true,
-                controlAffinity: ListTileControlAffinity.leading,
-              );
-            },
+        for (final r in rows) ...[
+          _glass(
+            child: Row(
+              children: [
+                Expanded(child: Text(r.$1, style: const TextStyle(fontSize: 14))),
+                const SizedBox(width: 8),
+                DropdownButton<int>(
+                  value: _appliances[r.$2]!,
+                  items: ddItems,
+                  onChanged: (v) => setState(() => _appliances[r.$2] = v ?? 0),
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 10),
+        ],
       ],
+    );
+  }
+
+  // ---- Q4: Allergies（Checkbox 多選）----
+  Widget _qAllergy() {
+    const allergens = [
+      'Peanuts',
+      'Tree nuts (walnuts, almonds, cashews, etc.)',
+      'Milk / Dairy',
+      'Eggs',
+      'Fish',
+      'Shellfish (shrimp, crab, lobster)',
+      'Wheat (gluten)',
+      'Soy (soybeans / soy products)',
+      'Mango',
+      'Kiwi',
+      'Avocado',
+      'Sesame / Sesame oil',
+      'Coconut',
+      'Tomato',
+      'Beef / Pork',
+      'Taro',
+    ];
+
+    return SizedBox(
+      height: 340, // 防止過長溢位
+      child: Scrollbar(
+        child: ListView.separated(
+          itemCount: allergens.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (_, i) {
+            final name = allergens[i];
+            final checked = _allergies.contains(name);
+            return CheckboxListTile(
+              title: Text(name),
+              value: checked,
+              onChanged: (v) {
+                setState(() {
+                  if (v == true) {
+                    _allergies.add(name);
+                  } else {
+                    _allergies.remove(name);
+                  }
+                });
+              },
+            );
+          },
+        ),
+      ),
     );
   }
 }
