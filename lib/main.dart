@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/cupertino.dart';
 
 void main() {
   runApp(
@@ -191,7 +192,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginScreen(),
+      home: const StartEntryPage(),
     );
   }
 }
@@ -219,6 +220,441 @@ class PageFrame extends StatelessWidget {
     );
   }
 }
+
+// ====== StartEntryPage：開場引導（Start using / Login） ======
+class StartEntryPage extends StatelessWidget {
+  const StartEntryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 24),
+                // 食物圖示
+                Icon(
+                  Icons.restaurant_menu,
+                  size: 96,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Start your cooking journey',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Answer a few quick questions to personalize your recipes, or go straight to login.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // 按鈕們
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PersonalizationPage(),
+                        ),
+                      );
+                    },
+                    child: const Text('Start using'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const LoginScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('Login'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ====== PersonalizationPage：多步驟個人化問卷 ======
+class PersonalizationPage extends StatefulWidget {
+  const PersonalizationPage({super.key});
+
+  @override
+  State<PersonalizationPage> createState() => _PersonalizationPageState();
+}
+
+class _PersonalizationPageState extends State<PersonalizationPage> {
+  // 目前第幾步（0-based）
+  int _currentStep = 0;
+
+  // Q1: Gender
+  String? _gender;
+
+  // Q2: Age
+  static const int _minAge = 10;
+  static const int _maxAge = 80;
+  int _age = 25;
+  late FixedExtentScrollController _ageController;
+
+  // Q3: Appliances 數量
+  int _cookwareCount = 0;
+  int _stoveCount = 0;
+  int _electricCount = 0;
+  int _bakingCount = 0;
+
+  // Q4: Food allergies
+  final Set<String> _allergies = <String>{};
+
+  // 問題 builder 清單（每一題對應一個 Widget builder）
+  late final List<Widget Function()> _steps;
+
+  static const List<String> _genderOptions = [
+    'Male',
+    'Female',
+    'Other',
+    'Prefer not to say',
+  ];
+
+  static const List<String> _allergyOptions = [
+    'Peanuts',
+    'Tree nuts (walnuts, almonds, cashews, etc.)',
+    'Milk / Dairy',
+    'Eggs',
+    'Fish',
+    'Shellfish (shrimp, crab, lobster)',
+    'Wheat (gluten)',
+    'Soy (soybeans / soy products)',
+    'Mango',
+    'Kiwi',
+    'Avocado',
+    'Sesame / Sesame oil',
+    'Coconut',
+    'Tomato',
+    'Beef / Pork',
+    'Taro',
+  ];
+
+  int get _totalSteps => _steps.length;
+  bool get _isLastStep => _currentStep == _totalSteps - 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _ageController = FixedExtentScrollController(initialItem: _age - _minAge);
+    _steps = [
+      _buildGenderQuestion,
+      _buildAgeQuestion,
+      _buildApplianceQuestion,
+      _buildAllergyQuestion,
+      // 將來要新增問題，只要在這裡加一個 builder 即可
+      // 例如: _buildCookingLevelQuestion,
+    ];
+  }
+
+  @override
+  void dispose() {
+    _ageController.dispose();
+    super.dispose();
+  }
+
+  void _goNext() {
+    if (_isLastStep) {
+      // TODO: 在這裡可以把答案丟去 AppState / 儲存
+      Navigator.of(context).pop(); // 回到 LoginPage
+    } else {
+      setState(() {
+        _currentStep++;
+      });
+    }
+  }
+
+  void _goPrev() {
+    if (_currentStep == 0) return;
+    setState(() {
+      _currentStep--;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final progress = (_currentStep + 1) / _totalSteps;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Personalization settings'),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // 進度條
+              LinearProgressIndicator(value: progress),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Step ${_currentStep + 1} of $_totalSteps',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 問題內容區（一次只顯示一題）
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: KeyedSubtree(
+                    key: ValueKey<int>(_currentStep),
+                    child: _steps[_currentStep](),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 底部按鈕列：Back / Next step / Finish
+              Row(
+                children: [
+                  if (_currentStep > 0)
+                    TextButton(
+                      onPressed: _goPrev,
+                      child: const Text('Back'),
+                    ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: _goNext,
+                    child: Text(_isLastStep ? 'Finish' : 'Next step'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------- Question Builders ----------
+
+  // Q1: Gender
+  Widget _buildGenderQuestion() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '1. Gender',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _genderOptions.map((g) {
+            final selected = _gender == g;
+            return ChoiceChip(
+              label: Text(g),
+              selected: selected,
+              onSelected: (_) {
+                setState(() {
+                  _gender = g;
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  // Q2: Age（number wheel picker）
+  Widget _buildAgeQuestion() {
+    final theme = Theme.of(context);
+    final itemCount = _maxAge - _minAge + 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '2. Age',
+          style: theme.textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Use the wheel to pick your age.',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: SizedBox(
+            height: 160,
+            child: CupertinoPicker(
+              scrollController: _ageController,
+              itemExtent: 32,
+              onSelectedItemChanged: (index) {
+                setState(() {
+                  _age = _minAge + index;
+                });
+              },
+              children: List<Widget>.generate(itemCount, (index) {
+                final value = _minAge + index;
+                return Center(child: Text('$value'));
+              }),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Text(
+            'Selected age: $_age',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Q3: Kitchen appliances（0-4 dropdown）
+  Widget _buildApplianceQuestion() {
+    final theme = Theme.of(context);
+
+    Widget buildRow(String title, String subtitle, int value, ValueChanged<int?> onChanged) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: theme.textTheme.bodyLarge),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            DropdownButton<int>(
+              value: value,
+              items: List<DropdownMenuItem<int>>.generate(
+                5,
+                (i) => DropdownMenuItem(
+                  value: i,
+                  child: Text('$i'),
+                ),
+              ),
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '3. Which kitchen appliances do you own?',
+            style: theme.textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          buildRow(
+            'Cookware',
+            '(wok, soup pot, frying pan, steamer pot, sauté pan, stew pot, pressure cooker)',
+            _cookwareCount,
+            (v) => setState(() => _cookwareCount = v ?? 0),
+          ),
+          buildRow(
+            'Stove / Cooktop',
+            '(induction cooker, gas stove)',
+            _stoveCount,
+            (v) => setState(() => _stoveCount = v ?? 0),
+          ),
+          buildRow(
+            'Electric Cooking Appliances',
+            '(rice cooker, slow cooker, electric skillet)',
+            _electricCount,
+            (v) => setState(() => _electricCount = v ?? 0),
+          ),
+          buildRow(
+            'Baking / Air Frying Appliances',
+            '(oven, air fryer)',
+            _bakingCount,
+            (v) => setState(() => _bakingCount = v ?? 0),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Q4: Food Allergies（multi-select checkbox）
+  Widget _buildAllergyQuestion() {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '4. Food allergies',
+          style: theme.textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _allergyOptions.length,
+            itemBuilder: (context, index) {
+              final label = _allergyOptions[index];
+              final selected = _allergies.contains(label);
+              return CheckboxListTile(
+                value: selected,
+                onChanged: (v) {
+                  setState(() {
+                    if (v == true) {
+                      _allergies.add(label);
+                    } else {
+                      _allergies.remove(label);
+                    }
+                  });
+                },
+                title: Text(label),
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 
 /// --------------------------- Login --------------------------------------
 class LoginScreen extends StatefulWidget {
