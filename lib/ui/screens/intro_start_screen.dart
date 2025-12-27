@@ -1,8 +1,4 @@
-// lib/ui/screens/intro_start_screen.dart
-// App 開場頁（IntroStartScreen）
-// 用途：
-// - 首次開 App 時顯示歡迎畫面
-// - 提供「開始使用」進入 Persona Wizard，以及「登入」選項
+// [OOP] 開始頁：App 入口 UI，導向登入/設定個人資料/進入主頁。
 
 import 'package:flutter/material.dart';
 
@@ -24,7 +20,6 @@ class IntroStartScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 歡迎卡片
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -47,10 +42,8 @@ class IntroStartScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 20),
 
-                  // 開始使用按鈕
                   ElevatedButton(
                     onPressed: () {
                       Navigator.push(
@@ -60,10 +53,8 @@ class IntroStartScreen extends StatelessWidget {
                     },
                     child: const Text('Start using'),
                   ),
-
                   const SizedBox(height: 12),
 
-                  // 登入按鈕
                   OutlinedButton(
                     onPressed: () {
                       Navigator.push(

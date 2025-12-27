@@ -1,14 +1,12 @@
-// lib/domain/models/recipe.dart
-// ✅ Domain Model：Recipe + RecipeStep
-// 代表「菜單」以及「步驟」資料結構（純資料，不含 UI / State）。
+// [OOP] 資料模型：一個菜式/食譜（步驟、所需食材、封面等）。
 
 class Recipe {
   final String menuId;
   final String name;
-  final String type; // Cuisine type (Chinese/Western/...)
-  final List<String> taste; // Tags
-  final List<String> ingredientsRequired; // 包含主料 + 調味料 key
-  final String cover; // Image URL
+  final String type;
+  final List<String> taste;
+  final List<String> ingredientsRequired;
+  final String cover;
   final List<RecipeStep> steps;
 
   const Recipe({

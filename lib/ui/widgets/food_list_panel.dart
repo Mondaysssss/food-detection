@@ -1,10 +1,4 @@
-// lib/ui/widgets/food_list_panel.dart
-// ✅ FoodListPanel：AI Camera 頁底部「Food Log + Add/Menu/Clear」面板
-// 功能：
-// - 顯示目前 ingredients（chip + 可刪除）
-// - Add：進 IngredientPickerPage 全螢幕多選
-// - Menu Suggestions：入 RecommendScreen
-// - Clear：清空 ingredients
+// [OOP] 面板：顯示目前食材清單（已偵測/已選擇），並提供新增/移除入口。
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,12 +11,11 @@ import 'glass.dart';
 import 'ui_helpers.dart';
 
 class FoodListPanel extends StatelessWidget {
-  const FoodListPanel({super.key});
+  final AppState app;
+  const FoodListPanel({super.key, required this.app});
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
-
     return glass(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,7 +43,7 @@ class FoodListPanel extends StatelessWidget {
                     side: const BorderSide(color: Colors.white24),
                     label: Text(i),
                     deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: () => context.read<AppState>().removeIngredient(i),
+                    onDeleted: () => app.removeIngredient(i),
                     labelStyle: const TextStyle(color: Colors.white),
                   ),
               ],
@@ -95,7 +88,7 @@ class FoodListPanel extends StatelessWidget {
                           ),
                         );
                         if (picked != null && picked.isNotEmpty) {
-                          context.read<AppState>().addIngredients(picked);
+                          app.addIngredients(picked);
                         }
                       },
                       icon: const Icon(Icons.add),
@@ -128,7 +121,7 @@ class FoodListPanel extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         backgroundColor: Colors.red.shade200.withValues(alpha: 0.2),
                       ),
-                      onPressed: app.ingredients.isEmpty ? null : () => context.read<AppState>().clearIngredients(),
+                      onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
                       icon: const Icon(Icons.delete),
                       label: const Text('Clear'),
                     ),

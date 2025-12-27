@@ -1,8 +1,4 @@
-// lib/ui/screens/history/session_detail_screen.dart
-// Session Detail Screen（多菜烹飪紀錄詳情）
-// 用途：
-// - 顯示某次多菜烹飪的摘要（完成時間、總份數、總時間）
-// - 以自適應 Grid 顯示每道菜的 RecipeCard（readOnly 模式，顯示份量，隱藏匹配線與進度條）
+// [OOP] 歷史詳情：顯示某次 CookSession 的詳細步驟/耗時/食材。
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -77,7 +73,6 @@ class SessionDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 摘要面板
                   glass(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,8 +87,6 @@ class SessionDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-
-                  // 菜單卡片 Grid
                   grid,
                 ],
               ),

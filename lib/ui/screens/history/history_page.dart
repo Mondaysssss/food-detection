@@ -1,9 +1,4 @@
-// lib/ui/screens/history/history_page.dart
-// History Page（烹飪歷史紀錄）
-// 用途：
-// - 優先顯示多菜烹飪紀錄（sessions）
-// - 若無 sessions，才顯示單菜完成紀錄（history）
-// - 點擊 session 進入 SessionDetailScreen
+// [OOP] 歷史頁：列出過往 CookHistory，點入可看詳情。
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,18 +15,20 @@ class HistoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final sessions = context.watch<AppState>().sessions;
 
-    // 優先顯示 Sessions
     if (sessions.isNotEmpty) {
       return ListView.separated(
-        padding: const EdgeInsets.all(12),
         itemCount: sessions.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (_, i) {
           final s = sessions[i];
           final totalMenus = s.items.values.fold<int>(0, (sum, v) => sum + v);
 
+          String? cover;
+          if (s.items.isNotEmpty) {
+            // cover will be shown in detail; keep list simple
+          }
+
           return InkWell(
-            borderRadius: BorderRadius.circular(18),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => SessionDetailScreen(session: s)),
@@ -68,18 +65,9 @@ class HistoryPage extends StatelessWidget {
       );
     }
 
-    // 無 sessions 時顯示單菜 History
     final list = context.watch<AppState>().history;
-
     if (list.isEmpty) {
-      return Center(
-        child: glass(
-          child: const Padding(
-            padding: EdgeInsets.all(20),
-            child: Text('No menus completed yet.', style: TextStyle(color: Colors.white70)),
-          ),
-        ),
-      );
+      return glass(child: const Text('No menus completed yet.', style: TextStyle(color: Colors.white70)));
     }
 
     return LayoutBuilder(
@@ -88,7 +76,6 @@ class HistoryPage extends StatelessWidget {
         final cols = w >= 1100 ? 3 : w >= 750 ? 2 : 1;
 
         return GridView.builder(
-          padding: const EdgeInsets.all(12),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: cols,
             crossAxisSpacing: 12,

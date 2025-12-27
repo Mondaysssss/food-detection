@@ -1,6 +1,4 @@
-// lib/ui/widgets/detection_dialog.dart
-// DetectionDialog：偵測結果彈窗（顯示食材 chips）
-// Confirm 會把 detections 加入 AppState.ingredients。
+// [OOP] 對話框：顯示 AI 偵測結果，讓使用者確認/編輯後寫入 AppState。
 
 import 'package:flutter/material.dart';
 

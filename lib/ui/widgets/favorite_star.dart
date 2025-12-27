@@ -1,6 +1,4 @@
-// lib/ui/widgets/favorite_star.dart
-// FavoriteStar：右上角收藏星星（點擊切換收藏狀態）
-// 用 Selector 只重建星星本身，避免整張卡重建。
+// [OOP] 共用元件：收藏星星按鈕（切換收藏狀態）。
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

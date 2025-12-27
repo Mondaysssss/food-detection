@@ -1,6 +1,4 @@
-// lib/ui/widgets/ui_helpers.dart
-// UI 小工具：title / inputDecoration / kv pill / section title / qty list
-// 用途：避免每個頁重複寫一大堆 UI style。
+// [OOP] UI 小工具：常用文字/標籤/格式化 helper（例如 prettyName、sectionTitle、kvPill）。
 
 import 'package:flutter/material.dart';
 

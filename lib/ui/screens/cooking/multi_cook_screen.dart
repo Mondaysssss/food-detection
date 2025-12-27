@@ -1,10 +1,4 @@
-// lib/ui/screens/cooking/multi_cook_screen.dart
-// MultiCook Screen（多菜同時烹飪導航）
-// 用途：
-// - 將購物車內的多份菜單展開成所有步驟任務
-// - 支援多個計時器同時運行（可手動 Start/Pause/Reset/Complete）
-// - 每步完成有通知，全完成有提示
-// - 最後點 "Finish cooking" 寫入 CookSession 並返回主頁
+// [OOP] 多菜煮食流程：把購物車多個食譜合併成一個 Session 逐步煮。
 
 import 'dart:async';
 import 'dart:math';
@@ -203,7 +197,6 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
             children: [
-              // 使用說明
               glass(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +213,6 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Running 任務
               if (running.isNotEmpty) ...[
                 titleText('Running'),
                 const SizedBox(height: 6),
@@ -228,7 +220,6 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
                 const SizedBox(height: 12),
               ],
 
-              // Waiting 任務
               titleText('Waiting'),
               const SizedBox(height: 6),
               if (waiting.isEmpty)
@@ -238,7 +229,6 @@ class _MultiCookScreenState extends State<MultiCookScreen> {
 
               const SizedBox(height: 12),
 
-              // Done 任務
               if (done.isNotEmpty) ...[
                 titleText('Done'),
                 const SizedBox(height: 6),
