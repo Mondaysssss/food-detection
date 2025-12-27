@@ -50,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> loadMetadata() async {
     try {
-      final yamlStr = await rootBundle.loadString('assets/metadata.yaml');
+      final yamlStr = await rootBundle.loadString('assets/model_new/metadata.yaml');
       final yamlMap = loadYaml(yamlStr);
       final namesMap = yamlMap['names'];
       classNames = List.generate(namesMap.length, (i) => namesMap[i].toString());
@@ -63,7 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> loadModel() async {
     try {
-      _interpreter = await Interpreter.fromAsset('assets/model_test.tflite');
+      _interpreter = await Interpreter.fromAsset('assets/model_new/best_int8.tflite');
       _inputShape = _interpreter!.getInputTensor(0).shape;
       _outputShape = _interpreter!.getOutputTensor(0).shape;
       print('Model input shape: $_inputShape');
@@ -124,8 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
         print('--- Model Output (Best Score Per Class) ---');
         Map<String, Map<String, dynamic>> bestScores = {};
         final int boxLen = output[0].length;
-        final int classProbStart = 5;
-        final int classCount = boxLen - classProbStart;
+        final int classProbStart = 4;
         for (int i = 0; i < output[0][0].length; i++) {
           List<double> box = [];
           for (int j = 0; j < boxLen; j++) {
@@ -137,7 +136,6 @@ class _MyHomePageState extends State<MyHomePage> {
             if (!bestScores.containsKey(classNames[k]) || score > bestScores[classNames[k]]!['score']) {
               bestScores[classNames[k]] = {
                 'box': box.sublist(0, 4),
-                'obj': box[4],
                 'score': score
               };
             }
@@ -146,7 +144,6 @@ class _MyHomePageState extends State<MyHomePage> {
         bestScores.forEach((name, info) {
           print(
             '$name | Box: ${info['box'].map((v) => v.toStringAsFixed(1)).join(', ')} | '
-            'Obj: ${(info['obj'] as double).toStringAsFixed(2)} | '
             'Score: ${(info['score'] as double).toStringAsFixed(2)}'
           );
         });
@@ -199,16 +196,14 @@ class _MyHomePageState extends State<MyHomePage> {
               ...(() {
                 // record the best scores for each class
                 Map<String, Map<String, dynamic>> bestScores = {};
-                final int boxLen = _response![0].length; // 25
-                final int classProbStart = 5;
-                final int classProbEnd = boxLen; // 25
+                final int boxLen = _response![0].length; // 35
+                final int classProbStart = 4;
                 final int classCount = classNames.length;
                 for (int i = 0; i < _response![0][0].length; i++) {
                   List<double> box = [];
                   for (int j = 0; j < boxLen; j++) {
                     box.add(_response![0][j][i]);
                   }
-                  // only consider boxes with a valid object score
                   List<double> classScores = box.sublist(classProbStart, classProbStart + classCount > boxLen ? boxLen : classProbStart + classCount);
                   print('classNames.length: ${classNames.length}, classScores.length: ${classScores.length}');
                   for (int k = 0; k < classScores.length; k++) {
@@ -216,7 +211,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     if (!bestScores.containsKey(classNames[k]) || score > bestScores[classNames[k]]!['score']) {
                       bestScores[classNames[k]] = {
                         'box': box.sublist(0, 4),
-                        'obj': box[4],
                         'score': score
                       };
                     }
@@ -228,8 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   final info = entry.value;
                   final idx = classNames.indexOf(name);
                   return Text(
-                    '${name} (${idx}) | Box: ${info['box'].map((v) => v.toStringAsFixed(1)).join(', ')} | '
-                    'Obj: ${(info['obj'] as double).toStringAsFixed(2)} | '
+                    '$name (${idx}) | Box: ${info['box'].map((v) => v.toStringAsFixed(1)).join(', ')} | '
                     'Score: ${(info['score'] as double).toStringAsFixed(2)}'
                   );
                 }).toList();
