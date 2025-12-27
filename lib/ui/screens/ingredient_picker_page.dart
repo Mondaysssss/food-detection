@@ -1,183 +1,80 @@
 // lib/ui/screens/ingredient_picker_page.dart
-// Ingredient Picker Page（手動補充食材多選頁）
+// Ingredient Picker Page（手動揀食材頁）
 // 用途：
-// - 從所有食材中搜尋並多選（自動排除調味料與已存在的食材）
-// - 已存在食材顯示為 disabled + 提示
-// - 支援 Select filtered / Clear selection
-// - 確認後回傳新增的食材列表
+// - 顯示全部食材清單（widget.all）
+// - 用戶可以勾選/取消勾選
+// - Confirm 後把選中的食材寫入 AppState.ingredients
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../data/ingredients_meta.dart';
-import '../widgets/ui_helpers.dart';
+import '../../data/recipe_meta.dart';
+import '../../state/app_state.dart';
+import '../widgets/glass.dart';
 
 class IngredientPickerPage extends StatefulWidget {
   final List<String> all;
-  final Set<String> existing;
-
-  const IngredientPickerPage({
-    super.key,
-    required this.all,
-    required this.existing,
-  });
+  const IngredientPickerPage({super.key, required this.all});
 
   @override
   State<IngredientPickerPage> createState() => _IngredientPickerPageState();
 }
 
 class _IngredientPickerPageState extends State<IngredientPickerPage> {
-  final Set<String> selected = {};
-  String query = '';
+  final Set<String> _selected = {};
 
+  // 只顯示「主食材」，唔顯示調味料
   List<String> get _allFoodOnly => widget.all.where((x) => !kSeasoningKeys.contains(x)).toList();
 
-  List<String> get _filtered {
-    if (query.trim().isEmpty) return _allFoodOnly;
-    final q = query.toLowerCase();
-    return _allFoodOnly.where((x) => x.toLowerCase().contains(q)).toList();
+  @override
+  void initState() {
+    super.initState();
+    // 初始選中：AppState 已有的 ingredients
+    final app = context.read<AppState>();
+    _selected.addAll(app.ingredients);
   }
-
-  void _toggle(String name) {
-    if (widget.existing.contains(name)) return;
-    setState(() {
-      if (selected.contains(name)) {
-        selected.remove(name);
-      } else {
-        selected.add(name);
-      }
-    });
-  }
-
-  void _selectAllFiltered() {
-    setState(() {
-      for (final n in _filtered) {
-        if (!widget.existing.contains(n)) {
-          selected.add(n);
-        }
-      }
-    });
-  }
-
-  void _clearSelection() => setState(() => selected.clear());
 
   @override
   Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+    final list = _allFoodOnly;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Add items (selected ${selected.length})'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Close',
+      appBar: AppBar(title: const Text('Pick ingredients')),
+      body: glass(
+        child: ListView.separated(
+          padding: const EdgeInsets.all(12),
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (_, i) {
+            final key = list[i];
+            final checked = _selected.contains(key);
+
+            return CheckboxListTile(
+              value: checked,
+              onChanged: (v) {
+                setState(() {
+                  if (v == true) {
+                    _selected.add(key);
+                  } else {
+                    _selected.remove(key);
+                  }
+                });
+              },
+              title: Text(key, style: const TextStyle(color: Colors.white)),
+              controlAffinity: ListTileControlAffinity.leading,
+            );
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: _clearSelection,
-            child: const Text('Clear selection'),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 搜尋欄
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-            child: TextField(
-              decoration: inputDecoration('Search ingredients', icon: Icons.search),
-              onChanged: (v) => setState(() => query = v),
-            ),
-          ),
-
-          // 輔助按鈕列
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: LayoutBuilder(
-              builder: (context, c) {
-                final w = c.maxWidth;
-                double btnW;
-                if (w < 360) {
-                  btnW = w;
-                } else if (w < 560) {
-                  btnW = (w - 8) / 2;
-                } else {
-                  btnW = (w - 16) / 3;
-                }
-
-                final outlinedStyle = OutlinedButton.styleFrom(
-                  minimumSize: Size(btnW, 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  shape: const StadiumBorder(),
-                );
-
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    SizedBox(
-                      width: btnW,
-                      child: OutlinedButton.icon(
-                        style: outlinedStyle,
-                        onPressed: _selectAllFiltered,
-                        icon: const Icon(Icons.select_all),
-                        label: const Text('Select filtered', maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                    SizedBox(
-                      width: btnW,
-                      child: OutlinedButton.icon(
-                        style: outlinedStyle,
-                        onPressed: _clearSelection,
-                        icon: const Icon(Icons.clear_all),
-                        label: const Text('Clear selection', maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                    SizedBox(
-                      width: btnW,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Text('${_filtered.length} items', style: const TextStyle(color: Colors.white70)),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-
-          const Divider(height: 1),
-
-          // 食材列表
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filtered.length,
-              itemBuilder: (_, i) {
-                final name = _filtered[i];
-                final disabled = widget.existing.contains(name);
-                final checked = selected.contains(name);
-
-                return CheckboxListTile(
-                  title: Text(name),
-                  subtitle: disabled
-                      ? const Text('Already in list', style: TextStyle(color: Colors.white60))
-                      : null,
-                  value: disabled ? true : checked,
-                  onChanged: disabled ? null : (_) => _toggle(name),
-                  controlAffinity: ListTileControlAffinity.trailing,
-                  secondary: disabled
-                      ? const Icon(Icons.check_circle, color: Colors.greenAccent)
-                      : const Icon(Icons.add_circle_outline),
-                );
-              },
-            ),
-          ),
-        ],
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(12),
-        child: ElevatedButton.icon(
-          onPressed: selected.isEmpty ? null : () => Navigator.pop(context, selected.toList()),
-          icon: const Icon(Icons.check),
-          label: const Text('Add selected'),
+        child: ElevatedButton(
+          onPressed: () {
+            app.setIngredients(_selected.toList());
+            Navigator.pop(context);
+          },
+          child: const Text('Confirm'),
         ),
       ),
     );

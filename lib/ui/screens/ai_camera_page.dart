@@ -1,22 +1,18 @@
 // lib/ui/screens/ai_camera_page.dart
-// AI Camera Page（食材掃描頁）
+// AI Camera Page（模擬偵測食材）
 // 用途：
-// - 模擬相機介面（目前為 placeholder）
-// - 提供 Capture（模擬拍照）與 Upload image（觸發偵測）按鈕
-// - 偵測後彈出 DetectionDialog 確認
-// - 底部顯示目前食材清單（FoodListPanel）
-
-import 'dart:math';
+// - 模擬拍照 / 偵測一批食材（mock）
+// - 把偵測結果寫入 AppState.ingredients
+// - 顯示偵測結果對話框 + 下方 FoodListPanel（目前已加入的食材清單）
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/ingredients_meta.dart';
+import '../../data/recipe_meta.dart';
 import '../../state/app_state.dart';
 import '../widgets/detection_dialog.dart';
 import '../widgets/food_list_panel.dart';
 import '../widgets/glass.dart';
-import '../widgets/ui_helpers.dart';
 
 class AiCameraPage extends StatefulWidget {
   const AiCameraPage({super.key});
@@ -26,128 +22,85 @@ class AiCameraPage extends StatefulWidget {
 }
 
 class _AiCameraPageState extends State<AiCameraPage> {
-  String _previewHint = 'No image captured';
+  bool _busy = false;
 
-  List<String> _detectMock() {
-    // demo: fixed sample（保持原始固定結果）
-    final raw = <String>['egg', 'tomato'];
+  // mock 偵測：回傳一批「可能偵測到的食材」
+  Future<List<String>> _detectMock() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // 你可以按需要改呢個 mock list
+    const raw = <String>[
+      'egg',
+      'tomato',
+      'onion',
+      'garlic',
+      'salt',
+      'black_pepper',
+      'soy_sauce',
+    ];
+
+    // 過濾掉調味料（只保留主食材）
     return raw.where((x) => !kSeasoningKeys.contains(x)).toList();
+  }
+
+  Future<void> _onDetectPressed(AppState app) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+
+    try {
+      final detected = await _detectMock();
+
+      // 寫入 AppState
+      app.addIngredients(detected);
+
+      if (!mounted) return;
+
+      // 彈出偵測結果視窗
+      showDialog(
+        context: context,
+        builder: (_) => DetectionDialog(detected: detected),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
-    const cardAspect = 4 / 5;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        children: [
-          // 相機區
-          glass(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      children: [
+        glass(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                titleText('Camera'),
-                const SizedBox(height: 8),
-                AspectRatio(
-                  aspectRatio: cardAspect,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black26,
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        child: _cameraInner(app),
-                      ),
-                    ),
+                Expanded(
+                  child: Text(
+                    'Mock AI Camera',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // 食材清單面板
-          FoodListPanel(app: app),
-        ],
-      ),
-    );
-  }
-
-  Widget _cameraInner(AppState app) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // 預覽區
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: 180,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.black26,
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.image, size: 48, color: Colors.white30),
-                const SizedBox(height: 6),
-                Text(_previewHint, style: const TextStyle(color: Colors.white60)),
+                ElevatedButton.icon(
+                  onPressed: _busy ? null : () => _onDetectPressed(app),
+                  icon: _busy
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.camera_alt),
+                  label: const Text('Detect'),
+                ),
               ],
             ),
           ),
         ),
         const SizedBox(height: 12),
 
-        // 操作按鈕
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => setState(() => _previewHint = 'Captured'),
-              icon: const Icon(Icons.photo_camera),
-              label: const Text('Capture'),
-            ),
-
-            FilledButton.tonalIcon(
-              onPressed: () {
-                final res = _detectMock();
-                if (res.isNotEmpty) {
-                  showDialog(
-                    context: context,
-                    builder: (_) => DetectionDialog(
-                      detections: res,
-                      onConfirm: () {
-                        app.addIngredients(res);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Upload image'),
-            ),
-
-            // 保留原始隱藏的 Retake（不顯示但保留程式碼）
-            Visibility(
-              visible: false,
-              child: OutlinedButton.icon(
-                onPressed: () => setState(() => _previewHint = 'No image captured'),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retake'),
-              ),
-            ),
-          ],
-        ),
+        // ✅ FoodListPanel 本身唔收 app:，佢內部自己 watch AppState
+        const FoodListPanel(),
       ],
     );
   }

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/ingredients_meta.dart';
+import '../../data/recipe_meta.dart';
 import '../../data/recipes_data.dart';
 import '../../domain/services/matcher.dart';
 import '../../state/app_state.dart';
@@ -84,7 +85,6 @@ class CartScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   kvPill('Total seasoning', '${totalSeasonTsp.toStringAsFixed(1)} tsp'),
                   const SizedBox(height: 12),
-
                   sectionTitle('Main ingredients'),
                   const SizedBox(height: 6),
                   if (mainGreen.isNotEmpty)
@@ -101,7 +101,6 @@ class CartScreen extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 12),
-
                   sectionTitle('Seasoning (tsp)'),
                   const SizedBox(height: 6),
                   if (seasonKeys.isNotEmpty)

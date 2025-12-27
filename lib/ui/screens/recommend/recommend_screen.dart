@@ -1,22 +1,20 @@
 // lib/ui/screens/recommend/recommend_screen.dart
-// Recommend Screen（全螢幕菜單建議頁）
+// Recommend Screen（推薦頁）
 // 用途：
-// - 由 FoodListPanel 的 "Menu suggestions" 按鈕進入
-// - 顯示目前偵測到的食材（Chip 形式，並標記哪些已被購物車內菜單使用）
-// - 主內容為 RecommendPage（帶過濾與 Grid 顯示的推薦清單）
-// - 右下角 FAB 可進入 CartScreen
+// - 根據 AppState.ingredients（已偵測/已選食材）
+// - 逐個 recipe 計算 match（主食材 match 數）
+// - 顯示推薦結果（越多 match 越前）
+// 註：調味料不計入主食材 match（用 kSeasoningKeys 過濾）
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../data/ingredients_meta.dart';
+import '../../../data/recipe_meta.dart';
 import '../../../data/recipes_data.dart';
+import '../../../domain/services/matcher.dart';
 import '../../../state/app_state.dart';
-import '../../widgets/page_frame.dart';
 import '../../widgets/glass.dart';
-import '../../widgets/ui_helpers.dart';
-import '../cart_screen.dart';
-import 'recommend_page.dart';
+import '../../widgets/recipe_card.dart';
 
 class RecommendScreen extends StatelessWidget {
   const RecommendScreen({super.key});
@@ -24,87 +22,42 @@ class RecommendScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
-    final ingredients = app.ingredients;
+    final detected = app.ingredients;
 
-    final usedIngredients = <String>{};
-    app.cart.forEach((menuId, qty) {
-      if (qty > 0) {
-        final r = kRecipeById[menuId];
-        if (r != null) {
-          for (final ing in r.ingredientsRequired) {
-            if (!kSeasoningKeys.contains(ing)) {
-              usedIngredients.add(ing);
-            }
-          }
-        }
-      }
-    });
+    // 計分：只計主食材（非 seasoning）
+    final scored = [
+      for (final r in kAllRecipes)
+        (recipe: r, mr: computeMatch(r, detected)),
+    ]..sort((a, b) => b.mr.matchCount.compareTo(a.mr.matchCount));
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text('Menu suggestions'),
-      ),
-      body: PageFrame(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 目前食材狀態面板
-            SizedBox(
-              width: double.infinity,
-              child: glass(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    titleText('Current ingredients (${ingredients.length})'),
-                    if (ingredients.isEmpty)
-                      const Text(
-                        'No ingredients added yet. Please go back to add or detect.',
-                        style: TextStyle(color: Colors.white70),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final i in ingredients)
-                            Chip(
-                              label: Text(
-                                i,
-                                style: TextStyle(
-                                  color: usedIngredients.contains(i) ? Colors.greenAccent : Colors.redAccent,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              backgroundColor: usedIngredients.contains(i)
-                                  ? Colors.green.withOpacity(0.15)
-                                  : Colors.red.withOpacity(0.15),
-                              side: BorderSide(
-                                color: usedIngredients.contains(i)
-                                    ? Colors.green.withOpacity(0.4)
-                                    : Colors.red.withOpacity(0.4),
-                              ),
-                            ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // 推薦清單（使用 RecommendPage）
-            const Expanded(child: RecommendPage()),
-          ],
+    // 若冇任何食材，就提示用戶先偵測/揀食材
+    if (detected.isEmpty) {
+      return glass(
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            'No ingredients yet. Try AI Camera or Ingredient Picker first.',
+            style: TextStyle(color: Colors.white70),
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
-        },
-        child: const Icon(Icons.shopping_cart),
-      ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(12),
+      itemCount: scored.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, i) {
+        final item = scored[i];
+
+        // 額外：你想推薦只靠主食材？咁就再做一次過濾
+        final mainMatch = item.recipe.ingredientsRequired.where((ing) => !kSeasoningKeys.contains(ing)).length;
+
+        return RecipeCard(
+          recipe: item.recipe,
+          mr: item.mr.copyWith(totalRequiredMain: mainMatch),
+        );
+      },
     );
   }
 }
