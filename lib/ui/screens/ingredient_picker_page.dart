@@ -1,3 +1,11 @@
+// lib/ui/screens/ingredient_picker_page.dart
+// Ingredient Picker Page（手動補充食材多選頁）
+// 用途：
+// - 從所有食材中搜尋並多選（自動排除調味料與已存在的食材）
+// - 已存在食材顯示為 disabled + 提示
+// - 支援 Select filtered / Clear selection
+// - 確認後回傳新增的食材列表
+
 import 'package:flutter/material.dart';
 
 import '../../data/ingredients_meta.dart';
@@ -32,15 +40,20 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
   void _toggle(String name) {
     if (widget.existing.contains(name)) return;
     setState(() {
-      if (selected.contains(name)) selected.remove(name);
-      else selected.add(name);
+      if (selected.contains(name)) {
+        selected.remove(name);
+      } else {
+        selected.add(name);
+      }
     });
   }
 
   void _selectAllFiltered() {
     setState(() {
       for (final n in _filtered) {
-        if (!widget.existing.contains(n)) selected.add(n);
+        if (!widget.existing.contains(n)) {
+          selected.add(n);
+        }
       }
     });
   }
@@ -55,6 +68,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
+          tooltip: 'Close',
         ),
         actions: [
           TextButton(
@@ -65,6 +79,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
       ),
       body: Column(
         children: [
+          // 搜尋欄
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
             child: TextField(
@@ -73,15 +88,20 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
             ),
           ),
 
+          // 輔助按鈕列
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: LayoutBuilder(
               builder: (context, c) {
                 final w = c.maxWidth;
                 double btnW;
-                if (w < 360) btnW = w;
-                else if (w < 560) btnW = (w - 8) / 2;
-                else btnW = (w - 16) / 3;
+                if (w < 360) {
+                  btnW = w;
+                } else if (w < 560) {
+                  btnW = (w - 8) / 2;
+                } else {
+                  btnW = (w - 16) / 3;
+                }
 
                 final outlinedStyle = OutlinedButton.styleFrom(
                   minimumSize: Size(btnW, 44),
@@ -126,6 +146,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
 
           const Divider(height: 1),
 
+          // 食材列表
           Expanded(
             child: ListView.builder(
               itemCount: _filtered.length,

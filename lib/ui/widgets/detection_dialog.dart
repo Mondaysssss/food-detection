@@ -1,3 +1,7 @@
+// lib/ui/widgets/detection_dialog.dart
+// DetectionDialog：偵測結果彈窗（顯示食材 chips）
+// Confirm 會把 detections 加入 AppState.ingredients。
+
 import 'package:flutter/material.dart';
 
 class DetectionDialog extends StatelessWidget {

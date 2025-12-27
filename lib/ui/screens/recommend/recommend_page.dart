@@ -1,3 +1,11 @@
+// lib/ui/screens/recommend/recommend_page.dart
+// Recommend Page（食材推薦頁）
+// 用途：
+// - 根據目前偵測到的食材計算每個菜單的匹配度
+// - 依缺少主料數量排序（越少越前面）
+// - 支援類型、口味、關鍵字搜尋、只顯示收藏過濾
+// - 以自適應 Grid 顯示 RecipeCard
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -88,7 +96,7 @@ class _RecommendPageState extends State<RecommendPage> {
                     label: const Text('Show favorites only'),
                     selected: onlyFav,
                     onSelected: (v) => setState(() => onlyFav = v),
-                    selectedColor: Colors.amber.withValues(alpha: .2),
+                    selectedColor: Colors.amber.withOpacity(0.2),
                     checkmarkColor: Colors.amber,
                     side: const BorderSide(color: Colors.white24),
                     labelStyle: const TextStyle(color: Colors.white),

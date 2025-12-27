@@ -1,3 +1,7 @@
+// lib/ui/widgets/ui_helpers.dart
+// UI 小工具：title / inputDecoration / kv pill / section title / qty list
+// 用途：避免每個頁重複寫一大堆 UI style。
+
 import 'package:flutter/material.dart';
 
 Widget titleText(String t) => Padding(

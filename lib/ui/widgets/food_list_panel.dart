@@ -1,3 +1,11 @@
+// lib/ui/widgets/food_list_panel.dart
+// ✅ FoodListPanel：AI Camera 頁底部「Food Log + Add/Menu/Clear」面板
+// 功能：
+// - 顯示目前 ingredients（chip + 可刪除）
+// - Add：進 IngredientPickerPage 全螢幕多選
+// - Menu Suggestions：入 RecommendScreen
+// - Clear：清空 ingredients
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,11 +17,12 @@ import 'glass.dart';
 import 'ui_helpers.dart';
 
 class FoodListPanel extends StatelessWidget {
-  final AppState app;
-  const FoodListPanel({super.key, required this.app});
+  const FoodListPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+
     return glass(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +50,7 @@ class FoodListPanel extends StatelessWidget {
                     side: const BorderSide(color: Colors.white24),
                     label: Text(i),
                     deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: () => app.removeIngredient(i),
+                    onDeleted: () => context.read<AppState>().removeIngredient(i),
                     labelStyle: const TextStyle(color: Colors.white),
                   ),
               ],
@@ -86,7 +95,7 @@ class FoodListPanel extends StatelessWidget {
                           ),
                         );
                         if (picked != null && picked.isNotEmpty) {
-                          app.addIngredients(picked);
+                          context.read<AppState>().addIngredients(picked);
                         }
                       },
                       icon: const Icon(Icons.add),
@@ -119,7 +128,7 @@ class FoodListPanel extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         backgroundColor: Colors.red.shade200.withValues(alpha: 0.2),
                       ),
-                      onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
+                      onPressed: app.ingredients.isEmpty ? null : () => context.read<AppState>().clearIngredients(),
                       icon: const Icon(Icons.delete),
                       label: const Text('Clear'),
                     ),

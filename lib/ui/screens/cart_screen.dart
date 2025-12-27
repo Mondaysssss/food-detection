@@ -1,3 +1,10 @@
+// lib/ui/screens/cart_screen.dart
+// Cart Screen（購物車頁）
+// 用途：
+// - 顯示購物車已選菜單（Grid RecipeCard，readOnly 模式顯示份量）
+// - 點 "Start cooking" → 彈出彙總資訊（總菜數、總時間、主料缺少、調味料茶匙估算）
+// - Confirm 後清空 cart 與 ingredients，並進入 MultiCookScreen 開始多菜烹飪
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -24,7 +31,11 @@ class CartScreen extends StatelessWidget {
 
     final entries = [
       for (final e in cart.entries)
-        (recipe: kRecipeById[e.key]!, qty: e.value, mr: computeMatch(kRecipeById[e.key]!, detected)),
+        (
+          recipe: kRecipeById[e.key]!,
+          qty: e.value,
+          mr: computeMatch(kRecipeById[e.key]!, detected),
+        ),
     ];
 
     void onGeneratePressed() {
@@ -77,13 +88,17 @@ class CartScreen extends StatelessWidget {
                   sectionTitle('Main ingredients'),
                   const SizedBox(height: 6),
                   if (mainGreen.isNotEmpty)
-                    Text('Have: ${mainGreen.map(prettyName).join(', ')}',
-                        style: const TextStyle(color: Colors.greenAccent)),
+                    Text(
+                      'Have: ${mainGreen.map(prettyName).join(', ')}',
+                      style: const TextStyle(color: Colors.greenAccent),
+                    ),
                   if (mainRed.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text('Missing: ${mainRed.map(prettyName).join(', ')}',
-                          style: const TextStyle(color: Colors.redAccent)),
+                      child: Text(
+                        'Missing: ${mainRed.map(prettyName).join(', ')}',
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
                     ),
                   const SizedBox(height: 12),
 
@@ -98,7 +113,10 @@ class CartScreen extends StatelessWidget {
                       style: const TextStyle(color: Colors.greenAccent),
                     ),
                   const SizedBox(height: 4),
-                  const Text('(Amounts are estimated)', style: TextStyle(fontSize: 12, color: Colors.white60)),
+                  const Text(
+                    '(Amounts are estimated)',
+                    style: TextStyle(fontSize: 12, color: Colors.white60),
+                  ),
                 ],
               ),
             ),
@@ -140,10 +158,23 @@ class CartScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(leading: const BackButton(), title: const Text('Cart')),
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: const Text('Cart'),
+      ),
       body: PageFrame(
         child: entries.isEmpty
-            ? glass(child: const Text('No menu items added yet.', style: TextStyle(color: Colors.white70)))
+            ? Center(
+                child: glass(
+                  child: const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      'No menu items added yet.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ),
+              )
             : LayoutBuilder(
                 builder: (_, c) {
                   final w = c.maxWidth;
@@ -175,7 +206,9 @@ class CartScreen extends StatelessWidget {
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(children: [grid]),
+                    child: Column(
+                      children: [grid],
+                    ),
                   );
                 },
               ),

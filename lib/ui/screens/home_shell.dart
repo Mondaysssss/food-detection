@@ -1,3 +1,11 @@
+// lib/ui/screens/home_shell.dart
+// HomeShell（App 主頁框架）
+// 用途：
+// - 提供 Bottom Navigation 切換三個主要頁面
+// - 顯示對應 AppBar 標題
+// - 使用 PageFrame 包裝頁面內容
+// - 背景為放射漸層
+
 import 'package:flutter/material.dart';
 
 import '../widgets/page_frame.dart';

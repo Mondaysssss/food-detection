@@ -1,3 +1,7 @@
+// lib/ui/widgets/glass.dart
+// glass()：統一「玻璃卡片」外觀
+// 好處：全 app card 都一致，改一次就全改。
+
 import 'package:flutter/material.dart';
 
 Widget glass({

@@ -1,3 +1,9 @@
+// lib/ui/screens/settings_page.dart
+// Settings Page（設定頁）
+// 用途：
+// - 放置全局設定 / Debug 操作
+// - 目前只有 Reset all data（清空 ingredients / favorites / history / sessions / cart 等）
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

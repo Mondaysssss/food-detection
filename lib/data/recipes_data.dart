@@ -1,3 +1,7 @@
+// lib/data/recipes_data.dart
+// Sample Data：菜單資料（kRecipes）+ 快速查表（kRecipeById）+ 全部食材清單（kAllIngredients）
+// 你之後如果改成 API/DB，都係用 repository 去取代呢個檔。
+
 import '../domain/models/recipe.dart';
 
 const List<Recipe> kRecipes = [
@@ -73,6 +77,8 @@ final Map<String, Recipe> kRecipeById = {
   for (final r in kRecipes) r.menuId: r,
 };
 
+/// 所有可能的食材（方便模擬偵測 / 手動新增）
+/// 注意：此清單包含調味料 key（但 UI/配對會忽略調味料）
 final List<String> kAllIngredients = [
   ...{
     for (final r in kRecipes) ...r.ingredientsRequired,

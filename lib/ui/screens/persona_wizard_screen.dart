@@ -1,3 +1,10 @@
+// lib/ui/screens/persona_wizard_screen.dart
+// Persona Wizard（角色/偏好設定問卷）
+// 用途：
+// - 引導使用者填寫個人資訊（性別、年齡、廚具擁有、過敏）
+// - 多步驟流程，帶進度條
+// - 完成後進入 LoginScreen
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +29,7 @@ class QuestionDef {
 }
 
 class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
-  // add/remove questions here
+  // 在這裡增減問題
   final List<QuestionDef> _questions = const [
     QuestionDef(id: 'gender', title: 'Gender', type: QType.genderButtons),
     QuestionDef(id: 'age', title: 'Age', type: QType.ageWheel),
@@ -89,19 +96,23 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 進度條
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: LinearProgressIndicator(value: _progress, minHeight: 8),
             ),
             const SizedBox(height: 16),
 
+            // 問題標題
             Text(q.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
 
+            // 問題內容
             _buildQuestion(q),
 
             const Spacer(),
 
+            // 下一步 / 完成按鈕
             ElevatedButton(
               onPressed: _nextOrFinish,
               child: Text(_isLast ? 'Finish' : 'Next step'),

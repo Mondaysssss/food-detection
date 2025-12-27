@@ -1,9 +1,18 @@
+// lib/ui/screens/login_screen.dart
+// Login 頁
+// 用途：
+// - 提供 Email / Password 登入表單（含基本驗證）
+// - 支援 Google 快速登入（demo 直接通過）
+// - 提供建立帳號與忘記密碼選項（目前顯示 coming soon）
+// - 登入成功後進入 HomeShell 主頁
+
 import 'package:flutter/material.dart';
 
 import 'home_shell.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -46,6 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // 標誌與歡迎文字
                   const Icon(Icons.restaurant_menu, size: 72, color: Colors.white70),
                   const SizedBox(height: 12),
                   const Text(
@@ -61,6 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
 
+                  // 登入表單
                   Form(
                     key: _formKey,
                     child: Column(
@@ -109,6 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 16),
 
+                  // 主要登入按鈕
                   ElevatedButton.icon(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) _goHome();
@@ -118,6 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
 
+                  // Google 登入
                   OutlinedButton.icon(
                     onPressed: _goHome,
                     icon: const Icon(Icons.account_circle),
@@ -126,6 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 12),
 
+                  // 其他選項
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

@@ -1,3 +1,10 @@
+// lib/ui/screens/favorites_page.dart
+// Favorites Page（收藏頁）
+// 用途：
+// - 顯示使用者收藏的菜單（AppState.favorites）
+// - 以自適應 Grid 顯示大卡片（含封面、菜名、類型與口味）
+// - 目前僅供瀏覽（無點擊、無購物車操作）
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,7 +21,14 @@ class FavoritesPage extends StatelessWidget {
     final favList = kRecipes.where((r) => favIds.contains(r.menuId)).toList();
 
     if (favList.isEmpty) {
-      return glass(child: const Text('No favorite menus yet.', style: TextStyle(color: Colors.white70)));
+      return Center(
+        child: glass(
+          child: const Padding(
+            padding: EdgeInsets.all(20),
+            child: Text('No favorite menus yet.', style: TextStyle(color: Colors.white70)),
+          ),
+        ),
+      );
     }
 
     return LayoutBuilder(
@@ -23,6 +37,7 @@ class FavoritesPage extends StatelessWidget {
         final cols = w >= 1100 ? 3 : w >= 750 ? 2 : 1;
 
         return GridView.builder(
+          padding: const EdgeInsets.all(12),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: cols,
             crossAxisSpacing: 12,

@@ -1,3 +1,11 @@
+// lib/ui/screens/ai_camera_page.dart
+// AI Camera Page（食材掃描頁）
+// 用途：
+// - 模擬相機介面（目前為 placeholder）
+// - 提供 Capture（模擬拍照）與 Upload image（觸發偵測）按鈕
+// - 偵測後彈出 DetectionDialog 確認
+// - 底部顯示目前食材清單（FoodListPanel）
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -21,7 +29,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
   String _previewHint = 'No image captured';
 
   List<String> _detectMock() {
-    // demo: fixed sample
+    // demo: fixed sample（保持原始固定結果）
     final raw = <String>['egg', 'tomato'];
     return raw.where((x) => !kSeasoningKeys.contains(x)).toList();
   }
@@ -35,6 +43,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         children: [
+          // 相機區
           glass(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +69,10 @@ class _AiCameraPageState extends State<AiCameraPage> {
               ],
             ),
           ),
+
           const SizedBox(height: 12),
+
+          // 食材清單面板
           FoodListPanel(app: app),
         ],
       ),
@@ -71,6 +83,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // 預覽區
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Container(
@@ -92,6 +105,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
         ),
         const SizedBox(height: 12),
 
+        // 操作按鈕
         Wrap(
           alignment: WrapAlignment.center,
           spacing: 10,
@@ -123,6 +137,7 @@ class _AiCameraPageState extends State<AiCameraPage> {
               label: const Text('Upload image'),
             ),
 
+            // 保留原始隱藏的 Retake（不顯示但保留程式碼）
             Visibility(
               visible: false,
               child: OutlinedButton.icon(

@@ -1,3 +1,11 @@
+// lib/ui/screens/recommend/recommend_screen.dart
+// Recommend Screen（全螢幕菜單建議頁）
+// 用途：
+// - 由 FoodListPanel 的 "Menu suggestions" 按鈕進入
+// - 顯示目前偵測到的食材（Chip 形式，並標記哪些已被購物車內菜單使用）
+// - 主內容為 RecommendPage（帶過濾與 Grid 顯示的推薦清單）
+// - 右下角 FAB 可進入 CartScreen
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -24,7 +32,9 @@ class RecommendScreen extends StatelessWidget {
         final r = kRecipeById[menuId];
         if (r != null) {
           for (final ing in r.ingredientsRequired) {
-            if (!kSeasoningKeys.contains(ing)) usedIngredients.add(ing);
+            if (!kSeasoningKeys.contains(ing)) {
+              usedIngredients.add(ing);
+            }
           }
         }
       }
@@ -39,6 +49,7 @@ class RecommendScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 目前食材狀態面板
             SizedBox(
               width: double.infinity,
               child: glass(
@@ -66,12 +77,12 @@ class RecommendScreen extends StatelessWidget {
                                 ),
                               ),
                               backgroundColor: usedIngredients.contains(i)
-                                  ? Colors.green.withValues(alpha: 0.15)
-                                  : Colors.red.withValues(alpha: 0.15),
+                                  ? Colors.green.withOpacity(0.15)
+                                  : Colors.red.withOpacity(0.15),
                               side: BorderSide(
                                 color: usedIngredients.contains(i)
-                                    ? Colors.green.withValues(alpha: 0.4)
-                                    : Colors.red.withValues(alpha: 0.4),
+                                    ? Colors.green.withOpacity(0.4)
+                                    : Colors.red.withOpacity(0.4),
                               ),
                             ),
                         ],
@@ -80,7 +91,10 @@ class RecommendScreen extends StatelessWidget {
                 ),
               ),
             ),
+
             const SizedBox(height: 12),
+
+            // 推薦清單（使用 RecommendPage）
             const Expanded(child: RecommendPage()),
           ],
         ),
