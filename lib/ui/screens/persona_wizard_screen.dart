@@ -103,7 +103,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
             ),
             const SizedBox(height: 16),
 
-            Text(q.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            Text(q.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
 
             // 讓每一題的控件（多選/選擇器等）置中顯示
