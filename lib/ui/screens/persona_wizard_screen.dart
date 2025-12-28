@@ -173,7 +173,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
               groupValue: _gender,
               onChanged: (v) => setState(() => _gender = v),
               title: Text(o.$1),
-              secondary: Icon(o.$2),
+              secondary: Icon(o.$2, size: 22),//放大字
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
@@ -224,7 +224,13 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
 
     final ddItems = List<DropdownMenuItem<int>>.generate(
       5,
-      (i) => DropdownMenuItem(value: i, child: Text(i.toString())),
+      (i) => DropdownMenuItem(
+        value: i,
+        child: Text(
+          i.toString(),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600), // ✅ 放大
+        ),
+      ),
     );
 
     return Column(
@@ -243,13 +249,14 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
                       child: Text(
                         r.$1,
                         textAlign: TextAlign.center, // 文字也置中（你想要更「正中」就保留）
-                        style: const TextStyle(fontSize: 14),
+                        style: const TextStyle(fontSize: 17),//放大文字
                       ),
                     ),
                     const SizedBox(width: 8),
                     DropdownButton<int>(
                       value: _appliances[r.$2]!,
                       items: ddItems,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700), // 放大
                       onChanged: (v) => setState(() => _appliances[r.$2] = v ?? 0),
                     ),
                   ],
@@ -293,7 +300,10 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
             final name = allergens[i];
             final checked = _allergies.contains(name);
             return CheckboxListTile(
-              title: Text(name),
+              title: Text(
+                name,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600), // ✅ 放大
+              ),
               value: checked,
               onChanged: (v) {
                 setState(() {
