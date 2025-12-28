@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -20,11 +21,19 @@ class IntroStartScreen extends StatefulWidget {
 class _IntroStartScreenState extends State<IntroStartScreen> {
   static const _bg = Color(0xFFE8EFEA);
   static const _ink = Color(0xFF2F3A4A);
+  static const Duration _fadeDur = Duration(milliseconds: 1000);
+  int _heroIndex = 0;
+  Timer? _heroTimer;
 
+  String get _heroUrl => _heroUrls[_heroIndex % _heroUrls.length];
+  
   //用「香港食物」封面圖
-  static const String _heroUrl =
-    'https://themeatclub.com.sg/cdn/shop/files/the-meat-club-ginger-pork.jpg?v=1705912633';
-
+  static const List<String> _heroUrls = [
+    'https://themeatclub.com.sg/cdn/shop/files/the-meat-club-ginger-pork.jpg?v=1705912633',
+    'https://img-global.cpcdn.com/recipes/4a2ccb2d78d78db4/680x781f0.5_0.50125_1.0q80/%E6%B0%A3%E7%82%B8%E5%AE%89%E6%A0%BC%E6%96%AF%E7%89%9B%E6%89%92-%E9%A3%9F%E8%AD%9C%E6%88%90%E5%93%81%E7%85%A7%E7%89%87.jpg',
+    'https://www.justonecookbook.com/wp-content/uploads/2025/02/Miso-Glazed-Eggplant-3348-III-800x1200.jpg',
+    'https://img-global.cpcdn.com/recipes/c78dad99dee7f8b0/300x426f0.5_0.5_1.0q80/%E8%9C%82%E8%9C%9C%E8%92%9C%E5%91%B3%E7%83%A4%E9%9B%9E%E7%BF%85%E6%B0%A3%E7%82%B8%E9%8D%8B-%E9%A3%9F%E8%AD%9C%E6%88%90%E5%93%81%E7%85%A7%E7%89%87.webp',
+  ];
   /// Hero 圖載入失敗 / 未載入時，用一個「一定睇到」嘅食物 icon 當 fallback。
   Widget _heroFallback() {
     return Container(
@@ -62,6 +71,23 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _heroTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      setState(() {
+        _heroIndex = (_heroIndex + 1) % _heroUrls.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _heroTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final h = mq.size.height;
@@ -86,52 +112,38 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                       bottomLeft: Radius.circular(28),
                       bottomRight: Radius.circular(28),
                     ),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          _heroUrl,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (ctx, child, loading) {
-                            if (loading == null) return child;
-                            return Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                _heroFallback(),
-                                const Center(
-                                  child: SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: Positioned.fill(
+                      child: AnimatedSwitcher(
+                        duration: _fadeDur,
+                        switchInCurve: Curves.easeInOut,
+                        switchOutCurve: Curves.easeInOut,
+                        transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
+                        child: SizedBox.expand(
+                          key: ValueKey(_heroUrl), // ✅ 用 url 做 key
+                          child: Image.network(
+                            _heroUrl,
+                            fit: BoxFit.cover,              // ✅ 永遠塞滿（會裁切）
+                            alignment: Alignment.center,     // ✅ 永遠由中間裁切，最穩
+                            loadingBuilder: (ctx, child, loading) {
+                              if (loading == null) return child;
+                              return Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  _heroFallback(),
+                                  const Center(
+                                    child: SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            );
-                          },
-                          errorBuilder: (ctx, _, __) => _heroFallback(),
-                        ),
-
-                        // 底部漸變（令圖片自然融入背景）
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          height: 140,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  _bg.withValues(alpha: .92),
-                                  _bg,
                                 ],
-                              ),
-                            ),
+                              );
+                            },
+                            errorBuilder: (ctx, _, __) => _heroFallback(),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
