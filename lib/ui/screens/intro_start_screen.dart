@@ -21,23 +21,9 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
   static const _bg = Color(0xFFE8EFEA);
   static const _ink = Color(0xFF2F3A4A);
 
-  // 你 JSX 入面用嘅「香港食物」封面圖（Unsplash 關鍵字搜尋）
-  static const List<String> _hkFoodPhotos = [
-    // 家常感（茶餐廳 / 燒味 / 點心 / 湯麵）
-    'https://source.unsplash.com/1400x900/?hong%20kong,cha%20chaan%20teng',
-    'https://source.unsplash.com/1400x900/?hong%20kong,dim%20sum',
-    'https://source.unsplash.com/1400x900/?hong%20kong,noodles',
-    'https://source.unsplash.com/1400x900/?hong%20kong,roast%20meat',
-    'https://source.unsplash.com/1400x900/?hong%20kong,street%20food',
-  ];
-
-  late final String _heroUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _heroUrl = _hkFoodPhotos[Random().nextInt(_hkFoodPhotos.length)];
-  }
+  //用「香港食物」封面圖
+  static const String _heroUrl =
+    'https://themeatclub.com.sg/cdn/shop/files/the-meat-club-ginger-pork.jpg?v=1705912633';
 
   /// Hero 圖載入失敗 / 未載入時，用一個「一定睇到」嘅食物 icon 當 fallback。
   Widget _heroFallback() {
