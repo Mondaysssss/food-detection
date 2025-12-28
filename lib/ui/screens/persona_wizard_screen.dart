@@ -164,25 +164,25 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     ];
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final o in opts) ...[
-          glass(
-            child: RadioListTile<String>(
-              value: o.$1,
-              groupValue: _gender,
-              onChanged: (v) => setState(() => _gender = v),
-              title: Text(o.$1),
-              secondary: Icon(o.$2, size: 38),//放大字
-              contentPadding: EdgeInsets.zero,
-              dense: true,
+          ChoiceChip(
+            label: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                o.$1,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+              ),
             ),
+            avatar: Icon(o.$2, size: 26),
+            selected: _gender == o.$1,
+            onSelected: (_) => setState(() => _gender = o.$1),
           ),
           const SizedBox(height: 10),
         ],
       ],
     );
-  }
 
   Widget _qAge() {
     final items = List<int>.generate(87, (i) => i + 13); // 13..99
