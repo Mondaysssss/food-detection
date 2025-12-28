@@ -163,34 +163,34 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       ('Prefer not to say', Icons.help_outline),
     ];
 
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      for (final o in opts) ...[
-        glass(
-          child: RadioListTile<String>(
-            value: o.$1,
-            groupValue: _gender,
-            onChanged: (v) => setState(() => _gender = v),
-            // 字體放大
-            title: Text(
-              o.$1,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final o in opts) ...[
+          glass(
+            child: RadioListTile<String>(
+              value: o.$1,
+              groupValue: _gender,
+              onChanged: (v) => setState(() => _gender = v),
+              // 字體放大
+              title: Text(
+                o.$1,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              // 圖形放大（你原本已有）
+              secondary: Icon(o.$2, size: 30),
+              // 令每行唔好太扁（變高少少、易按）
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              visualDensity: const VisualDensity(vertical: 1.0),
+              // 如果你想保留緊湊可以留 true；想再鬆啲就改 false
+              dense: true,
             ),
-            // 圖形放大（你原本已有）
-            secondary: Icon(o.$2, size: 30),
-            // 令每行唔好太扁（變高少少、易按）
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            visualDensity: const VisualDensity(vertical: 1.0),
-            // 如果你想保留緊湊可以留 true；想再鬆啲就改 false
-            dense: true,
           ),
-        ),
-        const SizedBox(height: 10),
+          const SizedBox(height: 10),
+        ],
       ],
-    ],
-  );
-}
+    );
+  }
 
   Widget _qAge() {
     final items = List<int>.generate(87, (i) => i + 13); // 13..99
@@ -298,27 +298,66 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       'Taro',
     ];
 
+    void toggle(String name) {
+      setState(() {
+        if (_allergies.contains(name)) _allergies.remove(name);
+        else _allergies.add(name);
+      });
+    }
+
     return SizedBox(
-      height: 340,
+      height: 360, // 你可再加大/減少
       child: Scrollbar(
         child: ListView.separated(
           itemCount: allergens.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (_, i) {
             final name = allergens[i];
             final checked = _allergies.contains(name);
-            return CheckboxListTile(
-              title: Text(
-                name,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600), // ✅ 放大
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => toggle(name),
+              child: glass(
+                child: Stack(
+                  children: [//  文字（加大）
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 18, // 文字
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                      ),
+                    ),    //  右上角勾勾（選中才顯示）
+                    if (checked)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: .15),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            size: 18,
+                            color: Colors.greenAccent,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              value: checked,
-              onChanged: (v) {
-                setState(() {
-                  if (v == true) _allergies.add(name);
-                  else _allergies.remove(name);
-                });
-              },
             );
           },
         ),
