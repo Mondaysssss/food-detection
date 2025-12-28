@@ -186,13 +186,30 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
 
   Widget _qAge() {
     final items = List<int>.generate(87, (i) => i + 13); // 13..99
-    return SizedBox(
-      height: 180,
-      child: CupertinoPicker(
-        scrollController: _ageCtl,
-        itemExtent: 36,
-        onSelectedItemChanged: (i) => setState(() => _age = items[i]),
-        children: [for (final v in items) Center(child: Text('$v'))],
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: SizedBox(
+        height: 260, // 原本 180 -> 放大
+        child: CupertinoPicker(
+          scrollController: _ageCtl,
+          itemExtent: 46, // 原本 36 -> 每格更高
+          magnification: 1.25, // 中間選中更大
+          useMagnifier: true,
+          onSelectedItemChanged: (i) => setState(() => _age = items[i]),
+          children: [
+            for (final v in items)
+              Center(
+                child: Text(
+                  '$v',
+                  style: const TextStyle(
+                    fontSize: 22, // 字更大
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
