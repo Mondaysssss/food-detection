@@ -190,10 +190,10 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: SizedBox(
-        height: 260, // 原本 180 -> 放大
+        height: 300, // 原本 180 -> 放大
         child: CupertinoPicker(
           scrollController: _ageCtl,
-          itemExtent: 46, // 原本 36 -> 每格更高
+          itemExtent: 52, // 原本 36 -> 每格更高
           magnification: 1.25, // 中間選中更大
           useMagnifier: true,
           onSelectedItemChanged: (i) => setState(() => _age = items[i]),
