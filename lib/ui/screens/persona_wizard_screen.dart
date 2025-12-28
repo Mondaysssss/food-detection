@@ -173,7 +173,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
               groupValue: _gender,
               onChanged: (v) => setState(() => _gender = v),
               title: Text(o.$1),
-              secondary: Icon(o.$2, size: 22),//放大字
+              secondary: Icon(o.$2, size: 38),//放大字
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
