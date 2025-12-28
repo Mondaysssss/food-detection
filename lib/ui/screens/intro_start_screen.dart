@@ -1,5 +1,3 @@
-// [OOP] 開始頁：App 入口 UI，導向登入/設定個人資料/進入主頁。
-
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -39,6 +37,28 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
   void initState() {
     super.initState();
     _heroUrl = _hkFoodPhotos[Random().nextInt(_hkFoodPhotos.length)];
+  }
+
+  /// Hero 圖載入失敗 / 未載入時，用一個「一定睇到」嘅食物 icon 當 fallback。
+  Widget _heroFallback() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withValues(alpha: .04),
+            Colors.black.withValues(alpha: .10),
+          ],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.lunch_dining,
+        size: 120,
+        color: _ink.withValues(alpha: .38),
+      ),
+    );
   }
 
   void _goStartUsing(BuildContext context) {
@@ -88,17 +108,21 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                           fit: BoxFit.cover,
                           loadingBuilder: (ctx, child, loading) {
                             if (loading == null) return child;
-                            return Container(
-                              color: Colors.black.withValues(alpha: .06),
-                              alignment: Alignment.center,
-                              child: const CircularProgressIndicator(),
+                            return Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                _heroFallback(),
+                                const Center(
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                ),
+                              ],
                             );
                           },
-                          errorBuilder: (ctx, _, __) => Container(
-                            color: Colors.black.withValues(alpha: .06),
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.fastfood, size: 56),
-                          ),
+                          errorBuilder: (ctx, _, __) => _heroFallback(),
                         ),
 
                         // 底部漸變（令圖片自然融入背景）
@@ -121,29 +145,6 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                             ),
                           ),
                         ),
-
-                        // 角落品牌小字（可刪）
-                        Positioned(
-                          left: 16,
-                          top: 16,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: .78),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: Colors.white.withValues(alpha: .85)),
-                            ),
-                            child: const Text(
-                              'DishMind',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: .6,
-                                color: _ink,
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -156,7 +157,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // 底部白色面板（玻璃感）
+                        // 玻璃卡片（類似 JSX 底部白色面板）
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: .78),
@@ -199,18 +200,23 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
 
                         const Spacer(),
 
-                        // Start using（主按鈕）
+                        // Start using（主按鈕）—— 文字強制白色 ✅
                         SizedBox(
                           height: 54,
                           child: FilledButton(
                             style: FilledButton.styleFrom(
                               backgroundColor: _ink,
+                              foregroundColor: Colors.white,
                               shape: const StadiumBorder(),
                             ),
                             onPressed: () => _goStartUsing(context),
                             child: const Text(
                               'Start using',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -237,7 +243,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                           ),
                         ),
 
-                        // 底部細字
+                        // 底部細字（參考 JSX footer）
                         const SizedBox(height: 12),
                         const Text(
                           'By continuing, you agree to our Terms & Privacy Policy.',
