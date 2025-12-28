@@ -163,18 +163,23 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       ('Prefer not to say', Icons.help_outline),
     ];
 
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 8,
-      runSpacing: 8,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        for (final o in opts)
-          ChoiceChip(
-            label: Text(o.$1),
-            avatar: Icon(o.$2, size: 18),
-            selected: _gender == o.$1,
-            onSelected: (_) => setState(() => _gender = o.$1),
+        for (final o in opts) ...[
+          glass(
+            child: RadioListTile<String>(
+              value: o.$1,
+              groupValue: _gender,
+              onChanged: (v) => setState(() => _gender = v),
+              title: Text(o.$1),
+              secondary: Icon(o.$2),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            ),
           ),
+          const SizedBox(height: 10),
+        ],
       ],
     );
   }
@@ -206,19 +211,33 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     );
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         for (final r in rows) ...[
-          glass(
-            child: Row(
-              children: [
-                Expanded(child: Text(r.$1, style: const TextStyle(fontSize: 14))),
-                const SizedBox(width: 8),
-                DropdownButton<int>(
-                  value: _appliances[r.$2]!,
-                  items: ddItems,
-                  onChanged: (v) => setState(() => _appliances[r.$2] = v ?? 0),
+          Align(
+            alignment: Alignment.center,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: glass(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        r.$1,
+                        textAlign: TextAlign.center, // 文字也置中（你想要更「正中」就保留）
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    DropdownButton<int>(
+                      value: _appliances[r.$2]!,
+                      items: ddItems,
+                      onChanged: (v) => setState(() => _appliances[r.$2] = v ?? 0),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 10),
