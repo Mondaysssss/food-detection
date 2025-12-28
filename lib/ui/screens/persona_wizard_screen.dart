@@ -163,26 +163,34 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       ('Prefer not to say', Icons.help_outline),
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final o in opts) ...[
-          ChoiceChip(
-            label: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                o.$1,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-              ),
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (final o in opts) ...[
+        glass(
+          child: RadioListTile<String>(
+            value: o.$1,
+            groupValue: _gender,
+            onChanged: (v) => setState(() => _gender = v),
+            // 字體放大
+            title: Text(
+              o.$1,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
-            avatar: Icon(o.$2, size: 26),
-            selected: _gender == o.$1,
-            onSelected: (_) => setState(() => _gender = o.$1),
+            // 圖形放大（你原本已有）
+            secondary: Icon(o.$2, size: 30),
+            // 令每行唔好太扁（變高少少、易按）
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            visualDensity: const VisualDensity(vertical: 1.0),
+            // 如果你想保留緊湊可以留 true；想再鬆啲就改 false
+            dense: true,
           ),
-          const SizedBox(height: 10),
-        ],
+        ),
+        const SizedBox(height: 10),
       ],
-    );
+    ],
+  );
+}
 
   Widget _qAge() {
     final items = List<int>.generate(87, (i) => i + 13); // 13..99
