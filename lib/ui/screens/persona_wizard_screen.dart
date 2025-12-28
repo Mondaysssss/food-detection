@@ -62,8 +62,28 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
 
   double get _progress => (_index + 1) / _questions.length;
   bool get _isLast => _index == _questions.length - 1;
+  bool get _canProceed {
+    final q = _questions[_index];
+    switch (q.type) {
+      case QType.genderButtons:
+        return _gender != null;
+
+      case QType.ageWheel:
+        return true;
+
+      case QType.applianceDropdowns:
+        // cookware & stove 必須 >= 1
+        return (_appliances['cookware'] ?? 0) >= 1 && (_appliances['stove'] ?? 0) >= 1;
+
+      case QType.allergyCheckboxes:
+        // 冇要求必選，所以永遠可以
+        return true;
+    }
+  }
 
   void _nextOrFinish() {
+    if (!_canProceed) return;
+
     if (_index < _questions.length - 1) {
       setState(() => _index++);
     } else {
@@ -130,7 +150,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
                 // Next step / Finish 佔滿剩餘寬度
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _nextOrFinish,
+                    onPressed: _canProceed ? _nextOrFinish : null,
                     child: Text(_isLast ? 'Finish' : 'Next step'),
                   ),
                 ),
@@ -305,61 +325,72 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       });
     }
 
-    return SizedBox(
-      height: 360, // 你可再加大/減少
-      child: Scrollbar(
-        child: ListView.separated(
-          itemCount: allergens.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (_, i) {
-            final name = allergens[i];
-            final checked = _allergies.contains(name);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18), // 整個區域上下邊界加大
+      child: SizedBox(
+        height: 610, // 整體區域高度加大
+        child: Scrollbar(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 10), // ✅ list 內上下再多啲空間
+            itemCount: allergens.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              final name = allergens[i];
+              final checked = _allergies.contains(name);
 
-            return InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => toggle(name),
-              child: glass(
-                child: Stack(
-                  children: [//  文字（加大）
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 18, // 文字
-                                fontWeight: FontWeight.w600,
+              void toggle() {
+                setState(() {
+                  if (checked) _allergies.remove(name);
+                  else _allergies.add(name);
+                });
+              }
+
+              return InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: toggle,
+                child: glass(
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                      ),
-                    ),    //  右上角勾勾（選中才顯示）
-                    if (checked)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: .15),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            size: 18,
-                            color: Colors.greenAccent,
-                          ),
+                            const SizedBox(width: 8),
+                          ],
                         ),
                       ),
-                  ],
+                      if (checked)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: .15),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 18,
+                              color: Colors.greenAccent,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
