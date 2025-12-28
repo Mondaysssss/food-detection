@@ -74,6 +74,12 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     }
   }
 
+  void _prev() {
+    if (_index > 0) {
+      setState(() => _index--);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final q = _questions[_index];
@@ -100,13 +106,35 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
             Text(q.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
 
-            _buildQuestion(q),
+            // 讓每一題的控件（多選/選擇器等）置中顯示
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: _buildQuestion(q),
+                ),
+              ),
+            ),
 
-            const Spacer(),
+            // 底部：返回 + Next/Finish
+            Row(
+              children: [
+                // 小返回按鈕（第一題就禁用）
+                IconButton(
+                  onPressed: _index == 0 ? null : _prev,
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'Back',
+                ),
+                const SizedBox(width: 8),
 
-            ElevatedButton(
-              onPressed: _nextOrFinish,
-              child: Text(_isLast ? 'Finish' : 'Next step'),
+                // Next step / Finish 佔滿剩餘寬度
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _nextOrFinish,
+                    child: Text(_isLast ? 'Finish' : 'Next step'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -136,6 +164,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     ];
 
     return Wrap(
+      alignment: WrapAlignment.center,
       spacing: 8,
       runSpacing: 8,
       children: [
