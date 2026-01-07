@@ -1,22 +1,27 @@
-// [OOP] CookingScreen：
-// 舊版係「單菜步驟 + 單 timer」UI。
-// 依家改為：直接委派到 CookFlowScreen（單頁完成：icon + step + 右邊菜單 + bottom sheet）。
+// [OOP] CookingScreen：單菜入口頁
+// 現在改做「轉去 CookFlowScreen」(單菜都用同一個一頁式 UI)
 
 import 'package:flutter/material.dart';
 
+import '../../../domain/models/recipe.dart';
 import 'cook_flow_screen.dart';
 
-/// 單菜版本：轉去共用 CookFlowScreen
 class CookingScreen extends StatelessWidget {
-  final String menuId;
+  final Recipe recipe;
 
-  const CookingScreen({super.key, required this.menuId});
+  const CookingScreen({
+    super.key,
+    required this.recipe,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final totalMinutesPlanned = recipe.steps.fold<int>(0, (s, st) => s + st.durationMin);
+
     return CookFlowScreen(
-      snapshot: {menuId: 1},
-      totalPlannedMinutes: 0,
+      snapshot: {recipe.menuId: 1},
+      totalPlannedMinutes: totalMinutesPlanned,
+      singleRecipeTitle: recipe.name,
     );
   }
 }
