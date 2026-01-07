@@ -2,8 +2,7 @@
 // 現在改做「轉去 CookFlowScreen」(多菜都用同一個一頁式 UI)
 
 import 'package:flutter/material.dart';
-
-import 'cook_flow_screen.dart';
+import 'package:flutter_application_1/ui/screens/cooking/cook_flow_screen.dart';
 
 class MultiCookScreen extends StatelessWidget {
   final Map<String, int> snapshot;
@@ -20,6 +19,7 @@ class MultiCookScreen extends StatelessWidget {
     return CookFlowScreen(
       snapshot: snapshot,
       totalPlannedMinutes: totalPlannedMinutes,
+      titleOverride: 'Multi-cook',
     );
   }
 }

@@ -1,716 +1,772 @@
-// [OOP] Cook Flow：單菜/多菜共用的「一頁完成」烹飪流程畫面（參考你 TS 版 page3 風格）
-// - 上方：6 個工具 icon（之後可由 DB 決定邊個要亮/計時；暫時用簡單規則示範）
-// - 中間：只顯示 1 個「目前 step」（大字 + 大倒數）
-// - 右邊：最多 5 個菜單「圖按鈕」(依照 snapshot 的 menuId) → 彈出該菜 steps（顯示 global Step x/total）
-// - 底部：圓形 pull tab → 彈出 Bottom Sheet（顯示全部 global steps）
-// - Start 只可按一次；Next step 必須倒數到 0 先可按
+// lib/ui/screens/cooking/cook_flow_screen.dart
+//
+// 合併單菜/多菜：一頁完成（上面 6 個 tool icon + 中間單一步驟 + 右邊菜單圖按鈕 + 底部 draggable steps）
+//
+// ✅ 右邊菜單圖按鈕：最多顯示 5 個
+// ✅ Step 顯示：本菜 steps + global step index（例：Dish Step 2/6 · Global 7/18）
+//
+// ✅ 已按你現有 model 對應欄位：
+// Recipe: menuId / name / cover / steps
+// RecipeStep: text / durationMin
 
 import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../../data/recipes_data.dart';
-import '../../../domain/models/recipe.dart';
-import '../../../state/app_state.dart';
-import '../../widgets/glass.dart';
-import '../../widgets/page_frame.dart';
-import '../../widgets/ui_helpers.dart';
+import 'package:flutter_application_1/data/recipes_data.dart';
+import 'package:flutter_application_1/domain/models/recipe.dart';
+import 'package:flutter_application_1/ui/widgets/glass.dart';
+import 'package:flutter_application_1/ui/widgets/page_frame.dart';
 
 class CookFlowScreen extends StatefulWidget {
-  final Map<String, int> snapshot;
+  final Map<String, int> snapshot; // menuId -> qty
   final int totalPlannedMinutes;
-
-  /// ✅ 可選：單菜時顯示菜名
-  final String? singleRecipeTitle;
+  final String? titleOverride;
 
   const CookFlowScreen({
     super.key,
     required this.snapshot,
     required this.totalPlannedMinutes,
-    this.singleRecipeTitle,
+    this.titleOverride,
   });
 
   @override
   State<CookFlowScreen> createState() => _CookFlowScreenState();
 }
 
-class _FlowStep {
-  final String menuId;
-  final String menuTitle;
-  final int localStepIndex; // 0-based
-  final int localTotal;
-  final String title;
-  final String detail;
-  final int seconds;
-
-  const _FlowStep({
-    required this.menuId,
-    required this.menuTitle,
-    required this.localStepIndex,
-    required this.localTotal,
-    required this.title,
-    required this.detail,
-    required this.seconds,
-  });
-}
-
 class _CookFlowScreenState extends State<CookFlowScreen> {
-  static const _ink = Color(0xFF0B1220);
+  // ===== Tool icons（6 個）=====
+  static const _toolKeys = <String>['pot', 'electric', 'oven', 'pan', 'knife', 'hands'];
+  static const _toolIcons = <IconData>[
+    Icons.local_fire_department, // pot
+    Icons.electrical_services, // electric cooker
+    Icons.outdoor_grill, // oven / grill
+    Icons.local_dining, // pan
+    Icons.content_cut, // knife
+    Icons.pan_tool, // hands
+  ];
 
-  late final List<_FlowStep> _steps;
-  late final List<Recipe> _menus;
+  // ===== Flow data =====
+  late final List<_MenuVm> _menus; // unique menus (for right buttons)
+  late final List<_FlowStep> _steps; // expanded by qty (for global steps)
+  late final int _globalTotal;
 
-  /// key = "menuId#localStepIndex" -> globalIndex (0-based)
-  late final Map<String, int> _globalIndexByMenuStep;
-
+  // ===== Flow state =====
   int _idx = 0;
-  int _left = 0;
-  bool _started = false;
+  bool _autoNext = true;
+  bool _flowStarted = false;
+
+  int _leftMs = 0;
   bool _running = false;
   bool _finished = false;
-  bool _autoNext = true;
 
+  late List<bool> _done;
+
+  DateTime? _startAt;
   Timer? _ticker;
 
-  // bottom sheet open ratio 用嚟 hide 右邊 icons
-  double _sheetOpenRatio = 0.0;
-
-  // quick modal
-  String? _quickMenuId;
+  // bottom sheet open ratio (0..1)
+  double _sheetRatio = 0;
 
   @override
   void initState() {
     super.initState();
-    _menus = widget.snapshot.keys
-        .map((id) => kRecipeById[id])
-        .whereType<Recipe>()
-        .toList();
 
-    // 最多 5 個
-    if (_menus.length > 5) {
-      _menus = _menus.take(5).toList();
-    }
+    _menus = _buildMenus(widget.snapshot);
+    _steps = _buildSteps(_menus);
+    _globalTotal = _steps.length;
 
-    final built = _flattenSteps(_menus, widget.snapshot);
-    _steps = built.$1;
-    _globalIndexByMenuStep = built.$2;
+    _done = List<bool>.filled(_globalTotal, false);
 
-    if (_steps.isNotEmpty) {
-      _left = _steps.first.seconds;
-    }
+    final firstMs = _globalTotal > 0 ? _steps[0].durationMs : 0;
+    _resetTimer(firstMs);
   }
 
   @override
   void dispose() {
-    _ticker?.cancel();
+    _stopTicker();
     super.dispose();
   }
 
-  (List<_FlowStep>, Map<String, int>) _flattenSteps(List<Recipe> menus, Map<String, int> snapshot) {
-    final List<_FlowStep> out = [];
-    final Map<String, int> map = {};
-    int g = 0;
+  // ===== Build menus =====
+  List<_MenuVm> _buildMenus(Map<String, int> snapshot) {
+    final list = <_MenuVm>[];
 
-    for (final r in menus) {
-      final qty = snapshot[r.menuId] ?? 1;
-      // qty 暫時：重複 steps
-      for (int q = 0; q < max(1, qty); q++) {
-        final localTotal = r.steps.length;
-        for (int i = 0; i < r.steps.length; i++) {
-          final st = r.steps[i];
-          final seconds = max(1, st.durationMin * 60);
-          final t = _prettyTitle(st.text);
-          final d = st.text;
+    for (final e in snapshot.entries) {
+      final r = kRecipeById[e.key];
+      if (r == null) continue;
+      final qty = max(1, e.value);
+      final totalMin = r.steps.fold<int>(0, (s, st) => s + st.durationMin) * qty;
+
+      list.add(
+        _MenuVm(
+          menuId: r.menuId,
+          name: r.name,
+          cover: r.cover,
+          qty: qty,
+          totalMin: totalMin,
+          recipe: r,
+        ),
+      );
+    }
+
+    // 你講「先做最長嗰個」：先按 totalMin 由大到細排
+    list.sort((a, b) => b.totalMin.compareTo(a.totalMin));
+    return list;
+  }
+
+  // ===== Build steps (expanded by qty) =====
+  List<_FlowStep> _buildSteps(List<_MenuVm> menus) {
+    final out = <_FlowStep>[];
+    var g = 0;
+
+    for (final m in menus) {
+      for (var inst = 1; inst <= m.qty; inst++) {
+        final localTotal = m.recipe.steps.length;
+
+        for (var i = 0; i < localTotal; i++) {
+          final st = m.recipe.steps[i];
+          final text = st.text.trim();
+          final toolKey = _guessToolKey(text);
 
           out.add(
             _FlowStep(
-              menuId: r.menuId,
-              menuTitle: r.name,
-              localStepIndex: i,
+              globalIndex: g,
+              menuId: m.menuId,
+              menuName: m.name,
+              cover: m.cover,
+              menuInstance: inst,
+              menuInstanceTotal: m.qty,
+              localIndex: i,
               localTotal: localTotal,
-              title: t,
-              detail: d,
-              seconds: seconds,
+              text: text.isEmpty ? '(no text)' : text,
+              durationMs: max(0, st.durationMin) * 60 * 1000,
+              toolKey: toolKey,
             ),
           );
-
-          map['${r.menuId}#$i'] = g;
           g++;
         }
       }
     }
 
-    return (out, map);
+    return out;
   }
 
-  String _prettyTitle(String raw) {
-    final s = raw.trim();
-    if (s.isEmpty) return 'Step';
-    // 用第一句做 title
-    final cut = s.split(RegExp(r'[\n\.]')).first.trim();
-    return cut.isEmpty ? 'Step' : cut;
+  String _guessToolKey(String text) {
+    final t = text.toLowerCase();
+
+    bool hasAny(List<String> ks) => ks.any((k) => t.contains(k));
+
+    if (hasAny(['oven', 'bake', 'air fry', 'air-fry', 'roast'])) return 'oven';
+    if (hasAny(['rice cooker', 'slow cooker', 'electric', 'pressure cooker'])) return 'electric';
+    if (hasAny(['pan', 'fry', 'saute', 'sauté', 'skillet'])) return 'pan';
+    if (hasAny(['boil', 'pot', 'soup', 'steam', 'simmer'])) return 'pot';
+    if (hasAny(['chop', 'cut', 'slice', 'dice', 'mince'])) return 'knife';
+    return 'hands';
+  }
+
+  // ===== Timer helpers =====
+  void _stopTicker() {
+    _ticker?.cancel();
+    _ticker = null;
+  }
+
+  void _resetTimer(int ms) {
+    _stopTicker();
+    _startAt = null;
+
+    setState(() {
+      _leftMs = ms;
+      _running = false;
+      _finished = false;
+    });
+  }
+
+  void _startTimer(int ms) {
+    _stopTicker();
+    _startAt = DateTime.now();
+
+    setState(() {
+      _leftMs = ms;
+      _running = true;
+      _finished = false;
+    });
+
+    _ticker = Timer.periodic(const Duration(milliseconds: 90), (_) {
+      if (_startAt == null) return;
+
+      final elapsed = DateTime.now().difference(_startAt!).inMilliseconds;
+      final left = max(0, ms - elapsed);
+
+      if (left <= 0) {
+        _stopTicker();
+        _startAt = null;
+
+        setState(() {
+          _leftMs = 0;
+          _running = false;
+          _finished = true;
+          if (_idx >= 0 && _idx < _done.length) _done[_idx] = true;
+        });
+
+        if (_autoNext && _flowStarted && _idx < _globalTotal - 1) {
+          Future.delayed(const Duration(milliseconds: 220), () {
+            if (!mounted) return;
+            if (_idx < _globalTotal - 1) _goNext();
+          });
+        }
+        return;
+      }
+
+      if (mounted) {
+        setState(() => _leftMs = left);
+      }
+    });
   }
 
   void _startOnce() {
-    if (_started) return;
-    if (_steps.isEmpty) return;
+    if (_flowStarted) return;
+    if (_globalTotal == 0) return;
 
-    setState(() {
-      _started = true;
-      _running = true;
-      _finished = false;
-      _left = _steps[_idx].seconds;
-    });
-
-    _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      if (!_running) return;
-
-      setState(() {
-        _left = max(0, _left - 1);
-        if (_left == 0) {
-          _running = false;
-          _finished = true;
-
-          if (_autoNext && _idx < _steps.length - 1) {
-            // 自動下一步：微 delay 模擬 TS flow
-            Future.delayed(const Duration(milliseconds: 220), () {
-              if (!mounted) return;
-              if (!_autoNext) return;
-              _goNext();
-            });
-          }
-        }
-      });
-    });
+    setState(() => _flowStarted = true);
+    _startTimer(_steps[_idx].durationMs);
   }
 
   void _goNext() {
-    if (_steps.isEmpty) return;
-    if (!_finished) return;
+    if (_globalTotal == 0) return;
+    if (!_finished) return; // 未到 0 唔俾 Next
 
-    if (_idx >= _steps.length - 1) {
-      // finish
-      setState(() {
-        _running = false;
-        _finished = true;
+    if (_idx >= _globalTotal - 1) return;
+
+    setState(() => _idx++);
+    _resetTimer(_steps[_idx].durationMs);
+
+    if (_flowStarted) {
+      Future.delayed(const Duration(milliseconds: 40), () {
+        if (!mounted) return;
+        _startTimer(_steps[_idx].durationMs);
       });
-      return;
     }
-
-    setState(() {
-      _idx++;
-      _left = _steps[_idx].seconds;
-      _running = _started;
-      _finished = false;
-    });
   }
 
-  void _goPrev() {
-    if (_steps.isEmpty) return;
-    if (_idx <= 0) return;
-
-    setState(() {
-      _idx--;
-      _left = _steps[_idx].seconds;
-      _running = false; // 退返上一題先停住，等你按 Start/Next flow
-      _finished = false;
-    });
+  String _fmtLeft(int ms) {
+    final sec = max(0, (ms / 1000).ceil());
+    final mm = sec ~/ 60;
+    final ss = sec % 60;
+    if (mm <= 0) return '${ss}s';
+    return '${mm}m ${ss}s';
   }
 
-  bool get _canNext => _steps.isNotEmpty && _finished;
-  bool get _canPrev => _idx > 0;
-
-  // ---- tool icons ----
-  static const _toolIcons = <IconData>[
-    Icons.soup_kitchen, // 鍋
-    Icons.rice_bowl, // 電鍋
-    Icons.microwave, // 烤箱/微波（placeholder）
-    Icons.skillet, // 平底鍋（placeholder）
-    Icons.handyman, // 人手
-    Icons.timer, // timer
-  ];
-
-  int _activeToolIndexForStep(_FlowStep s) {
-    // 暫時：用文字關鍵字估計（之後你 DB 有 data 再改）
-    final t = s.detail.toLowerCase();
-    if (t.contains('oven') || t.contains('bake')) return 2;
-    if (t.contains('rice') || t.contains('cook rice')) return 1;
-    if (t.contains('pan') || t.contains('fry')) return 3;
-    if (t.contains('wait') || t.contains('rest') || t.contains('timer')) return 5;
-    if (t.contains('stir') || t.contains('wash') || t.contains('cut')) return 4;
-    return 0;
+  String _fmtTileCount(int ms) {
+    final sec = max(0, (ms / 1000).ceil());
+    if (sec >= 100) return '${(sec / 60).ceil()}m';
+    return sec.toString().padLeft(2, '0');
   }
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+    final cur = _globalTotal > 0 ? _steps[_idx] : null;
 
-    final cur = (_steps.isEmpty) ? null : _steps[_idx];
-    final total = _steps.length;
-
-    final globalStepNo = (cur == null) ? 0 : _idx + 1;
-    final headerTitle = widget.singleRecipeTitle?.trim().isNotEmpty == true
-        ? widget.singleRecipeTitle!
-        : (total <= 1 ? 'Cooking' : 'Cook Flow');
-
-    final hideRightIcons = _sheetOpenRatio > 0.18 || _quickMenuId != null;
+    final hideRightMenus = _sheetRatio > 0.22;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(headerTitle),
-        actions: [
-          if (total > 0)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Text(
-                  '${widget.totalPlannedMinutes} min',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-        ],
+        title: Text(widget.titleOverride ?? 'Cook Flow'),
       ),
       body: PageFrame(
-        child: LayoutBuilder(
-          builder: (_, c) {
-            final w = c.maxWidth;
-            final isWide = w >= 760;
-
-            return Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 120),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
+          children: [
+            // ===== Main scroll =====
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 140), // 預留俾 bottom sheet
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header
+                  Row(
                     children: [
-                      // top tools
-                      glass(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Tools (x6)',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-                            ),
-                            const SizedBox(height: 10),
-                            GridView.builder(
-                              shrinkWrap: true,
-                              primary: false,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                                childAspectRatio: 1,
-                              ),
-                              itemCount: 6,
-                              itemBuilder: (_, i) {
-                                final active = cur != null && _started && _activeToolIndexForStep(cur) == i;
-                                final timerActive = active && _running;
-                                final countText = timerActive ? _left.toString().padLeft(2, '0') : null;
-
-                                return _ToolTile(
-                                  icon: _toolIcons[i],
-                                  active: active,
-                                  timerText: countText,
-                                );
-                              },
-                            ),
-                          ],
+                      Expanded(
+                        child: Text(
+                          widget.titleOverride ?? (_menus.isNotEmpty ? _menus.first.name : 'Cooking'),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 14),
-
-                      // main step card
-                      glass(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: .10),
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(color: Colors.white.withValues(alpha: .14)),
-                                  ),
-                                  child: Text(
-                                    'Step $globalStepNo/$total',
-                                    style: const TextStyle(fontWeight: FontWeight.w900),
-                                  ),
-                                ),
-                                const Spacer(),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      cur == null ? '--' : _left.toString(),
-                                      style: TextStyle(
-                                        fontSize: 42,
-                                        height: 1.0,
-                                        fontWeight: FontWeight.w900,
-                                        color: (_finished ? Colors.redAccent : Colors.white),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    FilledButton.tonal(
-                                      onPressed: _started ? null : _startOnce,
-                                      child: Text(_started ? 'Started' : 'Start'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-
-                            if (cur == null)
-                              const Text('No steps', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))
-                            else ...[
-                              Text(
-                                cur.title,
-                                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                cur.detail,
-                                style: const TextStyle(fontSize: 16, height: 1.4, color: Colors.white70),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Menu: ${cur.menuTitle} · Local step ${cur.localStepIndex + 1}/${cur.localTotal}',
-                                style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w700),
-                              ),
-                            ],
-
-                            const SizedBox(height: 14),
-
-                            // bottom actions row: <- + Next
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 46,
-                                  height: 46,
-                                  child: OutlinedButton(
-                                    onPressed: _canPrev ? _goPrev : null,
-                                    style: OutlinedButton.styleFrom(
-                                      shape: const CircleBorder(),
-                                      side: BorderSide(color: Colors.white.withValues(alpha: .18)),
-                                    ),
-                                    child: const Icon(Icons.arrow_back),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 54,
-                                    child: ElevatedButton(
-                                      onPressed: _canNext ? _goNext : null,
-                                      child: Text(_idx >= total - 1 ? 'Finish' : 'Next step'),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _started
-                                  ? (_running ? 'Running…' : (_finished ? 'Done: you can go Next' : 'Idle'))
-                                  : 'Press Start once to begin.',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${widget.totalPlannedMinutes} min',
+                        style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.white70),
                       ),
-                      const SizedBox(height: 14),
-
-                      // helper: show current ingredients snapshot
-                      if (app.ingredients.isNotEmpty)
-                        glass(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Detected ingredients', style: TextStyle(fontWeight: FontWeight.w900)),
-                              const SizedBox(height: 8),
-                              Text(app.ingredients.map(prettyName).join(', '), style: const TextStyle(color: Colors.white70)),
-                            ],
-                          ),
-                        ),
-
-                      const SizedBox(height: 30),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 12),
 
-                // right menu buttons (max 5)
-                if (isWide)
-                  Positioned(
-                    right: 10,
-                    top: 86,
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 160),
-                      opacity: hideRightIcons ? 0 : 1,
-                      child: IgnorePointer(
-                        ignoring: hideRightIcons,
-                        child: Column(
-                          children: [
-                            for (final r in _menus)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: _MenuIconButton(
-                                  title: r.name,
-                                  imgUrl: r.coverUrl,
-                                  onTap: () => setState(() => _quickMenuId = r.menuId),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // quick modal
-                if (_quickMenuId != null)
-                  _QuickMenuModal(
-                    menuId: _quickMenuId!,
-                    menus: _menus,
-                    steps: _steps,
-                    globalIndexByMenuStep: _globalIndexByMenuStep,
-                    onClose: () => setState(() => _quickMenuId = null),
-                  ),
-
-                // bottom sheet pull tab
-                _StepsBottomSheetDock(
-                  steps: _steps,
-                  currentIndex: _idx,
-                  onOpenRatio: (r) => setState(() => _sheetOpenRatio = r),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _ToolTile extends StatelessWidget {
-  final IconData icon;
-  final bool active;
-  final String? timerText;
-
-  const _ToolTile({
-    required this.icon,
-    required this.active,
-    this.timerText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: active ? .14 : .08),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: active ? .22 : .12)),
-        boxShadow: active
-            ? [
-                BoxShadow(
-                  color: Colors.greenAccent.withValues(alpha: .25),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                )
-              ]
-            : null,
-      ),
-      child: Stack(
-        children: [
-          Center(
-            child: Icon(
-              icon,
-              size: 34,
-              color: Colors.white.withValues(alpha: active ? .95 : .70),
-            ),
-          ),
-          if (timerText != null)
-            Positioned(
-              right: 10,
-              bottom: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .82),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.black.withValues(alpha: .08)),
-                ),
-                child: Text(
-                  timerText!,
-                  style: const TextStyle(fontWeight: FontWeight.w900, color: _CookFlowScreenState._ink),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuIconButton extends StatelessWidget {
-  final String title;
-  final String imgUrl;
-  final VoidCallback onTap;
-
-  const _MenuIconButton({
-    required this.title,
-    required this.imgUrl,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 56,
-      height: 56,
-      child: Material(
-        color: Colors.white.withValues(alpha: .12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: .18)),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network(
-                  imgUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.restaurant, color: Colors.white70)),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 24,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: .55),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 6,
-                  right: 6,
-                  bottom: 4,
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickMenuModal extends StatelessWidget {
-  final String menuId;
-  final List<Recipe> menus;
-  final List<_FlowStep> steps;
-  final Map<String, int> globalIndexByMenuStep;
-  final VoidCallback onClose;
-
-  const _QuickMenuModal({
-    required this.menuId,
-    required this.menus,
-    required this.steps,
-    required this.globalIndexByMenuStep,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final r = menus.where((x) => x.menuId == menuId).cast<Recipe?>().firstOrNull;
-    final title = r?.name ?? menuId;
-
-    final items = <_FlowStep>[];
-    for (final s in steps) {
-      if (s.menuId == menuId) items.add(s);
-    }
-
-    return GestureDetector(
-      onTap: onClose,
-      child: Container(
-        color: Colors.black.withValues(alpha: .35),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(16),
-        child: GestureDetector(
-          onTap: () {},
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 720),
-            child: Material(
-              color: Colors.white.withValues(alpha: .78),
-              borderRadius: BorderRadius.circular(22),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
-                    child: Row(
+                  // ===== Top tools (6 icons) =====
+                  glass(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black87),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        const Text('Tools', style: TextStyle(fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 10),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: 6,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: 1,
                           ),
-                        ),
-                        IconButton(
-                          onPressed: onClose,
-                          icon: const Icon(Icons.close),
-                          tooltip: 'Close',
+                          itemBuilder: (_, i) {
+                            final key = _toolKeys[i];
+                            final icon = _toolIcons[i];
+
+                            final isActive = _flowStarted && cur != null && cur.toolKey == key;
+                            final showCount = isActive && (_running || _finished) && key != 'hands';
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isActive ? Colors.white.withOpacity(0.38) : Colors.white.withOpacity(0.16),
+                                ),
+                                color: isActive ? Colors.white.withOpacity(0.10) : Colors.white.withOpacity(0.06),
+                              ),
+                              child: Stack(
+                                children: [
+                                  Center(
+                                    child: Icon(
+                                      icon,
+                                      size: 34,
+                                      color: isActive ? Colors.white : Colors.white70,
+                                    ),
+                                  ),
+                                  if (showCount)
+                                    Positioned(
+                                      right: 8,
+                                      bottom: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.85),
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                        child: Text(
+                                          _fmtTileCount(_leftMs),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.black87,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
-                  const Divider(height: 1),
+
+                  const SizedBox(height: 12),
+
+                  // ===== Center step card =====
+                  glass(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Step pill
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: Colors.white.withOpacity(0.14)),
+                                ),
+                                child: Text(
+                                  cur == null
+                                      ? 'Step 0/0'
+                                      : 'Global Step ${cur.globalIndex + 1}/$_globalTotal  ·  Dish Step ${cur.localIndex + 1}/${cur.localTotal}'
+                                          '${cur.menuInstanceTotal > 1 ? '  (${cur.menuInstance}/${cur.menuInstanceTotal})' : ''}',
+                                  style: const TextStyle(fontWeight: FontWeight.w900),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Timer + toggle
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  _fmtLeft(_leftMs),
+                                  style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w900,
+                                    color: _finished ? Colors.redAccent : Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                SizedBox(
+                                  height: 34,
+                                  child: OutlinedButton(
+                                    onPressed: _flowStarted ? null : () => setState(() => _autoNext = !_autoNext),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(color: Colors.white.withOpacity(0.18)),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    ),
+                                    child: Text('Auto Next: ${_autoNext ? 'ON' : 'OFF'}'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        if (cur == null)
+                          const Text('No steps', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))
+                        else ...[
+                          Text(
+                            cur.menuName,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.white70),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            cur.text,
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, height: 1.18),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Dish Step ${cur.localIndex + 1}/${cur.localTotal} · Global ${cur.globalIndex + 1}/$_globalTotal · Duration ${_fmtLeft(cur.durationMs)}',
+                            style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700, fontSize: 12),
+                          ),
+                        ],
+
+                        const SizedBox(height: 14),
+
+                        SizedBox(
+                          height: 54,
+                          child: FilledButton(
+                            onPressed: (_globalTotal == 0 || !_finished) ? null : _goNext,
+                            child: Text(_idx >= _globalTotal - 1 ? 'Finish' : 'Next step →',
+                                style: const TextStyle(fontWeight: FontWeight.w900)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Start once (outside)
+                  glass(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          height: 54,
+                          width: 140,
+                          child: FilledButton(
+                            onPressed: (_flowStarted || _globalTotal == 0) ? null : _startOnce,
+                            child: Text(_flowStarted ? 'Started' : 'Start',
+                                style: const TextStyle(fontWeight: FontWeight.w900)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _flowStarted ? '已啟動：每步入場自動計時。' : '按 Start 一次開始 Step1；之後每步自動開始倒數。',
+                            style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ===== Right menu buttons (max 5) =====
+            if (!hideRightMenus)
+              Positioned(
+                right: 6,
+                top: 86,
+                child: _RightMenusBar(
+                  menus: _menus.take(5).toList(),
+                  steps: _steps,
+                  done: _done,
+                  currentGlobalIndex: _idx,
+                  globalTotal: _globalTotal,
+                ),
+              ),
+
+            // ===== Bottom draggable steps sheet =====
+            Positioned.fill(
+              child: _StepsSheet(
+                steps: _steps,
+                done: _done,
+                currentIdx: _idx,
+                globalTotal: _globalTotal,
+                onOpenRatio: (r) => setState(() => _sheetRatio = r),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ===== View Models =====
+
+class _MenuVm {
+  final String menuId;
+  final String name;
+  final String cover;
+  final int qty;
+  final int totalMin;
+  final Recipe recipe;
+
+  _MenuVm({
+    required this.menuId,
+    required this.name,
+    required this.cover,
+    required this.qty,
+    required this.totalMin,
+    required this.recipe,
+  });
+}
+
+class _FlowStep {
+  final int globalIndex;
+
+  final String menuId;
+  final String menuName;
+  final String cover;
+
+  final int menuInstance; // 1..qty
+  final int menuInstanceTotal;
+
+  final int localIndex; // 0-based
+  final int localTotal;
+
+  final String text;
+  final int durationMs;
+
+  final String toolKey;
+
+  _FlowStep({
+    required this.globalIndex,
+    required this.menuId,
+    required this.menuName,
+    required this.cover,
+    required this.menuInstance,
+    required this.menuInstanceTotal,
+    required this.localIndex,
+    required this.localTotal,
+    required this.text,
+    required this.durationMs,
+    required this.toolKey,
+  });
+}
+
+// ===== Right menus =====
+
+class _RightMenusBar extends StatelessWidget {
+  final List<_MenuVm> menus;
+  final List<_FlowStep> steps;
+  final List<bool> done;
+  final int currentGlobalIndex;
+  final int globalTotal;
+
+  const _RightMenusBar({
+    required this.menus,
+    required this.steps,
+    required this.done,
+    required this.currentGlobalIndex,
+    required this.globalTotal,
+  });
+
+  void _openMenu(BuildContext context, _MenuVm m) {
+    final rows = <_FlowStep>[];
+    for (final s in steps) {
+      if (s.menuId == m.menuId) rows.add(s);
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: Text(m.qty > 1 ? '${m.name} ×${m.qty}' : m.name),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: min(520, max(260, rows.length * 56.0)),
+            child: ListView.separated(
+              itemCount: rows.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (_, i) {
+                final st = rows[i];
+                final isCur = st.globalIndex == currentGlobalIndex;
+                final isDone = st.globalIndex >= 0 && st.globalIndex < done.length ? done[st.globalIndex] : false;
+
+                return ListTile(
+                  dense: true,
+                  title: Text(
+                    st.text,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: isCur ? FontWeight.w900 : FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    'Dish Step ${st.localIndex + 1}/${st.localTotal} · Global ${st.globalIndex + 1}/$globalTotal',
+                  ),
+                  trailing: isDone ? const Icon(Icons.check_circle, color: Colors.green) : const SizedBox(width: 18),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final m in menus) ...[
+          GestureDetector(
+            onTap: () => _openMenu(context, m),
+            child: Container(
+              width: 54,
+              height: 54,
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.18)),
+                color: Colors.white.withOpacity(0.06),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    m.cover,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.restaurant, color: Colors.white70)),
+                  ),
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        m.qty.toString(),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ===== Bottom draggable sheet =====
+
+class _StepsSheet extends StatelessWidget {
+  final List<_FlowStep> steps;
+  final List<bool> done;
+  final int currentIdx;
+  final int globalTotal;
+  final ValueChanged<double> onOpenRatio;
+
+  const _StepsSheet({
+    required this.steps,
+    required this.done,
+    required this.currentIdx,
+    required this.globalTotal,
+    required this.onOpenRatio,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const minExtent = 0.12;
+    const maxExtent = 0.92;
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: NotificationListener<DraggableScrollableNotification>(
+        onNotification: (n) {
+          final ratio = ((n.extent - minExtent) / (maxExtent - minExtent)).clamp(0.0, 1.0);
+          onOpenRatio(ratio.toDouble()); // ✅ double
+          return false;
+        },
+        child: DraggableScrollableSheet(
+          minChildSize: minExtent,
+          maxChildSize: maxExtent,
+          initialChildSize: minExtent,
+          builder: (_, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.14),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                border: Border.all(color: Colors.white.withOpacity(0.14)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 58,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.30),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Expanded(
                     child: ListView.separated(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: items.length,
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 18),
+                      itemCount: steps.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (_, i) {
-                        final it = items[i];
-                        final gi = globalIndexByMenuStep['${it.menuId}#${it.localStepIndex}'];
-                        final gNo = (gi == null) ? '-' : '${gi + 1}/${steps.length}';
+                        final st = steps[i];
+                        final isCur = i == currentIdx;
+                        final isDone = i >= 0 && i < done.length ? done[i] : false;
 
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: .55),
+                            color: isCur ? Colors.white.withOpacity(0.18) : Colors.white.withOpacity(0.10),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withValues(alpha: .35)),
+                            border: Border.all(color: Colors.white.withOpacity(isCur ? 0.22 : 0.14)),
                           ),
                           child: Row(
                             children: [
@@ -719,268 +775,49 @@ class _QuickMenuModal extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Global Step $gNo',
-                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black54),
+                                      'Step ${st.globalIndex + 1}/$globalTotal',
+                                      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w900, fontSize: 12),
                                     ),
-                                    const SizedBox(height: 3),
+                                    const SizedBox(height: 4),
                                     Text(
-                                      it.title,
-                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.black87),
+                                      st.text,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontWeight: isCur ? FontWeight.w900 : FontWeight.w700),
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: 4),
                                     Text(
-                                      '${it.seconds}s · local ${it.localStepIndex + 1}/${it.localTotal}',
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black54),
+                                      '${st.menuName} · Dish ${st.localIndex + 1}/${st.localTotal}'
+                                      '${st.menuInstanceTotal > 1 ? ' (${st.menuInstance}/${st.menuInstanceTotal})' : ''}',
+                                      style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700, fontSize: 11),
                                     ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Icon(Icons.chevron_right, color: Colors.black54),
+                              Container(
+                                width: 24,
+                                height: 24,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: isDone ? Colors.white.withOpacity(0.22) : Colors.white.withOpacity(0.10),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: Colors.white.withOpacity(0.18)),
+                                ),
+                                child: Text(isDone ? '✓' : ' ', style: const TextStyle(fontWeight: FontWeight.w900)),
+                              ),
                             ],
                           ),
                         );
                       },
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 14, top: 8),
-                    child: Text(
-                      '點空白位／按 X 關閉',
-                      style: TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w800),
-                    ),
-                  ),
                 ],
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
   }
-}
-
-class _StepsBottomSheetDock extends StatefulWidget {
-  final List<_FlowStep> steps;
-  final int currentIndex;
-  final ValueChanged<double> onOpenRatio;
-
-  const _StepsBottomSheetDock({
-    required this.steps,
-    required this.currentIndex,
-    required this.onOpenRatio,
-  });
-
-  @override
-  State<_StepsBottomSheetDock> createState() => _StepsBottomSheetDockState();
-}
-
-class _StepsBottomSheetDockState extends State<_StepsBottomSheetDock> {
-  double _y = 0;
-  double _maxY = 0;
-  bool _init = false;
-
-  void _notifyRatio() {
-    final r = _maxY <= 0 ? 0 : (1 - (_y / _maxY)).clamp(0.0, 1.0);
-    widget.onOpenRatio(r);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (_, c) {
-        final h = c.maxHeight;
-        _maxY = max(0, h);
-        if (!_init) {
-          _init = true;
-          _y = _maxY; // closed
-          WidgetsBinding.instance.addPostFrameCallback((_) => _notifyRatio());
-        }
-
-        final isOpen = _y <= 1;
-
-        return Stack(
-          children: [
-            // pull tab
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 12,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 180),
-                opacity: isOpen ? 0 : 1,
-                child: IgnorePointer(
-                  ignoring: isOpen,
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() => _y = 0);
-                        _notifyRatio();
-                      },
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .18),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white.withValues(alpha: .22)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: .28),
-                              blurRadius: 24,
-                              offset: const Offset(0, 12),
-                            )
-                          ],
-                        ),
-                        child: const Icon(Icons.keyboard_arrow_up, size: 28),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // sheet
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: false,
-                child: Transform.translate(
-                  offset: Offset(0, _y),
-                  child: GestureDetector(
-                    onVerticalDragUpdate: (d) {
-                      setState(() => _y = (_y + d.delta.dy).clamp(0.0, _maxY));
-                      _notifyRatio();
-                    },
-                    onVerticalDragEnd: (d) {
-                      final vy = d.primaryVelocity ?? 0; // px/s
-                      setState(() {
-                        if (vy > 650) _y = _maxY;
-                        else if (vy < -650) _y = 0;
-                        else _y = (_y > _maxY * 0.45) ? _maxY : 0;
-                      });
-                      _notifyRatio();
-                    },
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 720),
-                        child: Material(
-                          color: Colors.white.withValues(alpha: .58),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                          child: SizedBox(
-                            height: h,
-                            child: Column(
-                              children: [
-                                Container(
-                                  height: 44,
-                                  alignment: Alignment.center,
-                                  child: Container(
-                                    width: 56,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: .18),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                ),
-                                const Divider(height: 1),
-                                Expanded(
-                                  child: ListView.builder(
-                                    padding: const EdgeInsets.all(12),
-                                    itemCount: widget.steps.length,
-                                    itemBuilder: (_, i) {
-                                      final s = widget.steps[i];
-                                      final isCur = i == widget.currentIndex;
-
-                                      return Container(
-                                        margin: const EdgeInsets.only(bottom: 8),
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: isCur ? .70 : .45),
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(color: Colors.white.withValues(alpha: .32)),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    'Step ${i + 1}/${widget.steps.length}',
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.w900,
-                                                      color: Colors.black54,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 3),
-                                                  Text(
-                                                    s.title,
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w900,
-                                                      color: Colors.black87,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    s.menuTitle,
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight: FontWeight.w800,
-                                                      color: Colors.black54,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Text(
-                                              '${s.seconds}s',
-                                              style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.black87),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Container(
-                                              width: 22,
-                                              height: 22,
-                                              alignment: Alignment.center,
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: .55),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(color: Colors.black.withValues(alpha: .18)),
-                                              ),
-                                              child: Text(isCur ? '●' : ' '),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-extension _FirstOrNullExt<E> on Iterable<E> {
-  E? get firstOrNull => isEmpty ? null : first;
 }
