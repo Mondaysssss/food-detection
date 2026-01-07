@@ -16,381 +16,448 @@ import '../../../domain/models/recipe.dart';
 import '../../../state/app_state.dart';
 import '../../widgets/glass.dart';
 import '../../widgets/page_frame.dart';
-import '../../widgets/ui_helpers.dart';
 
 class CookFlowScreen extends StatefulWidget {
+  /// 多菜：來自 cart 的 snapshot（menuId -> qty）
   final Map<String, int> snapshot;
-  final int totalPlannedMinutes;
 
-  /// ✅ 可選：單菜時顯示菜名
-  final String? singleRecipeTitle;
+  /// 多菜總時間（你之前 CartScreen 計出嚟嗰個）
+  final int totalPlannedMinutes;
 
   const CookFlowScreen({
     super.key,
     required this.snapshot,
     required this.totalPlannedMinutes,
-    this.singleRecipeTitle,
   });
 
   @override
   State<CookFlowScreen> createState() => _CookFlowScreenState();
 }
 
-class _FlowStep {
-  final String menuId;
-  final String menuTitle;
-  final int localStepIndex; // 0-based
-  final int localTotal;
-  final String title;
-  final String detail;
-  final int seconds;
-
-  const _FlowStep({
-    required this.menuId,
-    required this.menuTitle,
-    required this.localStepIndex,
-    required this.localTotal,
-    required this.title,
-    required this.detail,
-    required this.seconds,
-  });
-}
-
 class _CookFlowScreenState extends State<CookFlowScreen> {
-  static const _ink = Color(0xFF0B1220);
+  // ======== UI theme (match TS dark glass vibe) ========
+  static const _bg = Color(0xFF0B0F14);
+  static const _ink = Colors.white;
+  static const _muted = Color(0xB3FFFFFF);
 
-  late final List<_FlowStep> _steps;
-  late final List<Recipe> _menus;
-
-  /// key = "menuId#localStepIndex" -> globalIndex (0-based)
-  late final Map<String, int> _globalIndexByMenuStep;
-
-  int _idx = 0;
-  int _left = 0;
+  // ======== flow state ========
   bool _started = false;
-  bool _running = false;
-  bool _finished = false;
-  bool _autoNext = true;
 
+  int _globalIndex = 0; // 0-based
+  late final List<_GlobalStep> _globalSteps;
+  late final int _totalGlobalSteps;
+
+  // 倒數
+  int _leftSec = 0;
   Timer? _ticker;
+
+  // 右邊 quick menu list（最多 5）
+  String? _quickOpenMenuId;
+
+  // 底部 sheet
+  final DraggableScrollableController _sheetCtl = DraggableScrollableController();
+  bool _sheetOpen = false;
+
+  // ======== build mapping: (menuId#stepIndex) -> globalIndex ========
+  late final Map<String, int> _globalIndexByMenuStep;
 
   @override
   void initState() {
     super.initState();
-    _menus = widget.snapshot.keys
-        .map((id) => kRecipeById[id])
-        .whereType<Recipe>()
-        .toList(growable: false);
 
-    _steps = _buildSteps();
-    _globalIndexByMenuStep = _buildGlobalIndexMap(_steps);
+    _globalSteps = _buildGlobalSteps(widget.snapshot);
+    _totalGlobalSteps = _globalSteps.length;
 
-    _left = _steps.isEmpty ? 0 : _steps.first.seconds;
+    _globalIndexByMenuStep = {};
+    for (int gi = 0; gi < _globalSteps.length; gi++) {
+      final gs = _globalSteps[gi];
+      _globalIndexByMenuStep['${gs.menuId}#${gs.stepIndex}'] = gi;
+    }
+
+    // 初始 leftSec（未 start 都顯示該 step 時間）
+    _leftSec = _globalSteps.isNotEmpty ? _globalSteps[0].durationSec : 0;
+
+    _sheetCtl.addListener(() {
+      // sheet 只要一開到 0.25+ 就當開，會隱藏右邊 icons
+      final s = _sheetCtl.size;
+      final open = s >= 0.25;
+      if (open != _sheetOpen) setState(() => _sheetOpen = open);
+    });
   }
 
   @override
   void dispose() {
     _ticker?.cancel();
+    _sheetCtl.dispose();
     super.dispose();
   }
 
-  List<_FlowStep> _buildSteps() {
-    // 以 MultiCookScreen 的規則：把每個菜嘅 steps 展開；順序先照 snapshot 展開（之後你可用 DB 規則排程）
-    // 為咗保留「多份同一菜 qty」：會重複展開同一菜 steps。
+  // ======== rules ========
+  bool get _isLast => _globalIndex >= _totalGlobalSteps - 1;
+  bool get _canNext => _started && _leftSec <= 0;
 
-    final timeScale = context.read<AppState>().timeScale;
-    final List<_FlowStep> out = [];
+  _GlobalStep? get _cur => _globalSteps.isEmpty ? null : _globalSteps[_globalIndex];
 
-    widget.snapshot.forEach((menuId, qty) {
-      final r = kRecipeById[menuId];
-      if (r == null) return;
+  void _startOnce() {
+    if (_started) return;
+    if (_globalSteps.isEmpty) return;
 
-      for (int q = 0; q < qty; q++) {
-        final localTotal = r.steps.length;
-        for (int i = 0; i < r.steps.length; i++) {
-          final st = r.steps[i];
-          final sec = max(1, st.durationMin * timeScale);
-          out.add(
-            _FlowStep(
-              menuId: menuId,
-              menuTitle: r.title,
-              localStepIndex: i,
-              localTotal: localTotal,
-              title: st.title,
-              detail: st.detail,
-              seconds: sec,
-            ),
-          );
-        }
+    setState(() => _started = true);
+    _restartCountdownForCurrent();
+  }
+
+  void _restartCountdownForCurrent() {
+    _ticker?.cancel();
+
+    final cur = _cur;
+    final sec = cur?.durationSec ?? 0;
+
+    setState(() => _leftSec = sec);
+
+    // 即時 tick 一次，然後每秒 tick
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _leftSec = max(0, _leftSec - 1);
+      });
+    });
+  }
+
+  void _goNext() {
+    if (!_canNext) return;
+    if (_globalSteps.isEmpty) return;
+
+    if (_isLast) {
+      // finish
+      _ticker?.cancel();
+      setState(() => _leftSec = 0);
+      _showFinishedDialog();
+      return;
+    }
+
+    setState(() => _globalIndex++);
+    _restartCountdownForCurrent();
+  }
+
+  void _showFinishedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Done'),
+        content: const Text('All steps finished.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ======== global steps builder ========
+  List<_GlobalStep> _buildGlobalSteps(Map<String, int> snapshot) {
+    // 展開為 menuIds（同 menu qty 次）
+    final List<String> menuIds = [];
+    snapshot.forEach((menuId, qty) {
+      for (int i = 0; i < qty; i++) {
+        menuIds.add(menuId);
       }
     });
+
+    // 取食譜
+    final recipes = <Recipe>[];
+    for (final id in menuIds) {
+      final r = kRecipeById[id];
+      if (r != null) recipes.add(r);
+    }
+
+    // 合併規則（暫時簡化）：
+    // - 先按「最長總時間」排序：長嘅菜先做（你描述：先做最長嗰個）
+    recipes.sort((a, b) => _recipeTotalMin(b).compareTo(_recipeTotalMin(a)));
+
+    // 先照排序串連 steps 變 global steps
+    final out = <_GlobalStep>[];
+    for (final r in recipes) {
+      for (int si = 0; si < r.steps.length; si++) {
+        final st = r.steps[si];
+
+        out.add(_GlobalStep(
+          menuId: r.menuId,
+          menuTitle: r.menuTitle,
+          stepIndex: si,
+          title: st.titleText,
+          detail: st.detailText,
+          durationSec: max(1, st.durationMin) * 60,
+          tool: _guessTool(st),
+        ));
+      }
+    }
 
     return out;
   }
 
-  Map<String, int> _buildGlobalIndexMap(List<_FlowStep> steps) {
-    final m = <String, int>{};
-    for (int i = 0; i < steps.length; i++) {
-      final s = steps[i];
-      m['${s.menuId}#${s.localStepIndex}'] ??= i; // 同一菜 qty 重複時，保留第一次（夠用於 UI）
-    }
-    return m;
+  int _recipeTotalMin(Recipe r) {
+    return r.steps.fold<int>(0, (s, st) => s + st.durationMin);
   }
 
-  void _startTicker() {
-    _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!_running) return;
-      if (_left <= 0) return;
-
-      setState(() {
-        _left = max(0, _left - 1);
-        if (_left == 0) {
-          _running = false;
-          _finished = true;
-
-          if (_autoNext && _started && _idx < _steps.length - 1) {
-            // 小延遲令 UI 更自然
-            Future.delayed(const Duration(milliseconds: 220), () {
-              if (!mounted) return;
-              if (!_autoNext) return;
-              if (!_finished) return;
-              _goNext(auto: true);
-            });
-          }
-        }
-      });
-    });
+  // 工具 icon（之後你會用 DB 決定；暫時用字眼猜）
+  _ToolKind _guessTool(RecipeStep st) {
+    final t = ('${st.titleText} ${st.detailText}').toLowerCase();
+    if (t.contains('oven') || t.contains('bake')) return _ToolKind.oven;
+    if (t.contains('rice') || t.contains('electric') || t.contains('pot')) return _ToolKind.electricPot;
+    if (t.contains('wok') || t.contains('pan') || t.contains('fry')) return _ToolKind.pan;
+    if (t.contains('steam')) return _ToolKind.steamer;
+    if (t.contains('mix') || t.contains('cut') || t.contains('stir')) return _ToolKind.hand;
+    return _ToolKind.hand;
   }
 
-  void _startOnce() {
-    if (_started) return;
-    if (_steps.isEmpty) return;
-    setState(() {
-      _started = true;
-      _running = true;
-      _finished = false;
-      _left = _steps[_idx].seconds;
-    });
-    _startTicker();
-  }
+  // ======== UI pieces ========
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
 
-  void _goNext({bool auto = false}) {
-    if (_steps.isEmpty) return;
-    if (!auto) {
-      // ✅ 手動 Next：未到 0 唔俾
-      if (!_finished) return;
-    }
+    final cur = _cur;
+    final hideRightMenus = _sheetOpen || _quickOpenMenuId != null;
 
-    if (_idx >= _steps.length - 1) {
-      // 最後一步
-      setState(() {
-        _running = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _idx = min(_idx + 1, _steps.length - 1);
-      _left = _steps[_idx].seconds;
-      _running = _started; // Start 後每步自動計時
-      _finished = false;
-    });
-
-    if (_started) _startTicker();
-  }
-
-  String _fmt(int s) {
-    final mm = (s ~/ 60).toString().padLeft(2, '0');
-    final ss = (s % 60).toString().padLeft(2, '0');
-    return '$mm:$ss';
-  }
-
-  Future<void> _openAllStepsSheet() async {
-    if (_steps.isEmpty) return;
-
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.55,
-          minChildSize: 0.25,
-          maxChildSize: 0.95,
-          builder: (ctx, scrollCtl) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .86),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-                border: Border.all(color: Colors.white.withValues(alpha: .9)),
-              ),
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        title: const Text('Cooking'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: PageFrame(
+        child: Stack(
+          children: [
+            // main scroll
+            SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 120),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 54,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: .18),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: ListView.separated(
-                      controller: scrollCtl,
-                      itemCount: _steps.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (_, i) {
-                        final s = _steps[i];
-                        final isCur = i == _idx;
-                        final done = i < _idx;
+                  _header(app),
+                  const SizedBox(height: 12),
 
-                        return ListTile(
-                          dense: true,
-                          title: Text(
-                            'Step ${i + 1}/${_steps.length} · ${s.menuTitle}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: isCur ? _ink : Colors.black.withValues(alpha: .88),
-                            ),
-                          ),
-                          subtitle: Text(
-                            s.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _fmt(s.seconds),
-                                style: const TextStyle(fontWeight: FontWeight.w800),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: done
-                                      ? Colors.black.withValues(alpha: .70)
-                                      : Colors.black.withValues(alpha: .08),
-                                  border: Border.all(color: Colors.black.withValues(alpha: .18)),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(done ? '✓' : '', style: const TextStyle(color: Colors.white)),
-                              ),
-                            ],
-                          ),
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            if (!_started) {
-                              setState(() {
-                                _idx = i;
-                                _left = _steps[_idx].seconds;
-                              });
-                            }
-                          },
-                        );
-                      },
-                    ),
-                  ),
+                  _toolIcons(cur),
+                  const SizedBox(height: 14),
+
+                  _stepCard(cur),
+                  const SizedBox(height: 12),
+
+                  _startOnceHint(),
                 ],
               ),
-            );
-          },
-        );
-      },
+            ),
+
+            // right vertical menu buttons
+            Positioned(
+              top: 110,
+              right: 0,
+              child: AnimatedOpacity(
+                opacity: hideRightMenus ? 0 : 1,
+                duration: const Duration(milliseconds: 160),
+                child: IgnorePointer(
+                  ignoring: hideRightMenus,
+                  child: _rightMenuButtons(),
+                ),
+              ),
+            ),
+
+            // quick menu popup
+            if (_quickOpenMenuId != null) _quickMenuDialog(),
+
+            // bottom pull-sheet
+            _bottomSheet(),
+
+            // bottom actions (Start / Next)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
+                minimum: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 54,
+                        child: FilledButton(
+                          onPressed: _started ? null : _startOnce,
+                          child: Text(_started ? 'Started' : 'Start'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SizedBox(
+                        height: 54,
+                        child: FilledButton.tonal(
+                          onPressed: _canNext ? _goNext : null,
+                          child: Text(_isLast ? 'Finish' : 'Next step'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  void _openMenuQuickList(Recipe r) {
-    // ✅ 需求 2.B：顯示「該菜 steps + global step index」（例如 Step 7/18）
-    final total = _steps.length;
+  Widget _header(AppState app) {
+    final totalMin = widget.totalPlannedMinutes;
+    final total = _totalGlobalSteps;
+    final curNo = total == 0 ? 0 : (_globalIndex + 1);
 
-    // 取出該菜的 local steps，再用 map 找 global index（找不到就跳過）
-    final items = <({int globalIdx, RecipeStep st, int localIdx})>[];
-    for (int i = 0; i < r.steps.length; i++) {
-      final gi = _globalIndexByMenuStep['${r.id}#$i'];
-      if (gi == null) continue;
-      items.add((globalIdx: gi, st: r.steps[i], localIdx: i));
-    }
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-          content: SizedBox(
-            width: 520,
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (_, i) {
-                final it = items[i];
-                final label = 'Step ${it.globalIdx + 1}/$total';
-                return ListTile(
-                  dense: true,
-                  title: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
-                  subtitle: Text(it.st.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  trailing: Text('${it.st.durationMin}m', style: const TextStyle(fontWeight: FontWeight.w800)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    if (!_started) {
-                      setState(() {
-                        _idx = it.globalIdx;
-                        _left = _steps[_idx].seconds;
-                      });
-                    }
-                  },
-                );
-              },
+    return glass(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Cook Flow',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Global Step $curNo/$total · Planned ${totalMin}min',
+                  style: const TextStyle(color: _muted, fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
-          ],
-        );
-      },
+          const SizedBox(width: 10),
+          _bigSecBox(_leftSec),
+        ],
+      ),
     );
   }
 
-  Widget _toolIcon({required IconData icon, required String label, required bool active, String? countText}) {
-    final border = active ? Colors.white.withValues(alpha: .45) : Colors.white.withValues(alpha: .18);
+  Widget _bigSecBox(int sec) {
+    final txt = sec.toString().padLeft(2, '0');
+    final danger = _started && sec <= 0;
+
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: active ? .14 : .10),
+        color: Colors.white.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: .14)),
+      ),
+      child: Text(
+        txt,
+        style: TextStyle(
+          color: danger ? const Color(0xFFEF4444) : _ink,
+          fontSize: 32,
+          fontWeight: FontWeight.w900,
+          letterSpacing: .5,
+        ),
+      ),
+    );
+  }
+
+  Widget _toolIcons(_GlobalStep? cur) {
+    final tool = cur?.tool;
+
+    // 6 icons: pan, electric pot, oven, steamer, hand, timer
+    final items = <_ToolItem>[
+      _ToolItem(_ToolKind.pan, Icons.local_fire_department, 'Pan'),
+      _ToolItem(_ToolKind.electricPot, Icons.soup_kitchen, 'Pot'),
+      _ToolItem(_ToolKind.oven, Icons.outdoor_grill, 'Oven'),
+      _ToolItem(_ToolKind.steamer, Icons.water_drop, 'Steam'),
+      _ToolItem(_ToolKind.hand, Icons.back_hand, 'Hand'),
+      _ToolItem(_ToolKind.timer, Icons.alarm, 'Timer'),
+    ];
+
+    return glass(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Tools', style: TextStyle(color: _ink, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (_, c) {
+              final w = c.maxWidth;
+              final cols = w >= 420 ? 3 : 2;
+              const gap = 10.0;
+              final tileW = (w - (cols - 1) * gap) / cols;
+
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final it in items)
+                    SizedBox(
+                      width: tileW,
+                      child: _toolTile(
+                        it,
+                        active: _started && (it.kind == tool || it.kind == _ToolKind.timer),
+                        finished: _started && _leftSec <= 0 && it.kind == _ToolKind.timer,
+                        countText: (it.kind == _ToolKind.timer && _started) ? _leftSec.toString().padLeft(2, '0') : null,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _toolTile(_ToolItem it, {required bool active, required bool finished, String? countText}) {
+    return Container(
+      height: 88,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: active ? .10 : .06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: border),
+        border: Border.all(color: Colors.white.withValues(alpha: active ? .22 : .12)),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: (finished ? const Color(0xFFEF4444) : const Color(0xFF22C55E)).withValues(alpha: .25),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ]
+            : null,
       ),
       child: Stack(
         children: [
           Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 30, color: Colors.white.withValues(alpha: .95)),
-                const SizedBox(height: 6),
-                Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white70)),
-              ],
+            child: Icon(it.icon, color: Colors.white.withValues(alpha: .92), size: 34),
+          ),
+          Positioned(
+            left: 10,
+            bottom: 10,
+            child: Text(
+              it.label,
+              style: const TextStyle(color: _muted, fontSize: 12, fontWeight: FontWeight.w800),
             ),
           ),
           if (countText != null)
             Positioned(
-              right: 8,
-              bottom: 8,
+              right: 10,
+              bottom: 10,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .9),
+                  color: Colors.white.withValues(alpha: .85),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   countText,
-                  style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.black87, fontSize: 12),
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
                 ),
               ),
             ),
@@ -399,275 +466,406 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final total = _steps.length;
-    final cur = total == 0 ? null : _steps[_idx];
-    final canNext = total > 0 && _finished;
+  Widget _stepCard(_GlobalStep? cur) {
+    if (cur == null) {
+      return glass(
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('No steps', style: TextStyle(color: _muted)),
+        ),
+      );
+    }
 
-    final mq = MediaQuery.of(context);
-    final isNarrow = mq.size.width < 520;
+    final total = _totalGlobalSteps;
+    final curNo = _globalIndex + 1;
 
-    // ✅ 簡單示範：秒數 >= 60 視為「可離手（用鍋/電鍋/焗爐）」→ 顯示在第一個 icon 倒數
-    final showTopTimer = _started && cur != null && cur.seconds >= 60;
-    final topCountText = showTopTimer ? _fmt(_left) : null;
-
-    final rightMenus = _menus.take(5).toList(growable: false); // ✅ 需求 1：最多 5 個
-
-    final headerTitle = widget.singleRecipeTitle ?? (rightMenus.length <= 1 ? 'Cooking' : 'Multi cooking');
-    final headerSub = total == 0
-        ? 'No steps'
-        : (rightMenus.length <= 1
-            ? 'Step-by-step · Total $total steps'
-            : 'Step-by-step · Total $total steps · ${rightMenus.length} menus');
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0B1220),
-        title: Text(headerTitle),
-      ),
-      body: Stack(
+    return glass(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PageFrame(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(headerTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
-                const SizedBox(height: 4),
-                Text(headerSub, style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700, fontSize: 12)),
-                const SizedBox(height: 12),
-
-                // ✅ Top icons (6)
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .06),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withValues(alpha: .14)),
-                  ),
-                  child: LayoutBuilder(
-                    builder: (_, c) {
-                      final cols = c.maxWidth < 360 ? 2 : 3;
-                      return GridView.count(
-                        crossAxisCount: cols,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        children: [
-                          _toolIcon(
-                            icon: Icons.soup_kitchen,
-                            label: 'Pot',
-                            active: showTopTimer,
-                            countText: topCountText,
-                          ),
-                          _toolIcon(icon: Icons.rice_bowl, label: 'Rice', active: false),
-                          _toolIcon(icon: Icons.local_fire_department, label: 'Stove', active: !showTopTimer && _started),
-                          _toolIcon(icon: Icons.kitchen, label: 'Oven', active: false),
-                          _toolIcon(icon: Icons.handyman, label: 'Prep', active: false),
-                          _toolIcon(icon: Icons.front_hand, label: 'Hands', active: !showTopTimer && _started),
-                        ],
-                      );
-                    },
-                  ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .08),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white.withValues(alpha: .14)),
                 ),
+                child: Text(
+                  'Step $curNo/$total',
+                  style: const TextStyle(color: _ink, fontWeight: FontWeight.w900, fontSize: 12),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${cur.durationSec ~/ 60}m',
+                style: const TextStyle(color: _muted, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            cur.title,
+            style: const TextStyle(color: _ink, fontSize: 28, height: 1.15, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            cur.detail,
+            style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 17, height: 1.45, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _started
+                ? (_leftSec > 0 ? 'Running...' : 'Done. You can go next.')
+                : 'Press Start once to begin Step1 countdown.',
+            style: const TextStyle(color: _muted, fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
 
-                const SizedBox(height: 14),
+  Widget _startOnceHint() {
+    return Center(
+      child: Text(
+        _started ? 'Started: each step starts countdown automatically.' : 'Start only once. Next step is locked until timer reaches 0.',
+        style: const TextStyle(color: _muted, fontSize: 11, fontWeight: FontWeight.w700),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
 
-                // ✅ Main row: Step card + right menus
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 560),
-                            child: Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: .08),
-                                borderRadius: BorderRadius.circular(22),
-                                border: Border.all(color: Colors.white.withValues(alpha: _finished ? .30 : .16)),
-                              ),
-                              child: cur == null
-                                  ? const Center(
-                                      child: Text('No steps', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w900)),
-                                    )
-                                  : Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: .10),
-                                                borderRadius: BorderRadius.circular(999),
-                                                border: Border.all(color: Colors.white.withValues(alpha: .14)),
-                                              ),
-                                              child: Text(
-                                                // ✅ 需求 2.B：global Step index
-                                                'Step ${_idx + 1}/$total',
-                                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
-                                              ),
-                                            ),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  _fmt(_left),
-                                                  style: TextStyle(
-                                                    color: _finished ? Colors.redAccent : Colors.white,
-                                                    fontWeight: FontWeight.w900,
-                                                    fontSize: 34,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 6),
-                                                SizedBox(
-                                                  height: 34,
-                                                  child: FilledButton.tonal(
-                                                    onPressed: _started
-                                                        ? null
-                                                        : () {
-                                                            setState(() => _autoNext = !_autoNext);
-                                                          },
-                                                    child: Text('Auto Next: ${_autoNext ? 'ON' : 'OFF'}'),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 14),
-                                        Text(
-                                          cur.title,
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 28, height: 1.1),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          cur.detail,
-                                          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700, fontSize: 16, height: 1.4),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          'Menu: ${cur.menuTitle} · Local: ${cur.localStepIndex + 1}/${cur.localTotal}',
-                                          style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700, fontSize: 12),
-                                        ),
-                                        const Spacer(),
+  // ======== right menu buttons (最多 5) ========
+  Widget _rightMenuButtons() {
+    final menuIds = widget.snapshot.keys.toList();
+    final limited = menuIds.take(5).toList();
 
-                                        SizedBox(
-                                          height: 54,
-                                          child: FilledButton(
-                                            onPressed: canNext ? () => _goNext() : null,
-                                            child: Text(_idx >= total - 1 ? 'Finish' : 'Next step →', style: const TextStyle(fontWeight: FontWeight.w900)),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
+    return Column(
+      children: [
+        for (final id in limited) ...[
+          _menuIconButton(menuId: id),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
 
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: SizedBox(
-                                                height: 54,
-                                                child: FilledButton.tonal(
-                                                  onPressed: _started || total == 0 ? null : _startOnce,
-                                                  child: Text(_started ? 'Started' : 'Start', style: const TextStyle(fontWeight: FontWeight.w900)),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          _started
-                                              ? (_running ? 'Running…' : (_finished ? 'Done (you can Next)' : 'Idle'))
-                                              : 'Press Start once to begin Step 1 timer.',
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.w700),
-                                        ),
-                                      ],
-                                    ),
+  Widget _menuIconButton({required String menuId}) {
+    final r = kRecipeById[menuId];
+    final title = r?.menuTitle ?? menuId;
+
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          backgroundColor: Colors.white.withValues(alpha: .10),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        onPressed: () => setState(() => _quickOpenMenuId = menuId),
+        child: Center(
+          child: Text(
+            title.characters.take(2).toString().toUpperCase(),
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ======== quick menu dialog (顯示該菜 steps + global Step x/total) ========
+  Widget _quickMenuDialog() {
+    final menuId = _quickOpenMenuId!;
+    final r = kRecipeById[menuId];
+    final steps = r?.steps ?? const <RecipeStep>[];
+
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: () => setState(() => _quickOpenMenuId = null),
+        child: Container(
+          color: Colors.black.withValues(alpha: .40),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(16),
+          child: GestureDetector(
+            onTap: () {}, // stop
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520, maxHeight: 680),
+              child: Material(
+                color: Colors.white.withValues(alpha: .82),
+                borderRadius: BorderRadius.circular(22),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              r?.menuTitle ?? menuId,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                             ),
                           ),
-                        ),
+                          IconButton(
+                            onPressed: () => setState(() => _quickOpenMenuId = null),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
                       ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: steps.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (_, i) {
+                          final st = steps[i];
+                          final gi = _globalIndexByMenuStep['$menuId#$i'];
+                          final globalLabel = (gi == null) ? '' : 'Step ${gi + 1}/$_totalGlobalSteps';
 
-                      if (!isNarrow) ...[
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 64,
-                          child: Column(
-                            children: [
-                              for (final r in rightMenus) ...[
-                                GestureDetector(
-                                  onTap: () => _openMenuQuickList(r),
-                                  child: Container(
-                                    width: 52,
-                                    height: 52,
-                                    margin: const EdgeInsets.only(bottom: 10),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: Colors.white.withValues(alpha: .18)),
-                                      color: Colors.white.withValues(alpha: .10),
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: Image.network(
-                                      r.cover,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Center(
-                                        child: Icon(Icons.restaurant_menu, color: Colors.white70),
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: .60),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.black.withValues(alpha: .08)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        globalLabel,
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF374151)),
                                       ),
-                                    ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        st.titleText,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  '${st.durationMin}m',
+                                  style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF4B5563)),
+                                ),
                               ],
-                            ],
-                          ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                      child: SizedBox(
+                        height: 46,
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => setState(() => _quickOpenMenuId = null),
+                          child: const Text('Close'),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // 底部留位（避免被 pull tab 擋住）
-                const SizedBox(height: 74),
-              ],
-            ),
-          ),
-
-          // ✅ pull tab (bottom center)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 18,
-            child: Center(
-              child: GestureDetector(
-                onTap: _openAllStepsSheet,
-                child: Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: .14),
-                    border: Border.all(color: Colors.white.withValues(alpha: .22)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: .45),
-                        blurRadius: 28,
-                        offset: const Offset(0, 14),
-                      )
-                    ],
-                  ),
-                  child: const Icon(Icons.keyboard_arrow_up, color: Colors.white, size: 28),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
+
+  // ======== bottom draggable sheet (all global steps) ========
+  Widget _bottomSheet() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: DraggableScrollableSheet(
+        controller: _sheetCtl,
+        initialChildSize: 0.10,
+        minChildSize: 0.10,
+        maxChildSize: 0.92,
+        snap: true,
+        snapSizes: const [0.10, 0.92],
+        builder: (ctx, scrollCtl) {
+          final showPull = !_sheetOpen && _quickOpenMenuId == null;
+
+          return Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .55),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  border: Border.all(color: Colors.white.withValues(alpha: .20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: .35),
+                      blurRadius: 40,
+                      offset: const Offset(0, -18),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // grab bar
+                    Container(
+                      height: 44,
+                      alignment: Alignment.center,
+                      child: Container(
+                        width: 56,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: .16),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollCtl,
+                        padding: const EdgeInsets.all(12),
+                        itemCount: _globalSteps.length,
+                        itemBuilder: (_, i) {
+                          final it = _globalSteps[i];
+                          final isCur = i == _globalIndex;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: isCur ? .65 : .42),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.white.withValues(alpha: .26)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Step ${i + 1}/$_totalGlobalSteps',
+                                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF6B7280)),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        it.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                                      ),
+                                      const SizedBox(height: 1),
+                                      Text(
+                                        it.menuTitle,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF374151)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  '${it.durationSec ~/ 60}m',
+                                  style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF4B5563)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // pull tab button（開 sheet）
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 10,
+                child: AnimatedOpacity(
+                  opacity: showPull ? 1 : 0,
+                  duration: const Duration(milliseconds: 160),
+                  child: IgnorePointer(
+                    ignoring: !showPull,
+                    child: Center(
+                      child: SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            shape: const CircleBorder(),
+                            elevation: 0,
+                            backgroundColor: Colors.white.withValues(alpha: .18),
+                            foregroundColor: Colors.black.withValues(alpha: .85),
+                          ),
+                          onPressed: () {
+                            // snap to open
+                            _sheetCtl.animateTo(
+                              0.92,
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            );
+                          },
+                          child: const Icon(Icons.keyboard_arrow_up, size: 28),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ======== internal models ========
+
+enum _ToolKind { pan, electricPot, oven, steamer, hand, timer }
+
+class _ToolItem {
+  final _ToolKind kind;
+  final IconData icon;
+  final String label;
+  _ToolItem(this.kind, this.icon, this.label);
+}
+
+class _GlobalStep {
+  final String menuId;
+  final String menuTitle;
+  final int stepIndex; // index inside that recipe
+  final String title;
+  final String detail;
+  final int durationSec;
+  final _ToolKind tool;
+
+  _GlobalStep({
+    required this.menuId,
+    required this.menuTitle,
+    required this.stepIndex,
+    required this.title,
+    required this.detail,
+    required this.durationSec,
+    required this.tool,
+  });
 }

@@ -4,21 +4,19 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../domain/models/recipe.dart';
 import 'cook_flow_screen.dart';
 
+/// 單菜版本：轉去共用 CookFlowScreen
 class CookingScreen extends StatelessWidget {
-  final Recipe recipe;
+  final String menuId;
 
-  const CookingScreen({super.key, required this.recipe});
+  const CookingScreen({super.key, required this.menuId});
 
   @override
   Widget build(BuildContext context) {
-    final totalMin = recipe.steps.fold<int>(0, (s, st) => s + st.durationMin);
     return CookFlowScreen(
-      snapshot: {recipe.id: 1},
-      totalPlannedMinutes: totalMin,
-      titleOverride: recipe.name,
+      snapshot: {menuId: 1},
+      totalPlannedMinutes: 0,
     );
   }
 }
