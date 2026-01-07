@@ -84,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<List<List<List<double>>>> preprocessImage(File imageFile, int inputSize) async {
     final bytes = await imageFile.readAsBytes();
     img.Image? image = img.decodeImage(bytes);
-    if (image == null) throw Exception('无法解码图片');
+    if (image == null) throw Exception('Unable to decode image');
 
     img.Image resized = img.copyResize(image, width: inputSize, height: inputSize);
 
@@ -183,11 +183,11 @@ class _MyHomePageState extends State<MyHomePage> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.camera_alt),
-            label: '模型推論',
+            label: 'Model Inference',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.people),
-            label: '用戶管理',
+            label: 'User Management',
           ),
         ],
       ),

@@ -18,11 +18,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   String _queryStatus = '';
   bool _isLoading = false;
 
-  // 查詢用戶
+  // Query user
   Future<void> _queryUserById(String id) async {
     if (id.isEmpty) {
       setState(() {
-        _queryStatus = '請輸入 ID';
+        _queryStatus = 'Please enter ID';
         _queryResult = null;
       });
       return;
@@ -30,7 +30,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     setState(() {
       _isLoading = true;
-      _queryStatus = '查詢中...';
+      _queryStatus = 'Querying...';
     });
 
     try {
@@ -39,49 +39,49 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       if (doc.exists) {
         setState(() {
           _queryResult = {'id': doc.id, ...doc.data() as Map<String, dynamic>};
-          _queryStatus = '查詢成功';
+          _queryStatus = 'Query successful';
           _isLoading = false;
         });
       } else {
         setState(() {
           _queryResult = null;
-          _queryStatus = '找不到此 ID 的用戶';
+          _queryStatus = 'User with this ID not found';
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _queryStatus = '查詢失敗: $e';
+        _queryStatus = 'Query failed: $e';
         _queryResult = null;
         _isLoading = false;
       });
-      print('查詢錯誤: $e');
+      print('Query error: $e');
     }
   }
 
-  // 添加用戶
+  // Add user
   Future<void> _addUser() async {
     final id = _addIdController.text.trim();
     final name = _addNameController.text.trim();
 
     if (id.isEmpty || name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID 和名稱不能為空')),
+        const SnackBar(content: Text('ID and Name cannot be empty')),
       );
       return;
     }
 
     try {
-      // 檢查是否已存在
+      // Check if already exists
       final existingDoc = await _firestore.collection('User').doc(id).get();
       if (existingDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('此 ID 已存在')),
+          const SnackBar(content: Text('This ID already exists')),
         );
         return;
       }
 
-      // 新增用戶
+      // Add new user
       await _firestore.collection('User').doc(id).set({
         'ID': id,
         'name': name,
@@ -91,36 +91,36 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       _addNameController.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('用戶添加成功')),
+        const SnackBar(content: Text('User added successfully')),
       );
-      print('用戶添加成功: ID=$id, name=$name');
+      print('User added successfully: ID=$id, name=$name');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('添加失敗: $e')),
+        SnackBar(content: Text('Add failed: $e')),
       );
-      print('添加錯誤: $e');
+      print('Add error: $e');
     }
   }
 
-  // 刪除用戶
+  // Delete user
   Future<void> _deleteUser(String id) async {
     try {
       await _firestore.collection('User').doc(id).delete();
       
       setState(() {
         _queryResult = null;
-        _queryStatus = '用戶已刪除';
+        _queryStatus = 'User deleted';
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('用戶刪除成功')),
+        const SnackBar(content: Text('User deleted successfully')),
       );
-      print('用戶刪除成功: ID=$id');
+      print('User deleted successfully: ID=$id');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('刪除失敗: $e')),
+        SnackBar(content: Text('Delete failed: $e')),
       );
-      print('刪除錯誤: $e');
+      print('Delete error: $e');
     }
   }
 
@@ -140,7 +140,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 查詢區段
+            // Query section
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -148,7 +148,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '查詢用戶',
+                      'Query User',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -158,7 +158,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     TextField(
                       controller: _queryIdController,
                       decoration: InputDecoration(
-                        labelText: '輸入用戶 ID',
+                        labelText: 'Enter User ID',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -172,7 +172,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         onPressed: _isLoading
                             ? null
                             : () => _queryUserById(_queryIdController.text),
-                        child: Text(_isLoading ? '查詢中...' : '查詢'),
+                        child: Text(_isLoading ? 'Querying...' : 'Query'),
                       ),
                     ),
                     if (_queryStatus.isNotEmpty) ...[
@@ -189,7 +189,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ),
             ),
 
-            // 查詢結果
+            // Query result
             if (_queryResult != null) ...[
               const SizedBox(height: 16),
               Card(
@@ -199,7 +199,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '查詢結果',
+                        'Query Result',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -208,7 +208,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       const SizedBox(height: 12),
                       _buildResultRow('ID', _queryResult!['ID'] ?? 'N/A'),
                       const SizedBox(height: 8),
-                      _buildResultRow('名稱', _queryResult!['name'] ?? 'N/A'),
+                      _buildResultRow('Name', _queryResult!['name'] ?? 'N/A'),
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -221,7 +221,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                   _queryIdController.clear();
                                 });
                               },
-                              child: const Text('返回'),
+                              child: const Text('Back'),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -236,7 +236,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 backgroundColor: Colors.red,
                               ),
                               child: const Text(
-                                '刪除',
+                                'Delete',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
@@ -249,7 +249,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ),
             ],
 
-            // 添加用戶區段
+            // Add user section
             const SizedBox(height: 16),
             Card(
               child: Padding(
@@ -258,7 +258,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '添加新用戶',
+                      'Add New User',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -268,7 +268,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     TextField(
                       controller: _addIdController,
                       decoration: InputDecoration(
-                        labelText: '輸入 ID',
+                        labelText: 'Enter ID',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -279,7 +279,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     TextField(
                       controller: _addNameController,
                       decoration: InputDecoration(
-                        labelText: '輸入名稱',
+                        labelText: 'Enter Name',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -295,7 +295,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           backgroundColor: Colors.green,
                         ),
                         child: const Text(
-                          '添加用戶',
+                          'Add User',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
@@ -310,7 +310,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  // 結果行組件
+  // Result row widget
   Widget _buildResultRow(String label, String value) {
     return Row(
       children: [
@@ -332,18 +332,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  // 刪除確認對話框
+  // Delete confirmation dialog
   void _showDeleteConfirmDialog(String userId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('確認刪除'),
-          content: Text('確定要刪除 ID 為 "$userId" 的用戶嗎？'),
+          title: const Text('Confirm Delete'),
+          content: Text('Are you sure you want to delete the user with ID "$userId"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
@@ -353,7 +353,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,
               ),
-              child: const Text('確認刪除'),
+              child: const Text('Confirm Delete'),
             ),
           ],
         );
