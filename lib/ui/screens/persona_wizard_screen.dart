@@ -44,6 +44,36 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     'bake': 0,
   };
 
+  // ✅ Appliance dropdown limits
+  static const Map<String, int> _applianceMin = {
+    'cookware': 1,
+    'stove': 1,
+    'electric': 0,
+    'bake': 0,
+  };
+
+  static const Map<String, int> _applianceMax = {
+    'cookware': 2,
+    'stove': 2,
+    'electric': 2,
+    'bake': 1,
+  };
+
+  int _applianceValue(String key) {
+    final v = _appliances[key] ?? 0;
+    final max = _applianceMax[key] ?? 4;
+    if (v < 0) return 0;
+    if (v > max) return max;
+    return v;
+  }
+
+  bool _applianceOk(String key) {
+    final v = _applianceValue(key);
+    final min = _applianceMin[key] ?? 0;
+    final max = _applianceMax[key] ?? 999;
+    return v >= min && v <= max;
+  }
+
   final Set<String> _allergies = {};
 
   late FixedExtentScrollController _ageCtl;
@@ -72,8 +102,12 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
         return true;
 
       case QType.applianceDropdowns:
-        // cookware & stove 必須 >= 1
-        return (_appliances['cookware'] ?? 0) >= 1 && (_appliances['stove'] ?? 0) >= 1;
+        // ✅ min/max:
+        // cookware <=2, >=1
+        // stove <=2, >=1
+        // electric <=2
+        // bake <=1
+        return _applianceOk('cookware') && _applianceOk('stove') && _applianceOk('electric') && _applianceOk('bake');
 
       case QType.allergyCheckboxes:
         // 冇要求必選，所以永遠可以
@@ -250,50 +284,61 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       ('Baking / air frying (oven, air fryer)', 'bake'),
     ];
 
-    final ddItems = List<DropdownMenuItem<int>>.generate(
-      5,
-      (i) => DropdownMenuItem(
-        value: i,
-        child: Text(
-          i.toString(),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600), // ✅ 放大
-        ),
-      ),
-    );
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        for (final r in rows) ...[
-          Align(
-            alignment: Alignment.center,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: glass(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        r.$1,
-                        textAlign: TextAlign.center, // 文字也置中（你想要更「正中」就保留）
-                        style: const TextStyle(fontSize: 17),//放大文字
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    DropdownButton<int>(
-                      value: _appliances[r.$2]!,
-                      items: ddItems,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700), // 放大
-                      onChanged: (v) => setState(() => _appliances[r.$2] = v ?? 0),
-                    ),
-                  ],
+        for (final r in rows)
+        Builder(
+          builder: (context) {
+            final key = r.$2;
+            final max = _applianceMax[key] ?? 4;
+
+            final ddItems = List<DropdownMenuItem<int>>.generate(
+              max + 1,
+              (i) => DropdownMenuItem(
+                value: i,
+                child: Text(
+                  i.toString(),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600), // ✅ 放大
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
+            );
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.center,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: glass(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              r.$1,
+                              textAlign: TextAlign.center, // 文字也置中（你想要更「正中」就保留）
+                              style: const TextStyle(fontSize: 17), // 放大文字
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          DropdownButton<int>(
+                            value: _applianceValue(key),
+                            items: ddItems,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700), // 放大
+                            onChanged: (v) => setState(() => _appliances[key] = v ?? 0),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+            );
+          },
+        ),
       ],
     );
   }
