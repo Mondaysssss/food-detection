@@ -9,6 +9,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../state/app_state.dart';
 
 import '../../../data/recipes_data.dart';
 import '../../../domain/models/recipe.dart';
@@ -166,11 +168,24 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     final t = text.toLowerCase();
 
     // 超簡單推斷（你將來會由 DB 決定）
-    if (t.contains('oven') || t.contains('bake') || t.contains('roast')) return _ToolKey.oven;
-    if (t.contains('electric') || t.contains('rice cooker') || t.contains('slow cooker')) return _ToolKey.electric;
-    if (t.contains('stove') || t.contains('boil') || t.contains('fry') || t.contains('pan')) return _ToolKey.stove;
-    if (t.contains('pot') || t.contains('soup') || t.contains('simmer')) return _ToolKey.pot;
-    if (t.contains('chop') || t.contains('slice') || t.contains('wash') || t.contains('mix')) return _ToolKey.prep;
+    if (t.contains('oven') || t.contains('bake') || t.contains('roast'))
+      return _ToolKey.oven;
+    if (t.contains('electric') ||
+        t.contains('rice cooker') ||
+        t.contains('slow cooker'))
+      return _ToolKey.electric;
+    if (t.contains('stove') ||
+        t.contains('boil') ||
+        t.contains('fry') ||
+        t.contains('pan'))
+      return _ToolKey.stove;
+    if (t.contains('pot') || t.contains('soup') || t.contains('simmer'))
+      return _ToolKey.pot;
+    if (t.contains('chop') ||
+        t.contains('slice') ||
+        t.contains('wash') ||
+        t.contains('mix'))
+      return _ToolKey.prep;
     return _ToolKey.hands;
   }
 
@@ -427,6 +442,17 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     if (!_finished) return;
 
     if (_idx >= _steps.length - 1) {
+      // ✅ 1) 入 session history（一次 Cook Flow = 一條記錄）
+      final app = context.read<AppState>();
+      app.addSessionFromCartSnapshot(
+        widget.snapshot,
+        widget.totalPlannedMinutes,
+      );
+
+      // （可選）如果你 Finish 之後想清空購物車：
+      // app.clearCart();
+
+      // ✅ 2) 返回上一頁
       Navigator.pop(context);
       return;
     }
@@ -495,7 +521,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   int _toolShakeMs(_ToolKey k) {
     final t = _toolTimers[k];
     if (t == null) return 420;
-    return _calcShakeMs(totalMs: t.totalMs, leftMs: t.leftMs, finished: t.finished);
+    return _calcShakeMs(
+      totalMs: t.totalMs,
+      leftMs: t.leftMs,
+      finished: t.finished,
+    );
   }
 
   Future<void> _openMenuStepsDialog(Recipe r) async {
@@ -517,9 +547,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             data: Theme.of(context).copyWith(
               brightness: Brightness.light,
               textTheme: Theme.of(context).textTheme.apply(
-                    bodyColor: Colors.black87,
-                    displayColor: Colors.black87,
-                  ),
+                bodyColor: Colors.black87,
+                displayColor: Colors.black87,
+              ),
               iconTheme: const IconThemeData(color: Colors.black87),
             ),
             child: Container(
@@ -539,7 +569,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                         Expanded(
                           child: Text(
                             r.name,
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -561,15 +594,21 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
                         final curNo = _steps[_idx].globalNo;
                         final isCurrent = s.globalNo == curNo;
-                        final done = (s.globalNo < curNo) || (s.globalNo == curNo && _finished);
+                        final done =
+                            (s.globalNo < curNo) ||
+                            (s.globalNo == curNo && _finished);
 
                         return ListTile(
                           dense: true,
                           title: Text(
                             'Step ${s.globalNo}/${s.globalTotal}  ·  ${s.menuName} ${s.dishNo}/${s.dishTotal}',
                             style: TextStyle(
-                              fontWeight: isCurrent ? FontWeight.w900 : FontWeight.w700,
-                              color: isCurrent ? Colors.black : Colors.black.withValues(alpha: 0.8),
+                              fontWeight: isCurrent
+                                  ? FontWeight.w900
+                                  : FontWeight.w700,
+                              color: isCurrent
+                                  ? Colors.black
+                                  : Colors.black.withValues(alpha: 0.8),
                             ),
                           ),
 
@@ -589,7 +628,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                s.durationMs <= 0 ? '-' : _fmtLeft(s.durationMs),
+                                s.durationMs <= 0
+                                    ? '-'
+                                    : _fmtLeft(s.durationMs),
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   color: Colors.blue.shade700,
@@ -635,7 +676,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     final title = widget.titleOverride ?? 'Cooking';
 
     // ✅ Step 卡只顯示「人手倒數」
-    final stepTimeText = (_flowStarted && _stepMs > 0) ? _fmtLeft(_leftMs) : '--';
+    final stepTimeText = (_flowStarted && _stepMs > 0)
+        ? _fmtLeft(_leftMs)
+        : '--';
 
     // 右邊菜單最多 5 個（已改為上方橫向 Row）
     final menusForRight = _menus.take(5).toList(growable: false);
@@ -687,10 +730,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
                     const SizedBox(height: 12),
 
-                    _StartOnceBar(
-                      started: _flowStarted,
-                      onStart: _startOnce,
-                    ),
+                    _StartOnceBar(started: _flowStarted, onStart: _startOnce),
                   ],
                 ),
               ),
@@ -780,7 +820,9 @@ class _ToolIconsFrame extends StatelessWidget {
               color: const Color(0xFF0B1220),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: active ? _accent.withValues(alpha: 0.65) : Colors.white.withValues(alpha: 0.10),
+                color: active
+                    ? _accent.withValues(alpha: 0.65)
+                    : Colors.white.withValues(alpha: 0.10),
                 width: active ? 2 : 1,
               ),
               boxShadow: active
@@ -817,9 +859,7 @@ class _ToolIconsFrame extends StatelessWidget {
 
                 // 上層：大鬧鐘（置中 + 搖擺）
                 if (timerActive)
-                  Positioned.fill(
-                    child: _AlarmOverlay(shakeMs: shakeMs),
-                  ),
+                  Positioned.fill(child: _AlarmOverlay(shakeMs: shakeMs)),
 
                 // 最上層：倒數 badge（右下）
                 if (timerActive && countText.isNotEmpty)
@@ -827,11 +867,16 @@ class _ToolIconsFrame extends StatelessWidget {
                     right: 8,
                     bottom: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.86),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.08),
+                        ),
                       ),
                       child: Text(
                         countText,
@@ -861,7 +906,8 @@ class _AlarmOverlay extends StatefulWidget {
   State<_AlarmOverlay> createState() => _AlarmOverlayState();
 }
 
-class _AlarmOverlayState extends State<_AlarmOverlay> with SingleTickerProviderStateMixin {
+class _AlarmOverlayState extends State<_AlarmOverlay>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctl;
   late Animation<double> _rot;
 
@@ -907,7 +953,8 @@ class _AlarmOverlayState extends State<_AlarmOverlay> with SingleTickerProviderS
           padding: const EdgeInsets.all(6),
           child: AnimatedBuilder(
             animation: _rot,
-            builder: (_, child) => Transform.rotate(angle: _rot.value, child: child),
+            builder: (_, child) =>
+                Transform.rotate(angle: _rot.value, child: child),
             child: Opacity(
               opacity: 0.85,
               child: FittedBox(
@@ -1032,11 +1079,16 @@ class _StepCard extends StatelessWidget {
                 backgroundColor: Colors.white.withValues(alpha: 0.18),
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: Colors.white.withValues(alpha: 0.10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: Text(
                 (s.globalNo >= s.globalTotal) ? 'Finish' : 'Next step →',
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
@@ -1064,7 +1116,9 @@ class _StartOnceBar extends StatelessWidget {
               backgroundColor: Colors.white.withValues(alpha: 0.90),
               foregroundColor: const Color(0xFF0B1220),
               disabledBackgroundColor: Colors.white.withValues(alpha: 0.55),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
             ),
             child: Text(
               started ? 'Started' : 'Start',
@@ -1116,11 +1170,17 @@ class _MenuIconButton extends StatelessWidget {
           ),
           clipBehavior: Clip.antiAlias,
           child: imgUrl == null
-              ? Icon(Icons.restaurant_menu, color: Colors.white.withValues(alpha: 0.85))
+              ? Icon(
+                  Icons.restaurant_menu,
+                  color: Colors.white.withValues(alpha: 0.85),
+                )
               : Image.network(
                   imgUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(Icons.restaurant_menu, color: Colors.white.withValues(alpha: 0.85)),
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.restaurant_menu,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
                 ),
         ),
       ),
@@ -1205,7 +1265,10 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
       onNotification: (n) {
         final minSize = 0.12;
         final maxSize = 0.92;
-        final ratio = ((n.extent - minSize) / (maxSize - minSize)).clamp(0.0, 1.0);
+        final ratio = ((n.extent - minSize) / (maxSize - minSize)).clamp(
+          0.0,
+          1.0,
+        );
         widget.onOpenRatio(ratio);
         return false;
       },
@@ -1219,7 +1282,9 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
           return Container(
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.58),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(22),
+              ),
               border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
               boxShadow: [
                 BoxShadow(
@@ -1248,7 +1313,10 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                     children: [
                       const Text(
                         'All steps',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
                       ),
                       const Spacer(),
                       Text(
@@ -1283,16 +1351,22 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                       final s = widget.steps[i];
 
                       final isCurrent = s.globalNo == widget.currentGlobalNo;
-                      final done = (s.globalNo < widget.currentGlobalNo) ||
-                          (s.globalNo == widget.currentGlobalNo && widget.currentFinished);
+                      final done =
+                          (s.globalNo < widget.currentGlobalNo) ||
+                          (s.globalNo == widget.currentGlobalNo &&
+                              widget.currentFinished);
 
                       return ListTile(
                         dense: true,
                         title: Text(
                           'Step ${s.globalNo}/${s.globalTotal}  ·  ${s.menuName} ${s.dishNo}/${s.dishTotal}',
                           style: TextStyle(
-                            fontWeight: isCurrent ? FontWeight.w900 : FontWeight.w800,
-                            color: isCurrent ? Colors.black : Colors.black.withValues(alpha: 0.85),
+                            fontWeight: isCurrent
+                                ? FontWeight.w900
+                                : FontWeight.w800,
+                            color: isCurrent
+                                ? Colors.black
+                                : Colors.black.withValues(alpha: 0.85),
                           ),
                         ),
 
