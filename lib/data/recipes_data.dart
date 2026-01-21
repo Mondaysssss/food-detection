@@ -12,7 +12,7 @@ const List<Recipe> kRecipes = [
     menuId: 'r1',
     name: 'Tomato & Egg Stir-fry',
     type: 'Chinese',
-    taste: ['Savory', 'Slightly sweet'],
+    taste: ['Savory', 'Fresh'],
     ingredientsRequired: ['tomato', 'egg', 'salt', 'oil'],
     cover:
         'https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=1200&auto=format&fit=crop',
@@ -28,10 +28,10 @@ const List<Recipe> kRecipes = [
     menuId: 'r2',
     name: 'Garlic Butter Shrimp',
     type: 'Western',
-    taste: ['Aromatic', 'Salty'],
+    taste: ['Rich', 'Umami'],
     ingredientsRequired: ['shrimp', 'garlic', 'butter', 'salt', 'pepper'],
     cover:
-        'https://images.unsplash.com/photo-1604908178196-1c9c1c9d9c36?q=80&w=1200&auto=format&fit=crop',
+        'https://www.jocooks.com/wp-content/uploads/2021/09/garlic-butter-shrimp-1-10.jpg',
     steps: [
       RecipeStep('Thaw & devein shrimp', 4),
       RecipeStep('Heat butter, sauté minced garlic', 2),
@@ -44,7 +44,7 @@ const List<Recipe> kRecipes = [
     menuId: 'r3',
     name: 'Japanese-Style Salad',
     type: 'Japanese',
-    taste: ['Refreshing', 'Sweet & sour'],
+    taste: ['Fresh', 'Sour'],
     ingredientsRequired: [
       'lettuce',
       'tomato',
@@ -67,7 +67,7 @@ const List<Recipe> kRecipes = [
     menuId: 'r4',
     name: 'Thai Basil Pork',
     type: 'Thai',
-    taste: ['Spicy', 'Aromatic'],
+    taste: ['Spicy', 'Herby'],
     ingredientsRequired: [
       'pork',
       'basil',
@@ -90,7 +90,7 @@ const List<Recipe> kRecipes = [
     menuId: 'r5',
     name: 'Pesto Mushroom Pasta',
     type: 'Western',
-    taste: ['Herby', 'Salty'],
+    taste: ['Herby', 'Rich'],
     ingredientsRequired: [
       'pasta',
       'mushroom',
@@ -112,10 +112,10 @@ const List<Recipe> kRecipes = [
   // Previously added (your first batch)
   // =========================================================
   Recipe(
-    menuId: 'recipe_winter_melon_soup',
+    menuId: 'r6',
     name: 'Winter Melon Soup with Pork Ribs',
     type: 'Chinese',
-    taste: ['Soup', 'Comfort', 'Light'],
+    taste: ['Light', 'Umami'],
     ingredientsRequired: [
       'pork_ribs',
       'ginger',
@@ -127,7 +127,8 @@ const List<Recipe> kRecipes = [
       'light_soy_sauce',
       'water',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?winter-melon,soup,pork',
+    cover:
+        'https://smellylunchbox.com/wp-content/uploads/2023/09/fuzzymelonsoup-750x500.webp',
     steps: [
       RecipeStep('Soak ribs in cold water to remove blood', 60),
       RecipeStep('Blanch ribs briefly, then rinse', 5),
@@ -140,10 +141,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_katsudon',
+    menuId: 'r7',
     name: 'Katsudon',
     type: 'Japanese',
-    taste: ['Rice bowl', 'Pork', 'Comfort food'],
+    taste: ['Umami', 'Rich'],
     ingredientsRequired: [
       'dashi_packet',
       'water',
@@ -156,7 +157,8 @@ const List<Recipe> kRecipes = [
       'tonkatsu',
       'rice',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?katsudon',
+    cover:
+        'https://www.marionskitchen.com/wp-content/uploads/2019/07/Katsudon-02.jpg',
     steps: [
       RecipeStep(
         'Make dashi: boil water with dashi packet, simmer, remove packet',
@@ -177,10 +179,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_roast_rack_lamb',
+    menuId: 'r8',
     name: 'Oven Roasted Rack of Lamb with Potatoes',
     type: 'French',
-    taste: ['Lamb', 'Roasted', 'Potatoes', 'Herbs'],
+    taste: ['Rich', 'Herby'],
     ingredientsRequired: [
       'lamb_rack',
       'potato',
@@ -192,7 +194,8 @@ const List<Recipe> kRecipes = [
       'espelette_pepper',
       'olive_oil',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?rack-of-lamb,roast,potatoes',
+    cover:
+        'https://thefrayedapron.com/wp-content/uploads/2019/07/oven-roasted-rack-of-lamb-with-pan-potatoes-1024x683.jpg',
     steps: [
       RecipeStep('Bring lamb racks to room temperature', 60),
       RecipeStep('Preheat oven to 175°C', 10),
@@ -213,10 +216,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_miso_eggplant',
+    menuId: 'r9',
     name: 'Miso Glazed Eggplant',
     type: 'Japanese',
-    taste: ['Vegetarian', 'Side dish', 'Grilled'],
+    taste: ['Umami', 'Sweet'],
     ingredientsRequired: [
       'japanese_eggplant',
       'miso',
@@ -228,7 +231,8 @@ const List<Recipe> kRecipes = [
       'shiso_leaf',
       'white_sesame_seed',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?miso,eggplant',
+    cover:
+        'https://www.justonecookbook.com/wp-content/uploads/2025/02/Miso-Glazed-Eggplant-3360-II-800x1200.jpg',
     steps: [
       RecipeStep('Gather all the ingredients', 1),
       RecipeStep('Combine miso and sugar in a bowl', 1),
@@ -247,10 +251,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_korean_spicy_wings',
+    menuId: 'r10',
     name: 'Korean Spicy Chicken Wings',
     type: 'Korean',
-    taste: ['Spicy', 'Wings', 'Oven baked'],
+    taste: ['Spicy', 'Sweet', 'Umami'],
     ingredientsRequired: [
       'chicken_wings',
       'garlic',
@@ -264,7 +268,8 @@ const List<Recipe> kRecipes = [
       'green_onion',
       'white_sesame_seed',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?korean,spicy,chicken,wings',
+    cover:
+        'https://i0.wp.com/beyondsweetandsavory.com/wp-content/uploads/2022/02/Korean-fried-chicken-wings-VyTran-6.jpg?resize=683%2C1024&ssl=1',
     steps: [
       RecipeStep('Gather all the ingredients', 1),
       RecipeStep('Whisk marinade ingredients in a bowl', 3),
@@ -278,10 +283,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_char_siu',
+    menuId: 'r11',
     name: 'Char Siu',
     type: 'Cantonese',
-    taste: ['BBQ', 'Pork', 'Roasted'],
+    taste: ['Sweet', 'Umami', 'Rich'],
     ingredientsRequired: [
       'pork_shoulder',
       'light_soy_sauce',
@@ -297,7 +302,8 @@ const List<Recipe> kRecipes = [
       'red_food_coloring',
       'water',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?char-siu',
+    cover:
+        'https://images.getrecipekit.com/20241120144335-how-to-make-chinese-cantonese-bbq-roasted-pork-char-siu-recipe.png?aspect_ratio=16:9&quality=90&',
     steps: [
       RecipeStep('Cut pork into 1-inch slices; poke with fork', 7),
       RecipeStep('Mix marinade ingredients', 3),
@@ -310,10 +316,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_honey_garlic_pork',
+    menuId: 'r12',
     name: 'Pork Belly with Honey Garlic Sauce',
-    type: 'Asian Fusion',
-    taste: ['Glazed', 'Quick', 'Savory'],
+    type: 'Asian',
+    taste: ['Sweet', 'Umami'],
     ingredientsRequired: [
       'pork_belly',
       'garlic',
@@ -322,7 +328,8 @@ const List<Recipe> kRecipes = [
       'oyster_sauce',
       'neutral_oil',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?pork-belly,honey,garlic',
+    cover:
+        'https://juliasalbum.com/wp-content/uploads/2018/11/sliced-pork-belly-with-honey-garlic-sauce-2.jpg',
     steps: [
       RecipeStep('Slice pork belly', 2),
       RecipeStep('Prep garlic', 1),
@@ -333,10 +340,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_hk_pan_fried_noodles',
+    menuId: 'r13',
     name: 'Hong Kong Style Pan-Fried Noodles',
     type: 'Cantonese',
-    taste: ['Noodles', 'Stir-fry'],
+    taste: ['Savory', 'Umami'],
     ingredientsRequired: [
       'hk_pan_noodles',
       'corn_oil',
@@ -349,7 +356,8 @@ const List<Recipe> kRecipes = [
       'water',
       'sesame_oil',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?hong-kong,noodles',
+    cover:
+        'https://www.littlespicejar.com/wp-content/uploads/2016/01/Pan-Fried-Cantonese-Noodles-3-710x1065.jpg',
     steps: [
       RecipeStep('Steam noodles', 10),
       RecipeStep('Dip in boiling water and drain', 2),
@@ -362,10 +370,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_beef_teriyaki',
+    menuId: 'r13',
     name: 'Beef Teriyaki',
     type: 'Japanese',
-    taste: ['Steak', 'Teriyaki'],
+    taste: ['Sweet', 'Umami'],
     ingredientsRequired: [
       'ribeye_steak',
       'soy_sauce',
@@ -379,7 +387,8 @@ const List<Recipe> kRecipes = [
       'green_onion',
       'white_sesame_seed',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?beef,teriyaki',
+    cover:
+        'https://www.epochtimes.com/_next/image?url=https%3A%2F%2Fi.epochtimes.com%2Fassets%2Fuploads%2F2023%2F11%2Fid14119775-atk-steak-20231011.jpg&w=1200&q=75',
     steps: [
       RecipeStep('Mix teriyaki sauce', 2),
       RecipeStep('Marinate steaks', 30),
@@ -391,10 +400,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_spicy_garlic_chicken',
+    menuId: 'r14',
     name: 'Spicy Garlic Chicken',
-    type: 'Japanese Fusion',
-    taste: ['Spicy', 'Glazed', 'Quick'],
+    type: 'Japanese',
+    taste: ['Spicy', 'Umami'],
     ingredientsRequired: [
       'chicken_breast',
       'kosher_salt',
@@ -411,7 +420,8 @@ const List<Recipe> kRecipes = [
       'green_onion',
       'white_sesame_seed',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?spicy,garlic,chicken',
+    cover:
+        'https://lh5.googleusercontent.com/TsLBGTd0LiBq_GAv-BrJD7AMB3mpT2bnNDhwmMTnIejY1s7En08OAhVLLMAr8K1000WZMAIlYgW7t28OW8GYRclt78OJAd1Tg5e43h5WA8VQJ9mtkdoisTGDy8Bz8JXl6hUFuMmU=s0',
     steps: [
       RecipeStep('Prep chicken and coat with starch', 5),
       RecipeStep('Pan-fry until golden', 6),
@@ -424,10 +434,10 @@ const List<Recipe> kRecipes = [
   // NEW: latest files you uploaded (added now)
   // =========================================================
   Recipe(
-    menuId: 'recipe_oyakodon',
+    menuId: 'r15',
     name: 'Oyakodon',
     type: 'Japanese',
-    taste: ['Rice bowl', 'Chicken', 'Egg', 'Quick'],
+    taste: ['Umami', 'Light'],
     ingredientsRequired: [
       'onion',
       'green_onion',
@@ -441,7 +451,8 @@ const List<Recipe> kRecipes = [
       'rice',
       'shichimi_togarashi',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?oyakodon,japanese',
+    cover:
+        'https://www.okonomikitchen.com/wp-content/uploads/2024/09/oyakodon-recipe-Japanese-chicken-and-egg-rice-bowl-800x1200.jpg',
     steps: [
       RecipeStep('Gather all the ingredients', 1),
       RecipeStep('Slice onion thinly', 1),
@@ -465,10 +476,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_grilled_miso_chicken',
+    menuId: 'r16',
     name: 'Grilled Miso Chicken',
     type: 'Japanese',
-    taste: ['Grilled', 'Miso', 'Chicken', 'Quick'],
+    taste: ['Umami', 'Herby'],
     ingredientsRequired: [
       'chicken_breast',
       'garlic',
@@ -479,7 +490,8 @@ const List<Recipe> kRecipes = [
       'soy_sauce',
       'sambal_oelek',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?miso,chicken,grilled',
+    cover:
+        'https://glebekitchen.com/wp-content/uploads/2017/03/koreangrilledchickenfront.jpg',
     steps: [
       RecipeStep(
         'Mix garlic, ginger, miso, oils, soy sauce, and sambal in a bowl',
@@ -496,10 +508,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_spicy_pickled_cucumber',
+    menuId: 'r17',
     name: 'Spicy Japanese Pickled Cucumbers',
     type: 'Japanese',
-    taste: ['Pickled', 'Side dish', 'Spicy', 'Vegetarian'],
+    taste: ['Spicy', 'Sour', 'Fresh'],
     ingredientsRequired: [
       'japanese_cucumber',
       'kosher_salt',
@@ -509,7 +521,8 @@ const List<Recipe> kRecipes = [
       'la_yu',
       'sugar',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?pickled,cucumber,japanese',
+    cover:
+        'https://thejapanesepantry.com/cdn/shop/articles/Spicy_Sesame_Cucumber_Salad.jpg?v=1621634486&width=1200',
     steps: [
       RecipeStep('Whisk soy sauce, sesame oil, la-yu, and sugar', 1),
       RecipeStep('Peel cucumbers in striped pattern', 2),
@@ -524,10 +537,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_honey_garlic_chicken_stir_fry',
+    menuId: 'r18',
     name: 'Honey Garlic Chicken Stir Fry',
     type: 'Asian',
-    taste: ['Stir-fry', 'Chicken', 'Quick', 'Honey garlic'],
+    taste: ['Sweet', 'Savory'],
     ingredientsRequired: [
       'vegetable_oil',
       'carrot',
@@ -542,7 +555,7 @@ const List<Recipe> kRecipes = [
       'black_pepper',
     ],
     cover:
-        'https://source.unsplash.com/1200x800/?honey,garlic,chicken,stir-fry',
+        'https://sizzlingspoon.com/wp-content/uploads/2024/07/Chicken-Stir-Fry-Recipe-800x600.jpg',
     steps: [
       RecipeStep('Heat 1 tsp oil in a large pan over medium heat', 1),
       RecipeStep('Add broccoli and carrots; cook until tender', 4),
@@ -559,10 +572,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_baked_salmon',
+    menuId: 'r19',
     name: 'Easy Baked Salmon with Lemon, Tomato and Onion',
-    type: 'American Mediterranean',
-    taste: ['Salmon', 'Baked', 'Healthy', 'Quick'],
+    type: 'American',
+    taste: ['Light', 'Fresh'],
     ingredientsRequired: [
       'salmon_fillet',
       'roma_tomato',
@@ -574,7 +587,8 @@ const List<Recipe> kRecipes = [
       'salt',
       'black_pepper',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?baked,salmon,lemon',
+    cover:
+        'https://kalejunkie.com/wp-content/uploads/2023/04/SalmonwithTomatoLemonSauce_Shot6_172.jpg',
     steps: [
       RecipeStep('Place salmon in baking dish/cast iron skillet', 1),
       RecipeStep(
@@ -590,10 +604,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_chicken_stir_fry',
+    menuId: 'r20',
     name: 'Chicken Stir Fry',
     type: 'Asian',
-    taste: ['Stir-fry', 'Chicken', 'Vegetables', 'Quick'],
+    taste: ['Savory', 'Umami'],
     ingredientsRequired: [
       'chicken_broth',
       'tamari_soy_sauce',
@@ -612,7 +626,8 @@ const List<Recipe> kRecipes = [
       'garlic',
       'salt_pepper',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?chicken,stir-fry,vegetables',
+    cover:
+        'https://maplejubilee.com/wp-content/uploads/2021/07/Chicken-stir-fry-V1-1152x1536.jpg',
     steps: [
       RecipeStep('Whisk sauce ingredients together', 2),
       RecipeStep(
@@ -631,10 +646,10 @@ const List<Recipe> kRecipes = [
   ),
 
   Recipe(
-    menuId: 'recipe_beef_broccoli',
+    menuId: 'r21',
     name: 'Beef and Broccoli',
-    type: 'Chinese American',
-    taste: ['Stir-fry', 'Beef', 'Broccoli', 'Quick'],
+    type: 'Chinese',
+    taste: ['Savory', 'Umami'],
     ingredientsRequired: [
       'beef_sirloin',
       'soy_sauce',
@@ -648,7 +663,8 @@ const List<Recipe> kRecipes = [
       'brown_sugar',
       'sesame_seed',
     ],
-    cover: 'https://source.unsplash.com/1200x800/?beef,broccoli,stir-fry',
+    cover:
+        'https://natashaskitchen.com/wp-content/uploads/2019/08/Beef-and-Broccoli-2-1024x1536.jpg',
     steps: [
       RecipeStep('Marinate beef with soy sauce and cornstarch', 15),
       RecipeStep(
