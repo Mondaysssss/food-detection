@@ -21,30 +21,39 @@ class Recipe {
     required this.ingredientsRequired,
     required this.cover,
     required this.steps,
-
-    /// ✅ 新增（可選）
-    this.totalTimeMinutes = 0,
+    required this.totalTimeMinutes,
   });
 }
 
 class RecipeStep {
+  /// 英文描述（你原本用 text）
   final String text;
+
+  /// 你原本用嘅分鐘（保留，方便 UI 顯示）
   final int durationMin;
 
-  /// ✅ 新增：requiredEquipment / isContinuous / isConcurrent
-  /// - 同樣做成「可選 + 預設值」：舊有 RecipeStep('xx', 3) 唔使改
+  /// 第幾步（由 1 開始）
+  final int stepNumber;
+
+  /// 秒（for ipynb / scheduler）
+  final int SteptimeInSeconds;
+
+  /// 需要器材（例如: stove / oven / knife）
   final String? requiredEquipment;
+
+  /// 是否「持續性」動作（例如要一路攪拌/照看）
   final bool isContinuous;
+
+  /// 是否可與其他步驟同時進行（例如燜/焗/浸）
   final bool isConcurrent;
 
   const RecipeStep(
     this.text,
     this.durationMin, {
+    required this.stepNumber,
+    required this.SteptimeInSeconds,
     this.requiredEquipment,
     this.isContinuous = true,
     this.isConcurrent = false,
   });
-
-  /// （可選）方便你之後同 DB / ipynb 對齊
-  int get timeInSeconds => durationMin * 60;
 }
