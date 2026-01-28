@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 
 import 'home_shell.dart';
+import 'create_account_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,9 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _comingSoon(String what) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$what — coming soon')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$what — coming soon')));
   }
 
   @override
@@ -48,12 +50,20 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.restaurant_menu, size: 72, color: Colors.white70),
+                  const Icon(
+                    Icons.restaurant_menu,
+                    size: 72,
+                    color: Colors.white70,
+                  ),
                   const SizedBox(height: 12),
                   const Text(
                     'DishMind',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 1.0),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   const Text(
@@ -71,14 +81,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _email,
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
-                          autofillHints: const [AutofillHints.username, AutofillHints.email],
+                          autofillHints: const [
+                            AutofillHints.username,
+                            AutofillHints.email,
+                          ],
                           decoration: const InputDecoration(
                             labelText: 'Email',
                             prefixIcon: Icon(Icons.email_outlined),
                             border: OutlineInputBorder(),
                           ),
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Please enter email';
+                            if (v == null || v.trim().isEmpty)
+                              return 'Please enter email';
                             final re = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
                             if (!re.hasMatch(v.trim())) return 'Invalid email';
                             return null;
@@ -95,12 +109,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon: const Icon(Icons.lock_outline),
                             border: const OutlineInputBorder(),
                             suffixIcon: IconButton(
-                              onPressed: () => setState(() => _obscure = !_obscure),
-                              icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                              icon: Icon(
+                                _obscure
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
                               tooltip: _obscure ? 'Show' : 'Hide',
                             ),
                           ),
-                          validator: (v) => (v == null || v.length < 4) ? 'At least 4 characters' : null,
+                          validator: (v) => (v == null || v.length < 4)
+                              ? 'At least 4 characters'
+                              : null,
                           onFieldSubmitted: (_) {
                             if (_formKey.currentState!.validate()) _goHome();
                           },
@@ -132,11 +153,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton(
-                        onPressed: () => _comingSoon('Create new account'),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreateAccountScreen(),
+                            ),
+                          );
+                        },
                         child: const Text('Create new account'),
                       ),
                       TextButton(
-                        onPressed: () => _comingSoon('Forgot password'),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
                         child: const Text('Forgot password'),
                       ),
                     ],
