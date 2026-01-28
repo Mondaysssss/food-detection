@@ -12,15 +12,40 @@ const List<Recipe> kRecipes = [
     menuId: 'r1',
     name: 'Tomato & Egg Stir-fry',
     type: 'Chinese',
+    totalTimeMinutes: 10,
     taste: ['Savory', 'Fresh'],
     ingredientsRequired: ['tomato', 'egg', 'salt', 'oil'],
     cover:
         'https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('Cut tomatoes', 3),
-      RecipeStep('Heat pan, add oil', 2),
-      RecipeStep('Add eggs and stir-fry', 2),
-      RecipeStep('Add tomatoes & season', 3),
+      RecipeStep(
+        'Cut tomatoes',
+        3,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Heat pan, add oil',
+        2,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Add eggs and stir-fry',
+        2,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Add tomatoes & season',
+        3,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
     ],
   ),
 
@@ -28,15 +53,40 @@ const List<Recipe> kRecipes = [
     menuId: 'r2',
     name: 'Garlic Butter Shrimp',
     type: 'Western',
+    totalTimeMinutes: 11,
     taste: ['Rich', 'Umami'],
     ingredientsRequired: ['shrimp', 'garlic', 'butter', 'salt', 'pepper'],
     cover:
         'https://www.jocooks.com/wp-content/uploads/2021/09/garlic-butter-shrimp-1-10.jpg',
     steps: [
-      RecipeStep('Thaw & devein shrimp', 4),
-      RecipeStep('Heat butter, sauté minced garlic', 2),
-      RecipeStep('Add shrimp and cook until color changes', 4),
-      RecipeStep('Season & serve', 1),
+      RecipeStep(
+        'Thaw & devein shrimp',
+        4,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Heat butter, sauté minced garlic',
+        2,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Add shrimp and cook until color changes',
+        4,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Season & serve',
+        1,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
     ],
   ),
 
@@ -44,6 +94,7 @@ const List<Recipe> kRecipes = [
     menuId: 'r3',
     name: 'Japanese-Style Salad',
     type: 'Japanese',
+    totalTimeMinutes: 7,
     taste: ['Fresh', 'Sour'],
     ingredientsRequired: [
       'lettuce',
@@ -57,9 +108,27 @@ const List<Recipe> kRecipes = [
     cover:
         'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('Wash & cut veggies', 3),
-      RecipeStep('Mix wafu dressing', 2),
-      RecipeStep('Toss and sprinkle sesame', 2),
+      RecipeStep(
+        'Wash & cut veggies',
+        3,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Mix wafu dressing',
+        2,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Toss and sprinkle sesame',
+        2,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
     ],
   ),
 
@@ -67,6 +136,7 @@ const List<Recipe> kRecipes = [
     menuId: 'r4',
     name: 'Thai Basil Pork',
     type: 'Thai',
+    totalTimeMinutes: 8,
     taste: ['Spicy', 'Herby'],
     ingredientsRequired: [
       'pork',
@@ -80,9 +150,27 @@ const List<Recipe> kRecipes = [
     cover:
         'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('Sauté garlic and chili', 2),
-      RecipeStep('Add pork and stir-fry until crumbly', 4),
-      RecipeStep('Season, add Thai basil and toss', 2),
+      RecipeStep(
+        'Sauté garlic and chili',
+        2,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Add pork and stir-fry until crumbly',
+        4,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Season, add Thai basil and toss',
+        2,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
     ],
   ),
 
@@ -90,6 +178,7 @@ const List<Recipe> kRecipes = [
     menuId: 'r5',
     name: 'Pesto Mushroom Pasta',
     type: 'Western',
+    totalTimeMinutes: 11,
     taste: ['Herby', 'Rich'],
     ingredientsRequired: [
       'pasta',
@@ -102,9 +191,27 @@ const List<Recipe> kRecipes = [
     cover:
         'https://images.unsplash.com/photo-1467003909585-2f8a72700288?q=80&w=1200&auto=format&fit=crop',
     steps: [
-      RecipeStep('Cook pasta', 6),
-      RecipeStep('Sauté garlic and mushrooms', 3),
-      RecipeStep('Add pesto and toss', 2),
+      RecipeStep(
+        'Cook pasta',
+        6,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Sauté garlic and mushrooms',
+        3,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
+      RecipeStep(
+        'Add pesto and toss',
+        2,
+        requiredEquipment: null,
+        isContinuous: true,
+        isConcurrent: false,
+      ),
     ],
   ),
 
@@ -115,12 +222,13 @@ const List<Recipe> kRecipes = [
     menuId: 'r6',
     name: 'Winter Melon Soup with Pork Ribs',
     type: 'Chinese',
+    totalTimeMinutes: 205,
     taste: ['Light', 'Umami'],
     ingredientsRequired: [
       'pork_ribs',
       'ginger',
       'winter_melon',
-      'salt',
+      'sea_salt',
       'white_pepper',
       'scallion',
       'cilantro',
