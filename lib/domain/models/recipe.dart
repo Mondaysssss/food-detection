@@ -29,14 +29,11 @@ class RecipeStep {
   /// 英文描述（你原本用 text）
   final String text;
 
-  /// 你原本用嘅分鐘（保留，方便 UI 顯示）
-  final int durationMin;
+  /// 你原本用嘅秒
+  final int durationSec;
 
   /// 第幾步（由 1 開始）
   final int stepNumber;
-
-  /// 秒（for ipynb / scheduler）
-  final int SteptimeInSeconds;
 
   /// 需要器材（例如: stove / oven / knife）
   final String? requiredEquipment;
@@ -49,11 +46,13 @@ class RecipeStep {
 
   const RecipeStep(
     this.text,
-    this.durationMin, {
+    this.durationSec, {
     required this.stepNumber,
-    required this.SteptimeInSeconds,
     this.requiredEquipment,
     this.isContinuous = true,
     this.isConcurrent = false,
   });
+
+  /// （可選）UI 想顯示分鐘就用
+  int get durationMin => (durationSec / 60).ceil();
 }
