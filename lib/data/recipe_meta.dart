@@ -78,9 +78,8 @@ const Map<String, String> kRecipeMethod = {
   'r22': 'Pan-fry',
 };
 
-/// ✅ tot需要器材：每個食譜「所有步驟」會用到嘅器材總表
+/// tot需要器材：每個食譜「所有步驟」會用到嘅器材總表
 /// - 值要同你 recipes_data.dart 的 requiredEquipment 用同一套字串（例如: 'stove' / 'pot' / 'oven'）
-/// - 如果某些 step 冇器材（null/''），就唔需要放入清單
 const Map<String, List<String>> kRecipeTotalEquipment = {
   'r1': ['stove'],
   'r2': ['stove'],
@@ -106,7 +105,7 @@ const Map<String, List<String>> kRecipeTotalEquipment = {
   'r22': ['stove'],
 };
 
-//賣點
+//賣點 好似和recipes_data.dart的taste一樣,但沒太大問題,到時在看看
 const Map<String, List<String>> kSellingPoints = {
   'r1': ['Quick home-style', 'High-protein, low-cost', 'One-pan meal'],
   'r2': ['Garlicky & rich', 'Great with rice', 'Fast to cook'],

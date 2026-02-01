@@ -13,7 +13,8 @@ void showRecipeDetailSheet(
   Recipe recipe,
   MatchResult mr,
 ) {
-  final totalMin = recipe.steps.fold<int>(0, (s, st) => s + st.durationMin);
+  // final totalMin = recipe.steps.fold<int>(0, (s, st) => s + st.durationMin);
+  final totalMin = recipe.totalTimeMinutes;
   final servings = kRecipeServings[recipe.menuId] ?? 2;
   final difficulty = kRecipeDifficulty[recipe.menuId] ?? 2;
   final method = kRecipeMethod[recipe.menuId] ?? '—';
@@ -164,15 +165,13 @@ void showRecipeDetailSheet(
                             runSpacing: 8,
                             children: [
                               kvPill('Cuisine', recipe.type),
-                              kvPill('Taste', recipe.taste.join(' / ')),
-                              kvPill('Method', method),
-                              kvPill('Difficulty', '$difficulty / 5'),
-                              kvPill('Servings', '$servings servings'),
-                              kvPill('Total time', '$totalMin min'),
                               kvPill(
-                                'Completeness',
-                                '${mr.match.length}/${recipe.ingredientIds.length}',
-                              ),
+                                'Taste',
+                                recipe.taste.join('  / '),
+                              ), //可以轉recipe_meta.dart的kSellingPoints
+                              kvPill('Method', method),
+                              kvPill('Servings', '$servings '),
+                              kvPill('Total time', '$totalMin min'),
                             ],
                           ),
 
