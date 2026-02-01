@@ -61,6 +61,29 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // =========================================================
+  // Allergies (from PersonaWizard / Preference page)
+  // =========================================================
+  final Set<String> _allergies = {};
+  UnmodifiableSetView<String> get allergies => UnmodifiableSetView(_allergies);
+
+  bool hasAllergy(String name) => _allergies.contains(name);
+
+  void toggleAllergy(String name) {
+    if (_allergies.contains(name))
+      _allergies.remove(name);
+    else
+      _allergies.add(name);
+    notifyListeners();
+  }
+
+  void setAllergies(Set<String> names) {
+    _allergies
+      ..clear()
+      ..addAll(names);
+    notifyListeners();
+  }
+
   void setPersona({
     String? newGender,
     int? newAge,
@@ -69,12 +92,10 @@ class AppState extends ChangeNotifier {
     if (newGender != null) gender = newGender;
     if (newAge != null) age = newAge;
     if (newAppliances != null) {
-      // keep keys; clamp to max
       for (final k in _appliances.keys) {
         final v = newAppliances[k] ?? _appliances[k] ?? 0;
-        setAppliance(k, v);
+        setAppliance(k, v); // 內部會 notify
       }
-      // setAppliance 已 notify；但為避免重複 notify，直接 return
       return;
     }
     notifyListeners();
@@ -225,6 +246,7 @@ class AppState extends ChangeNotifier {
     _appliances['stove'] = 0;
     _appliances['electric'] = 0;
     _appliances['bake'] = 0;
+    _allergies.clear();
 
     notifyListeners();
   }

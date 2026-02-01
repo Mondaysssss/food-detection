@@ -1,4 +1,4 @@
-// [OOP] Wizard：收集使用者偏好（口味、忌口等）並存入 AppState。
+// [OOP] Wizard：收集使用者偏好並存入 AppState。
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +30,6 @@ class QuestionDef {
 }
 
 class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
-  // add/remove questions here
   final List<QuestionDef> _questions = const [
     QuestionDef(id: 'gender', title: 'Gender', type: QType.genderButtons),
     QuestionDef(id: 'age', title: 'Age', type: QType.ageWheel),
@@ -58,7 +57,6 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     'bake': 0,
   };
 
-  // ✅ Appliance dropdown limits
   static const Map<String, int> _applianceMin = {
     'cookware': 1,
     'stove': 1,
@@ -104,18 +102,19 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // ✅ 用 AppState 作初始值（避免每次入嚟都 reset）
     final app = context.read<AppState>();
 
     _age = app.age;
     _gender = app.gender;
 
-    // appliances init from state
     for (final k in _appliances.keys) {
       _appliances[k] = app.applianceValue(k);
     }
 
-    // age picker sync
+    _allergies
+      ..clear()
+      ..addAll(app.allergies);
+
     _ageCtl.dispose();
     _ageCtl = FixedExtentScrollController(
       initialItem: (_age - 13).clamp(0, 86),
@@ -130,28 +129,20 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
 
   double get _progress => (_index + 1) / _questions.length;
   bool get _isLast => _index == _questions.length - 1;
+
   bool get _canProceed {
     final q = _questions[_index];
     switch (q.type) {
       case QType.genderButtons:
         return _gender != null;
-
       case QType.ageWheel:
         return true;
-
       case QType.applianceDropdowns:
-        // ✅ min/max:
-        // cookware <=2, >=1
-        // stove <=2, >=1
-        // electric <=2
-        // bake <=1
         return _applianceOk('cookware') &&
             _applianceOk('stove') &&
             _applianceOk('electric') &&
             _applianceOk('bake');
-
       case QType.allergyCheckboxes:
-        // 冇要求必選，所以永遠可以
         return true;
     }
   }
@@ -162,12 +153,13 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     if (_index < _questions.length - 1) {
       setState(() => _index++);
     } else {
-      // ✅ 存入 AppState（age / gender / appliances）
+      // ✅ 存入 AppState
       context.read<AppState>().setPersona(
         newGender: _gender,
         newAge: _age,
         newAppliances: Map<String, int>.from(_appliances),
       );
+      context.read<AppState>().setAllergies(Set<String>.from(_allergies));
 
       Navigator.pushReplacement(
         context,
@@ -177,9 +169,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   }
 
   void _prev() {
-    if (_index > 0) {
-      setState(() => _index--);
-    }
+    if (_index > 0) setState(() => _index--);
   }
 
   @override
@@ -211,7 +201,6 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 讓每一題的控件（多選/選擇器等）置中顯示
             Expanded(
               child: Center(
                 child: ConstrainedBox(
@@ -221,18 +210,14 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
               ),
             ),
 
-            // 底部：返回 + Next/Finish
             Row(
               children: [
-                // 小返回按鈕（第一題就禁用）
                 IconButton(
                   onPressed: _index == 0 ? null : _prev,
                   icon: const Icon(Icons.arrow_back),
                   tooltip: 'Back',
                 ),
                 const SizedBox(width: 8),
-
-                // Next step / Finish 佔滿剩餘寬度
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _canProceed ? _nextOrFinish : null,
@@ -277,7 +262,6 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
               value: o.$1,
               groupValue: _gender,
               onChanged: (v) => setState(() => _gender = v),
-              // 字體放大
               title: Text(
                 o.$1,
                 style: const TextStyle(
@@ -285,9 +269,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              // 圖形放大（你原本已有）
               secondary: Icon(o.$2, size: 30),
-              // 令每行唔好太扁（變高少少、易按）
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 8,
                 vertical: 4,
@@ -303,16 +285,16 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   }
 
   Widget _qAge() {
-    final items = List<int>.generate(87, (i) => i + 13); // 13..99
+    final items = List<int>.generate(87, (i) => i + 13);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: SizedBox(
-        height: 300, // 原本 180 -> 放大
+        height: 300,
         child: CupertinoPicker(
           scrollController: _ageCtl,
-          itemExtent: 52, // 原本 36 -> 每格更高
-          magnification: 1.25, // 中間選中更大
+          itemExtent: 52,
+          magnification: 1.25,
           useMagnifier: true,
           onSelectedItemChanged: (i) => setState(() => _age = items[i]),
           children: [
@@ -321,7 +303,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
                 child: Text(
                   '$v',
                   style: const TextStyle(
-                    fontSize: 22, // 字更大
+                    fontSize: 22,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -365,7 +347,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                    ), // ✅ 放大
+                    ),
                   ),
                 ),
               );
