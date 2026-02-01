@@ -39,7 +39,9 @@ class RecipeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
     final mainCount = mr.match.length + mr.missing.length;
-    final count = context.select<AppState, int>((s) => s.cartCountOf(recipe.menuId));
+    final count = context.select<AppState, int>(
+      (s) => s.cartCountOf(recipe.menuId),
+    );
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
@@ -50,7 +52,9 @@ class RecipeCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(18),
+              ),
               child: Stack(
                 children: [
                   AspectRatio(
@@ -61,7 +65,10 @@ class RecipeCard extends StatelessWidget {
                     left: 8,
                     top: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(999),
@@ -82,7 +89,10 @@ class RecipeCard extends StatelessWidget {
                       right: 8,
                       bottom: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(999),
@@ -111,12 +121,18 @@ class RecipeCard extends StatelessWidget {
                               recipe.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${recipe.type} ・ ${recipe.taste.join('/ ')}',
-                              style: const TextStyle(fontSize: 12, color: Colors.white70),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
                             ),
                           ],
                         ),
@@ -130,10 +146,16 @@ class RecipeCard extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          const TextSpan(text: 'Already: ', style: TextStyle(fontSize: 12)),
+                          const TextSpan(
+                            text: 'Already: ',
+                            style: TextStyle(fontSize: 12),
+                          ),
                           TextSpan(
                             text: mr.match.isEmpty ? '—' : mr.match.join(', '),
-                            style: const TextStyle(fontSize: 12, color: Color(0xFFBBF7D0)),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFBBF7D0),
+                            ),
                           ),
                         ],
                       ),
@@ -144,10 +166,18 @@ class RecipeCard extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          const TextSpan(text: 'Missing: ', style: TextStyle(fontSize: 12)),
+                          const TextSpan(
+                            text: 'Missing: ',
+                            style: TextStyle(fontSize: 12),
+                          ),
                           TextSpan(
-                            text: mr.missing.isEmpty ? '—' : mr.missing.join(', '),
-                            style: const TextStyle(fontSize: 12, color: Color(0xFFFECACA)),
+                            text: mr.missing.isEmpty
+                                ? '—'
+                                : mr.missing.join(', '),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFFECACA),
+                            ),
                           ),
                         ],
                       ),
@@ -161,9 +191,9 @@ class RecipeCard extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: LinearProgressIndicator(
-                        value: recipe.ingredientsRequired.isEmpty
+                        value: recipe.ingredientIds.isEmpty
                             ? 1
-                            : (mr.match.length / recipe.ingredientsRequired.length),
+                            : (mr.match.length / recipe.ingredientIds.length),
                         minHeight: 8,
                       ),
                     ),
@@ -175,7 +205,9 @@ class RecipeCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton.filledTonal(
-                          onPressed: count > 0 ? () => app.addToCart(recipe.menuId, -1) : null,
+                          onPressed: count > 0
+                              ? () => app.addToCart(recipe.menuId, -1)
+                              : null,
                           icon: const Icon(Icons.remove),
                           tooltip: 'Decrease 1',
                           style: IconButton.styleFrom(
@@ -185,7 +217,10 @@ class RecipeCard extends StatelessWidget {
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Text('$count', style: const TextStyle(fontWeight: FontWeight.w700)),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
                         ),
                         IconButton.filled(
                           onPressed: () => app.addToCart(recipe.menuId, 1),

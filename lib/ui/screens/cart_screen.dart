@@ -26,7 +26,11 @@ class CartScreen extends StatelessWidget {
 
     final entries = [
       for (final e in cart.entries)
-        (recipe: kRecipeById[e.key]!, qty: e.value, mr: computeMatch(kRecipeById[e.key]!, detected)),
+        (
+          recipe: kRecipeById[e.key]!,
+          qty: e.value,
+          mr: computeMatch(kRecipeById[e.key]!, detected),
+        ),
     ];
 
     void onGeneratePressed() {
@@ -39,9 +43,10 @@ class CartScreen extends StatelessWidget {
 
       snapshot.forEach((menuId, qty) {
         final r = kRecipeById[menuId]!;
-        totalMinutes += qty * r.steps.fold<int>(0, (s, st) => s + st.durationMin);
+        totalMinutes +=
+            qty * r.steps.fold<int>(0, (s, st) => s + st.durationMin);
 
-        for (final ing in r.ingredientsRequired) {
+        for (final ing in r.ingredientIds) {
           if (kSeasoningKeys.contains(ing)) {
             final add = (kSeasoningTeaspoons[ing] ?? 1.0) * qty;
             seasonTsp[ing] = (seasonTsp[ing] ?? 0) + add;
@@ -52,8 +57,14 @@ class CartScreen extends StatelessWidget {
       });
 
       final have = app.ingredients.toSet();
-      final mainGreen = [for (final m in mainAll) if (have.contains(m)) m]..sort();
-      final mainRed = [for (final m in mainAll) if (!have.contains(m)) m]..sort();
+      final mainGreen = [
+        for (final m in mainAll)
+          if (have.contains(m)) m,
+      ]..sort();
+      final mainRed = [
+        for (final m in mainAll)
+          if (!have.contains(m)) m,
+      ]..sort();
 
       final seasonKeys = seasonTsp.keys.toList()..sort();
       final totalSeasonTsp = seasonTsp.values.fold<double>(0, (s, v) => s + v);
@@ -73,19 +84,26 @@ class CartScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   kvPill('Main ingredient types', '${mainAll.length}'),
                   const SizedBox(height: 4),
-                  kvPill('Total seasoning', '${totalSeasonTsp.toStringAsFixed(1)} tsp'),
+                  kvPill(
+                    'Total seasoning',
+                    '${totalSeasonTsp.toStringAsFixed(1)} tsp',
+                  ),
                   const SizedBox(height: 12),
 
                   sectionTitle('Main ingredients'),
                   const SizedBox(height: 6),
                   if (mainGreen.isNotEmpty)
-                    Text('Have: ${mainGreen.map(prettyName).join(', ')}',
-                        style: const TextStyle(color: Colors.greenAccent)),
+                    Text(
+                      'Have: ${mainGreen.map(prettyName).join(', ')}',
+                      style: const TextStyle(color: Colors.greenAccent),
+                    ),
                   if (mainRed.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text('Missing: ${mainRed.map(prettyName).join(', ')}',
-                          style: const TextStyle(color: Colors.redAccent)),
+                      child: Text(
+                        'Missing: ${mainRed.map(prettyName).join(', ')}',
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
                     ),
                   const SizedBox(height: 12),
 
@@ -95,12 +113,18 @@ class CartScreen extends StatelessWidget {
                     Text(
                       'Have: ' +
                           seasonKeys
-                              .map((k) => '${prettyName(k)} ${seasonTsp[k]!.toStringAsFixed(1)} tsp')
+                              .map(
+                                (k) =>
+                                    '${prettyName(k)} ${seasonTsp[k]!.toStringAsFixed(1)} tsp',
+                              )
                               .join(', '),
                       style: const TextStyle(color: Colors.greenAccent),
                     ),
                   const SizedBox(height: 4),
-                  const Text('(Amounts are estimated)', style: TextStyle(fontSize: 12, color: Colors.white60)),
+                  const Text(
+                    '(Amounts are estimated)',
+                    style: TextStyle(fontSize: 12, color: Colors.white60),
+                  ),
                 ],
               ),
             ),
@@ -114,9 +138,15 @@ class CartScreen extends StatelessWidget {
                   Navigator.pop(ctx);
 
                   final snapshot = Map<String, int>.from(app.cart);
-                  final int totalMinutesPlanned = snapshot.entries.fold(0, (sum, e) {
+                  final int totalMinutesPlanned = snapshot.entries.fold(0, (
+                    sum,
+                    e,
+                  ) {
                     final r = kRecipeById[e.key]!;
-                    final per = r.steps.fold<int>(0, (s, st) => s + st.durationMin);
+                    final per = r.steps.fold<int>(
+                      0,
+                      (s, st) => s + st.durationMin,
+                    );
                     return sum + per * e.value;
                   });
 
@@ -145,15 +175,26 @@ class CartScreen extends StatelessWidget {
       appBar: AppBar(leading: const BackButton(), title: const Text('Cart')),
       body: PageFrame(
         child: entries.isEmpty
-            ? glass(child: const Text('No menu items added yet.', style: TextStyle(color: Colors.white70)))
+            ? glass(
+                child: const Text(
+                  'No menu items added yet.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              )
             : LayoutBuilder(
                 builder: (_, c) {
                   final w = c.maxWidth;
-                  final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1;
+                  final cols = w >= 1200
+                      ? 3
+                      : w >= 800
+                      ? 2
+                      : 1;
                   const spacing = 12.0;
                   final tileW = (w - (cols - 1) * spacing) / cols;
                   final coverH = tileW * 9 / 16;
-                  final baseInfoH = cols == 1 ? 230.0 : (cols == 2 ? 220.0 : 210.0);
+                  final baseInfoH = cols == 1
+                      ? 230.0
+                      : (cols == 2 ? 220.0 : 210.0);
                   final tileH = coverH + baseInfoH;
 
                   final grid = GridView.builder(

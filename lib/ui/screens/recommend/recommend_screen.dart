@@ -25,7 +25,7 @@ class RecommendScreen extends StatelessWidget {
       if (qty > 0) {
         final r = kRecipeById[menuId];
         if (r != null) {
-          for (final ing in r.ingredientsRequired) {
+          for (final ing in r.ingredientIds) {
             if (!kSeasoningKeys.contains(ing)) usedIngredients.add(ing);
           }
         }
@@ -63,7 +63,9 @@ class RecommendScreen extends StatelessWidget {
                               label: Text(
                                 i,
                                 style: TextStyle(
-                                  color: usedIngredients.contains(i) ? Colors.greenAccent : Colors.redAccent,
+                                  color: usedIngredients.contains(i)
+                                      ? Colors.greenAccent
+                                      : Colors.redAccent,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -89,7 +91,10 @@ class RecommendScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          );
         },
         child: const Icon(Icons.shopping_cart),
       ),

@@ -5,24 +5,46 @@ class Recipe {
   final String name;
   final String type;
   final List<String> taste;
-  final List<String> ingredientsRequired;
+  // final List<String> ingredientsRequired;//要改
   final String cover;
   final List<RecipeStep> steps;
 
-  /// ✅ 新增：totalTimeMinutes（排程/顯示用）
+  /// totalTimeMinutes（排程/顯示用）
   /// - 先做成「可選 + 預設 0」：避免你其他地方有新建 Recipe 時要全部改晒
   final int totalTimeMinutes;
+
+  /// 真正食材資料來源（全系統只用呢個）
+  final List<RecipeIngredient> recipeIngredients;
 
   const Recipe({
     required this.menuId,
     required this.name,
     required this.type,
     required this.taste,
-    required this.ingredientsRequired,
+    // required this.ingredientsRequired,//要改
     required this.cover,
     required this.steps,
     required this.totalTimeMinutes,
+    this.recipeIngredients = const [],
   });
+
+  List<String> get ingredientIds =>
+      recipeIngredients.map((e) => e.ingredientId).toList(growable: false);
+}
+
+// 每個食譜的「食材 + 份量 + 單位」
+class RecipeIngredient {
+  final String ingredientId; // e.g. 'salt', 'soy_sauce'
+  final String quantity; // e.g. '1/2', '2' (可空字串代表未知/不提供)
+  final String unit; // e.g. 'tsp', 'tbsp', 'g', 'ml', 'pcs' (可空字串)
+
+  const RecipeIngredient({
+    required this.ingredientId,
+    this.quantity = '',
+    this.unit = '',
+  });
+
+  String get display => unit.isEmpty ? quantity : '$quantity $unit';
 }
 
 class RecipeStep {

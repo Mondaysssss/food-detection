@@ -9,7 +9,7 @@ MatchResult computeMatch(Recipe r, List<String> detected) {
 
   // only main ingredients (ignore seasoning)
   final requiredMain = <String>[
-    for (final x in r.ingredientsRequired)
+    for (final x in r.ingredientIds)
       if (!kSeasoningKeys.contains(x)) x,
   ];
 

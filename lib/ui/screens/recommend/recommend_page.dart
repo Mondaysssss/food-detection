@@ -28,23 +28,31 @@ class _RecommendPageState extends State<RecommendPage> {
     final app = context.watch<AppState>();
     final detected = app.ingredients;
 
-    final list = kRecipes
-        .map((r) => (recipe: r, mr: computeMatch(r, detected)))
-        .toList()
-      ..sort((a, b) => a.mr.missing.length.compareTo(b.mr.missing.length));
+    final list =
+        kRecipes.map((r) => (recipe: r, mr: computeMatch(r, detected))).toList()
+          ..sort((a, b) => a.mr.missing.length.compareTo(b.mr.missing.length));
 
-    final types = ['All', ...{for (final r in kRecipes) r.type}];
-    final tastes = ['All', ...{for (final r in kRecipes) ...r.taste}];
+    final types = [
+      'All',
+      ...{for (final r in kRecipes) r.type},
+    ];
+    final tastes = [
+      'All',
+      ...{for (final r in kRecipes) ...r.taste},
+    ];
     final favSet = context.watch<AppState>().favorites;
 
     final filtered = list.where((e) {
       if (typeFilter != 'All' && e.recipe.type != typeFilter) return false;
-      if (tasteFilter != 'All' && !e.recipe.taste.any((t) => t.contains(tasteFilter))) return false;
+      if (tasteFilter != 'All' &&
+          !e.recipe.taste.any((t) => t.contains(tasteFilter)))
+        return false;
 
       if (search.trim().isNotEmpty) {
         final s = search.toLowerCase();
         if (!e.recipe.name.toLowerCase().contains(s) &&
-            !e.recipe.ingredientsRequired.any((i) => i.toLowerCase().contains(s))) return false;
+            !e.recipe.ingredientIds.any((i) => i.toLowerCase().contains(s)))
+          return false;
       }
 
       if (onlyFav && !favSet.contains(e.recipe.menuId)) return false;
@@ -55,7 +63,11 @@ class _RecommendPageState extends State<RecommendPage> {
     return LayoutBuilder(
       builder: (context, c) {
         final w = c.maxWidth;
-        final cols = w >= 1200 ? 3 : w >= 800 ? 2 : 1;
+        final cols = w >= 1200
+            ? 3
+            : w >= 800
+            ? 2
+            : 1;
 
         const spacing = 12.0;
         final tileW = (w - (cols - 1) * spacing) / cols;
@@ -100,7 +112,10 @@ class _RecommendPageState extends State<RecommendPage> {
               const SizedBox(height: 8),
               TextField(
                 onChanged: (v) => setState(() => search = v),
-                decoration: inputDecoration('Enter ingredient or dish', icon: Icons.search),
+                decoration: inputDecoration(
+                  'Enter ingredient or dish',
+                  icon: Icons.search,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -122,17 +137,14 @@ class _RecommendPageState extends State<RecommendPage> {
             mainAxisExtent: tileH,
           ),
           itemCount: filtered.length,
-          itemBuilder: (_, i) => RecipeCard(recipe: filtered[i].recipe, mr: filtered[i].mr),
+          itemBuilder: (_, i) =>
+              RecipeCard(recipe: filtered[i].recipe, mr: filtered[i].mr),
         );
 
         return SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
-            children: [
-              filterPanel,
-              const SizedBox(height: 12),
-              grid,
-            ],
+            children: [filterPanel, const SizedBox(height: 12), grid],
           ),
         );
       },
@@ -148,7 +160,10 @@ class _RecommendPageState extends State<RecommendPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
@@ -159,7 +174,9 @@ class _RecommendPageState extends State<RecommendPage> {
                 label: Text(v),
                 selected: v == current,
                 onSelected: (_) => onChanged(v),
-                labelStyle: TextStyle(color: v == current ? Colors.black : Colors.white),
+                labelStyle: TextStyle(
+                  color: v == current ? Colors.black : Colors.white,
+                ),
                 selectedColor: Colors.white,
                 backgroundColor: Colors.white12,
                 side: const BorderSide(color: Colors.white24),

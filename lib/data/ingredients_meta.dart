@@ -1,3 +1,5 @@
+import '../domain/models/recipe.dart';
+
 // [OOP] 靜態資料：食材/調味料的顯示名稱、分類、預設份量等（包含調味料 key / 茶匙換算）。
 
 /// seasoning keys
@@ -42,223 +44,81 @@ const Set<String> kSeasoningKeys = {
   'dark_soy_sauce',
   'tamari_soy_sauce',
   'oyster_sauce',
+  'fish_sauce',
   'hoisin_sauce',
+  'bbq_sauce',
+  'ketchup',
+  'mayonnaise',
+  'mustard',
   'miso',
   'gochujang',
   'sriracha',
-  'sambal_oelek',
-  'la_yu',
-  'red_fermented_bean_curd',
+  'chili_oil',
+  'doubanjiang',
+  'curry_paste',
 
-  // ===== spices / herb mixes =====
+  // ===== spices / herbs (seasoning category) =====
   'five_spice_powder',
-  'herbes_de_provence',
-  'shichimi_togarashi',
-  'espelette_pepper',
-  'lemon_powder',
-  'chili',
+  'cumin',
+  'paprika',
+  'chili_powder',
+  'cayenne',
+  'oregano',
+  'basil_dried',
+  'thyme_dried',
+  'rosemary_dried',
 
-  // ===== herbs / garnish (treat as seasoning to reduce “missing” noise) =====
-  'basil',
-  'parsley',
-  'rosemary',
-  'thyme',
-  'shiso_leaf',
-  'scallion',
-  'green_onion',
-  'cilantro',
-
-  // ===== sesame / toppings =====
-  'sesame',
-  'sesame_seed',
-  'white_sesame_seed',
-
-  // ===== thickeners / slurries / misc pantry =====
+  // ===== misc =====
+  'msg',
   'cornstarch',
-  'potato_starch',
-  'potato_starch_slurry',
-  'water_slurry',
-  'red_food_coloring',
-
-  // ===== stock bases =====
-  'chicken_broth',
-  'dashi_packet',
-  'dashi_powder',
-
-  // ===== small flavoring =====
-  'ginger_juice',
 };
 
-/// default quantities
+/// 預設份量（UI 顯示用 fallback）
 const Map<String, String> kQtyDefaults = {
-  'apple': '1 piece',
-  'basil': 'a handful',
-  'beef_sirloin': '300 g',
-  'black_pepper': '1/4 tsp',
-  'broccoli_florets': '250 g',
-  'brown_sugar': '1 tbsp',
-  'butter': '1 tbsp',
-  'carrot': '1 piece',
-  'chicken_breast': '300 g',
-  'chicken_broth': '1 cup',
-  'chicken_wings': '10–12 pieces',
-  'chili': '1/2 tsp',
-  'cilantro': 'a few sprigs',
-  'cooking_oil': '1 tbsp',
-  'corn_oil': '1 tbsp',
-  'cornstarch': '1 tbsp',
-  'cucumber': '1 piece',
-  'dark_soy_sauce': '1 tbsp',
-  'dashi_packet': '1 packet',
-  'dashi_powder': '1 tsp',
-  'egg': '2 eggs',
-  'espelette_pepper': '1/2 tsp',
-  'extra_virgin_olive_oil': '1 tbsp',
-  'five_spice_powder': '1/2 tsp',
-  'garlic': '3 cloves',
-  'garlic_salt': '1/2 tsp',
-  'ginger': '5 slices',
-  'ginger_juice': '1 tsp',
-  'gochujang': '1 tbsp',
-  'green_onion': '1 stalk',
-  'herbes_de_provence': '1 tsp',
-  'hoisin_sauce': '1 tbsp',
-  'honey': '1 tbsp',
-  'kimchi': '1 cup',
-  'kosher_salt': '1 tsp',
-  'la_yu': '1 tsp',
-  'lamb_rack': '1 rack (600–800 g)',
-  'lemon': '1 piece',
-  'lemon_powder': '1/2 tsp',
-  'lettuce': 'to taste',
-  'light_soy_sauce': '1 tbsp',
-  'milk': '1 cup',
-  'mirin': '1 tbsp',
-  'miso': '1 tbsp',
-  'mushroom': 'to taste',
-  'neutral_oil': '1 tbsp',
-  'noodles': '200 g',
+  // common
+  'salt': 'to taste',
+  'pepper': 'to taste',
   'oil': '1 tbsp',
-  'olive_oil': '1 tbsp',
-  'onion': '1/2 piece',
-  'oyster_sauce': '1 tbsp',
-  'panko': '1 cup',
-  'parsley': 'a few sprigs',
-  'pasta': 'to taste',
-  'pepper': '1/4 tsp',
-  'pork': 'to taste',
-  'pork_belly': '300 g',
-  'pork_ribs': '900 g',
-  'potato': '2 pieces (300 g)',
-  'potato_starch': '1 tbsp',
-  'potato_starch_slurry': 'as needed',
-  'potatoes': '2 pieces (300 g)',
-  'red_fermented_bean_curd': '1 cube',
-  'red_food_coloring': 'a drop',
-  'red_wine': '2 tbsp',
-  'ribeye_steak': '300 g',
-  'rice': '1 cup uncooked',
-  'rice_vinegar': '1 tbsp',
-  'rosemary': '2 sprigs',
-  'sake': '1 tbsp',
-  'salmon_fillet': '2 fillets (300–400 g)',
-  'salt': '1 tsp',
-  'salt_pepper': 'to taste',
-  'sambal_oelek': '1 tsp',
-  'scallion': '1 stalk',
-  'sesame': '1 tsp',
-  'sesame_oil': '1 tsp',
-  'sesame_seed': '1 tsp',
-  'shaoxing_wine': '1 tbsp',
-  'shichimi_togarashi': '1/2 tsp',
-  'shiso_leaf': '4 leaves',
-  'shrimp': '200 g',
-  'sirloin_steak': '300 g',
-  'sriracha': '1 tsp',
   'soy_sauce': '1 tbsp',
-  'sugar': '1 tsp',
-  'tamari_soy_sauce': '1 tbsp',
-  'thyme': '2 sprigs',
-  'tofu': '300 g',
-  'tomato': '2 pieces',
-  'tonkatsu': '2 pieces',
-  'udon_noodles': '2 servings',
-  'vegetable_oil': '1 tbsp',
-  'vinegar': '1 tbsp',
-  'water': '4 cups',
-  'water_slurry': 'as needed',
-  'white_pepper': '1/4 tsp',
-  'white_sesame_seed': '1 tsp',
-  'white_wine': '2 tbsp',
-  'winter_melon': '680 g',
-  'yellow_onion': '1/2 piece',
+
+  // examples
+  'egg': '2 pcs',
+  'tomato': '2 pcs',
+  'garlic': '2 cloves',
 };
 
-/// seasoning to teaspoons (estimation; auto-generated)
-/// - Based on kQtyDefaults conversions: 1 tbsp ≈ 3 tsp
-/// - Herbs/garnish/stock/dashi are set to 0 to avoid noisy totals.
+/// 調味料換算為 teaspoons（購物車彙總用）
 const Map<String, double> kSeasoningTeaspoons = {
-  'basil': 0,
-  'black_pepper': 0.25,
-  'brown_sugar': 3,
-  'butter': 3,
-  'chicken_broth': 0,
-  'chili': 0.5,
-  'cilantro': 0,
-  'cooking_oil': 3,
-  'corn_oil': 3,
-  'cornstarch': 3,
-  'dark_soy_sauce': 3,
-  'dashi_packet': 0,
-  'dashi_powder': 0,
-  'espelette_pepper': 0.5,
-  'extra_virgin_olive_oil': 3,
-  'five_spice_powder': 0.5,
-  'garlic_salt': 0.5,
-  'ginger_juice': 1,
-  'gochujang': 3,
-  'green_onion': 0,
-  'herbes_de_provence': 1,
-  'hoisin_sauce': 3,
-  'honey': 3,
-  'kosher_salt': 1,
-  'la_yu': 1,
-  'lemon_powder': 0.5,
-  'light_soy_sauce': 3,
-  'mirin': 3,
-  'miso': 3,
-  'neutral_oil': 3,
-  'oil': 3,
-  'olive_oil': 3,
-  'oyster_sauce': 3,
-  'parsley': 0,
-  'potato_starch': 3,
-  'potato_starch_slurry': 0,
-  'red_food_coloring': 0,
-  'red_fermented_bean_curd': 0,
-  'red_wine': 6,
-  'rice_vinegar': 3,
-  'rosemary': 0,
-  'sake': 3,
-  'salt': 1,
-  'salt_pepper': 0,
-  'sambal_oelek': 1,
-  'scallion': 0,
-  'sesame': 0,
-  'sesame_oil': 1,
-  'sesame_seed': 0,
-  'shaoxing_wine': 3,
-  'shichimi_togarashi': 0.5,
-  'shiso_leaf': 0,
-  'sriracha': 1,
-  'soy_sauce': 3,
-  'sugar': 1,
-  'tamari_soy_sauce': 3,
-  'thyme': 0,
-  'vegetable_oil': 3,
-  'vinegar': 3,
-  'water_slurry': 0,
-  'white_pepper': 0.25,
-  'white_sesame_seed': 0,
-  'white_wine': 6,
+  // 1 tbsp = 3 tsp
+  'soy_sauce': 3.0,
+  'light_soy_sauce': 3.0,
+  'dark_soy_sauce': 3.0,
+  'oyster_sauce': 3.0,
+  'sesame_oil': 3.0,
+  'olive_oil': 3.0,
+  'oil': 3.0,
+
+  // already tsp-based
+  'salt': 1.0,
+  'pepper': 1.0,
+  'sugar': 1.0,
 };
+
+/// =========================================================
+/// 方案 B：由 Recipe.recipeIngredients 分類（主食材 / 調味料）
+/// =========================================================
+bool isSeasoningKey(String key) => kSeasoningKeys.contains(key);
+
+List<RecipeIngredient> recipeSeasonings(Recipe r) => r.recipeIngredients
+    .where((x) => isSeasoningKey(x.ingredientId))
+    .toList(growable: false);
+
+List<RecipeIngredient> recipeMainIngredients(Recipe r) => r.recipeIngredients
+    .where((x) => !isSeasoningKey(x.ingredientId))
+    .toList(growable: false);
+
+List<String> recipeSeasoningIds(Recipe r) =>
+    recipeSeasonings(r).map((x) => x.ingredientId).toList(growable: false);
+
+List<String> recipeMainIngredientIds(Recipe r) =>
+    recipeMainIngredients(r).map((x) => x.ingredientId).toList(growable: false);

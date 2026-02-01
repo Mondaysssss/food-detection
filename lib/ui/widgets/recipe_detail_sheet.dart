@@ -8,23 +8,46 @@ import '../../domain/models/match_result.dart';
 import '../../domain/models/recipe.dart';
 import 'ui_helpers.dart';
 
-void showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr) {
+void showRecipeDetailSheet(
+  BuildContext context,
+  Recipe recipe,
+  MatchResult mr,
+) {
   final totalMin = recipe.steps.fold<int>(0, (s, st) => s + st.durationMin);
   final servings = kRecipeServings[recipe.menuId] ?? 2;
   final difficulty = kRecipeDifficulty[recipe.menuId] ?? 2;
   final method = kRecipeMethod[recipe.menuId] ?? '—';
-  final selling = kSellingPoints[recipe.menuId] ?? ['Quick to table', 'Easy ingredients', 'Home-style flavor'];
-  final verbose = kStepsVerbose[recipe.menuId] ?? recipe.steps.map((e) => e.text).toList();
+  final selling =
+      kSellingPoints[recipe.menuId] ??
+      ['Quick to table', 'Easy ingredients', 'Home-style flavor'];
+  final verbose =
+      kStepsVerbose[recipe.menuId] ?? recipe.steps.map((e) => e.text).toList();
 
   final mainIngr = <MapEntry<String, String>>[];
   final seasonings = <MapEntry<String, String>>[];
 
-  for (final key in recipe.ingredientsRequired) {
-    final qty = kQtyDefaults[key] ?? 'to taste';
-    if (kSeasoningKeys.contains(key)) {
-      seasonings.add(MapEntry(key, qty));
-    } else {
-      mainIngr.add(MapEntry(key, qty));
+  // 優先用 recipeIngredients（含 qty/unit），否則 fallback 舊 ingredientIds + kQtyDefaults
+  final ids = recipe.ingredientIds;
+  if (recipe.recipeIngredients.isNotEmpty) {
+    for (final ri in recipe.recipeIngredients) {
+      final key = ri.ingredientId;
+      final qty = (ri.quantity.isEmpty)
+          ? (kQtyDefaults[key] ?? 'to taste')
+          : (ri.unit.isEmpty ? ri.quantity : '${ri.quantity} ${ri.unit}');
+      if (kSeasoningKeys.contains(key)) {
+        seasonings.add(MapEntry(key, qty));
+      } else {
+        mainIngr.add(MapEntry(key, qty));
+      }
+    }
+  } else {
+    for (final key in ids) {
+      final qty = kQtyDefaults[key] ?? 'to taste';
+      if (kSeasoningKeys.contains(key)) {
+        seasonings.add(MapEntry(key, qty));
+      } else {
+        mainIngr.add(MapEntry(key, qty));
+      }
     }
   }
 
@@ -73,7 +96,10 @@ void showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr) 
                             color: Colors.black.withValues(alpha: .45),
                             shape: const CircleBorder(),
                             child: IconButton(
-                              icon: const Icon(Icons.arrow_back, color: Colors.white),
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                              ),
                               onPressed: () => Navigator.pop(ctx),
                               tooltip: 'Back',
                             ),
@@ -91,7 +117,10 @@ void showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr) 
                               Expanded(
                                 child: Text(
                                   recipe.name,
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -100,7 +129,9 @@ void showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr) 
                                 children: List.generate(
                                   5,
                                   (i) => Icon(
-                                    i < difficulty ? Icons.star : Icons.star_border,
+                                    i < difficulty
+                                        ? Icons.star
+                                        : Icons.star_border,
                                     color: Colors.amber,
                                     size: 18,
                                   ),
@@ -119,7 +150,9 @@ void showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr) 
                                   label: Text(s),
                                   backgroundColor: Colors.white12,
                                   side: const BorderSide(color: Colors.white24),
-                                  labelStyle: const TextStyle(color: Colors.white),
+                                  labelStyle: const TextStyle(
+                                    color: Colors.white,
+                                  ),
                                 ),
                             ],
                           ),
@@ -136,7 +169,10 @@ void showRecipeDetailSheet(BuildContext context, Recipe recipe, MatchResult mr) 
                               kvPill('Difficulty', '$difficulty / 5'),
                               kvPill('Servings', '$servings servings'),
                               kvPill('Total time', '$totalMin min'),
-                              kvPill('Completeness', '${mr.match.length}/${recipe.ingredientsRequired.length}'),
+                              kvPill(
+                                'Completeness',
+                                '${mr.match.length}/${recipe.ingredientIds.length}',
+                              ),
                             ],
                           ),
 
