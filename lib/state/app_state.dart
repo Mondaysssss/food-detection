@@ -10,9 +10,84 @@ import '../domain/models/cook_session.dart';
 import '../domain/models/recipe.dart';
 
 class AppState extends ChangeNotifier {
+  // =========================================================
+  // Persona / Profile (for Settings display)
+  // =========================================================
+
+  // login 未做，所以先用固定字
+  String userName = 'User name';
+
+  String? gender; // from PersonaWizard
+  int age = 18; // from PersonaWizard
+
+  // appliances counts (from PersonaWizard)
+  final Map<String, int> _appliances = {
+    'cookware': 0,
+    'stove': 0,
+    'electric': 0,
+    'bake': 0,
+  };
+  Map<String, int> get appliances => Map.unmodifiable(_appliances);
+
+  // same limits as persona_wizard_screen.dart
+  static const Map<String, int> applianceMin = {
+    'cookware': 1,
+    'stove': 1,
+    'electric': 0,
+    'bake': 0,
+  };
+
+  static const Map<String, int> applianceMax = {
+    'cookware': 2,
+    'stove': 2,
+    'electric': 2,
+    'bake': 1,
+  };
+
+  int applianceValue(String key) {
+    final v = _appliances[key] ?? 0;
+    final max = applianceMax[key] ?? 999;
+    if (v < 0) return 0;
+    if (v > max) return max;
+    return v;
+  }
+
+  void setAppliance(String key, int value) {
+    final max = applianceMax[key] ?? 999;
+    var v = value;
+    if (v < 0) v = 0;
+    if (v > max) v = max;
+    _appliances[key] = v;
+    notifyListeners();
+  }
+
+  void setPersona({
+    String? newGender,
+    int? newAge,
+    Map<String, int>? newAppliances,
+  }) {
+    if (newGender != null) gender = newGender;
+    if (newAge != null) age = newAge;
+    if (newAppliances != null) {
+      // keep keys; clamp to max
+      for (final k in _appliances.keys) {
+        final v = newAppliances[k] ?? _appliances[k] ?? 0;
+        setAppliance(k, v);
+      }
+      // setAppliance 已 notify；但為避免重複 notify，直接 return
+      return;
+    }
+    notifyListeners();
+  }
+
+  // =========================================================
+  // Existing AppState (unchanged)
+  // =========================================================
+
   // detected main ingredients (names only; no quantity)
   final List<String> _ingredients = [];
-  UnmodifiableListView<String> get ingredients => UnmodifiableListView(_ingredients);
+  UnmodifiableListView<String> get ingredients =>
+      UnmodifiableListView(_ingredients);
 
   // favorites (menuId)
   final Set<String> _favorites = {};
@@ -20,7 +95,8 @@ class AppState extends ChangeNotifier {
 
   // single-dish history (fallback)
   final List<CookHistory> _history = [];
-  UnmodifiableListView<CookHistory> get history => UnmodifiableListView(_history);
+  UnmodifiableListView<CookHistory> get history =>
+      UnmodifiableListView(_history);
 
   // cart: menuId -> qty
   final Map<String, int> _cart = {};
@@ -28,7 +104,8 @@ class AppState extends ChangeNotifier {
 
   // cook sessions (from cart snapshot)
   final List<CookSession> _sessions = [];
-  UnmodifiableListView<CookSession> get sessions => UnmodifiableListView(_sessions);
+  UnmodifiableListView<CookSession> get sessions =>
+      UnmodifiableListView(_sessions);
 
   void addSessionFromCartSnapshot(Map<String, int> snapshot, int totalMinutes) {
     _sessions.insert(
@@ -56,8 +133,10 @@ class AppState extends ChangeNotifier {
   }
 
   void setCartCount(String menuId, int count) {
-    if (count <= 0) _cart.remove(menuId);
-    else _cart[menuId] = count;
+    if (count <= 0)
+      _cart.remove(menuId);
+    else
+      _cart[menuId] = count;
     notifyListeners();
   }
 
@@ -122,7 +201,10 @@ class AppState extends ChangeNotifier {
   }
 
   void addHistory(Recipe r) {
-    _history.insert(0, CookHistory(title: r.name, cover: r.cover, completedAt: DateTime.now()));
+    _history.insert(
+      0,
+      CookHistory(title: r.name, cover: r.cover, completedAt: DateTime.now()),
+    );
     notifyListeners();
   }
 
@@ -134,6 +216,16 @@ class AppState extends ChangeNotifier {
     _sessions.clear();
     strictMode = true;
     timeScale = 10;
+
+    // reset persona/profile
+    userName = 'User name';
+    gender = null;
+    age = 18;
+    _appliances['cookware'] = 0;
+    _appliances['stove'] = 0;
+    _appliances['electric'] = 0;
+    _appliances['bake'] = 0;
+
     notifyListeners();
   }
 }

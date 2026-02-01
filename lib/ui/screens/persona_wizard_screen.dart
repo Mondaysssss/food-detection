@@ -2,7 +2,9 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../state/app_state.dart';
 import '../widgets/page_frame.dart';
 import '../widgets/glass.dart';
 import 'login_screen.dart';
@@ -20,7 +22,11 @@ class QuestionDef {
   final String id;
   final String title;
   final QType type;
-  const QuestionDef({required this.id, required this.title, required this.type});
+  const QuestionDef({
+    required this.id,
+    required this.title,
+    required this.type,
+  });
 }
 
 class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
@@ -28,8 +34,16 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   final List<QuestionDef> _questions = const [
     QuestionDef(id: 'gender', title: 'Gender', type: QType.genderButtons),
     QuestionDef(id: 'age', title: 'Age', type: QType.ageWheel),
-    QuestionDef(id: 'appliance', title: 'Which kitchen appliances do you own?', type: QType.applianceDropdowns),
-    QuestionDef(id: 'allergy', title: 'Food allergies', type: QType.allergyCheckboxes),
+    QuestionDef(
+      id: 'appliance',
+      title: 'Which kitchen appliances do you own?',
+      type: QType.applianceDropdowns,
+    ),
+    QuestionDef(
+      id: 'allergy',
+      title: 'Food allergies',
+      type: QType.allergyCheckboxes,
+    ),
   ];
 
   int _index = 0;
@@ -81,7 +95,31 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   @override
   void initState() {
     super.initState();
-    _ageCtl = FixedExtentScrollController(initialItem: (_age - 13).clamp(0, 86));
+    _ageCtl = FixedExtentScrollController(
+      initialItem: (_age - 13).clamp(0, 86),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // ✅ 用 AppState 作初始值（避免每次入嚟都 reset）
+    final app = context.read<AppState>();
+
+    _age = app.age;
+    _gender = app.gender;
+
+    // appliances init from state
+    for (final k in _appliances.keys) {
+      _appliances[k] = app.applianceValue(k);
+    }
+
+    // age picker sync
+    _ageCtl.dispose();
+    _ageCtl = FixedExtentScrollController(
+      initialItem: (_age - 13).clamp(0, 86),
+    );
   }
 
   @override
@@ -107,7 +145,10 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
         // stove <=2, >=1
         // electric <=2
         // bake <=1
-        return _applianceOk('cookware') && _applianceOk('stove') && _applianceOk('electric') && _applianceOk('bake');
+        return _applianceOk('cookware') &&
+            _applianceOk('stove') &&
+            _applianceOk('electric') &&
+            _applianceOk('bake');
 
       case QType.allergyCheckboxes:
         // 冇要求必選，所以永遠可以
@@ -121,6 +162,13 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     if (_index < _questions.length - 1) {
       setState(() => _index++);
     } else {
+      // ✅ 存入 AppState（age / gender / appliances）
+      context.read<AppState>().setPersona(
+        newGender: _gender,
+        newAge: _age,
+        newAppliances: Map<String, int>.from(_appliances),
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -157,7 +205,10 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
             ),
             const SizedBox(height: 16),
 
-            Text(q.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+            Text(
+              q.title,
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 12),
 
             // 讓每一題的控件（多選/選擇器等）置中顯示
@@ -229,14 +280,19 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
               // 字體放大
               title: Text(
                 o.$1,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               // 圖形放大（你原本已有）
               secondary: Icon(o.$2, size: 30),
               // 令每行唔好太扁（變高少少、易按）
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
               visualDensity: const VisualDensity(vertical: 1.0),
-              // 如果你想保留緊湊可以留 true；想再鬆啲就改 false
               dense: true,
             ),
           ),
@@ -278,9 +334,15 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
 
   Widget _qAppliance() {
     final rows = const [
-      ('Cookware (wok, soup pot, frying pan, steamer, sauté, stew, pressure cooker)', 'cookware'),
+      (
+        'Cookware (wok, soup pot, frying pan, steamer, sauté, stew, pressure cooker)',
+        'cookware',
+      ),
       ('Stove / cooktop (induction, gas stove)', 'stove'),
-      ('Electric cooking (rice cooker, slow cooker, electric skillet)', 'electric'),
+      (
+        'Electric cooking (rice cooker, slow cooker, electric skillet)',
+        'electric',
+      ),
       ('Baking / air frying (oven, air fryer)', 'bake'),
     ];
 
@@ -289,56 +351,63 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         for (final r in rows)
-        Builder(
-          builder: (context) {
-            final key = r.$2;
-            final max = _applianceMax[key] ?? 4;
+          Builder(
+            builder: (context) {
+              final key = r.$2;
+              final max = _applianceMax[key] ?? 4;
 
-            final ddItems = List<DropdownMenuItem<int>>.generate(
-              max + 1,
-              (i) => DropdownMenuItem(
-                value: i,
-                child: Text(
-                  i.toString(),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600), // ✅ 放大
+              final ddItems = List<DropdownMenuItem<int>>.generate(
+                max + 1,
+                (i) => DropdownMenuItem(
+                  value: i,
+                  child: Text(
+                    i.toString(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ), // ✅ 放大
+                  ),
                 ),
-              ),
-            );
+              );
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.center,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: glass(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              r.$1,
-                              textAlign: TextAlign.center, // 文字也置中（你想要更「正中」就保留）
-                              style: const TextStyle(fontSize: 17), // 放大文字
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: glass(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                r.$1,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 17),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          DropdownButton<int>(
-                            value: _applianceValue(key),
-                            items: ddItems,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700), // 放大
-                            onChanged: (v) => setState(() => _appliances[key] = v ?? 0),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            DropdownButton<int>(
+                              value: _applianceValue(key),
+                              items: ddItems,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              onChanged: (v) =>
+                                  setState(() => _appliances[key] = v ?? 0),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-              ],
-            );
-          },
-        ),
+                  const SizedBox(height: 10),
+                ],
+              );
+            },
+          ),
       ],
     );
   }
@@ -363,20 +432,13 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       'Taro',
     ];
 
-    void toggle(String name) {
-      setState(() {
-        if (_allergies.contains(name)) _allergies.remove(name);
-        else _allergies.add(name);
-      });
-    }
-
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18), // 整個區域上下邊界加大
+      padding: const EdgeInsets.symmetric(vertical: 18),
       child: SizedBox(
-        height: 610, // 整體區域高度加大
+        height: 610,
         child: Scrollbar(
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 10), // ✅ list 內上下再多啲空間
+            padding: const EdgeInsets.symmetric(vertical: 10),
             itemCount: allergens.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (_, i) {
@@ -385,8 +447,10 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
 
               void toggle() {
                 setState(() {
-                  if (checked) _allergies.remove(name);
-                  else _allergies.add(name);
+                  if (checked)
+                    _allergies.remove(name);
+                  else
+                    _allergies.add(name);
                 });
               }
 
@@ -397,7 +461,10 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
                   child: Stack(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 14,
+                        ),
                         child: Row(
                           children: [
                             Expanded(
