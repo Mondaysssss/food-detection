@@ -132,6 +132,7 @@ class _FlowStep {
 
 /// 器具倒數狀態（Tile）
 class _ToolTimerState {
+  final int ownerGlobalNo; // ✅ 呢個 timer 屬於邊一個 global step（用嚟決定 ✓）
   final int totalMs;
   final DateTime startAt;
   int leftMs;
@@ -140,6 +141,7 @@ class _ToolTimerState {
   bool notified;
 
   _ToolTimerState({
+    required this.ownerGlobalNo,
     required this.totalMs,
     required this.startAt,
     required this.leftMs,
@@ -174,12 +176,14 @@ class _IpynbSched {
   final int stepIndex;
   final int startSec;
   final int endSec;
+  final _ToolKey tool; // ✅ 已分配到 6 格 Tile 的其中一格（獨立 timer slot）
 
   _IpynbSched({
     required this.recipeIndex,
     required this.stepIndex,
     required this.startSec,
     required this.endSec,
+    required this.tool,
   });
 }
 
@@ -194,6 +198,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   int _idx = 0;
 
+  // ✅ 真正完成（倒數完成 + 用戶確認/前進）先算 ✓
+  final Set<int> _doneGlobalNos = <int>{};
+
+  // ✅ 每一步：同一食譜的上一個 global step（用嚟判斷「可唔可以進入下一步」）
+  late final Map<int, int> _prevSameRecipe = _buildPrevSameRecipeMap(_steps);
   // ---------------------------
   // A) Step countdown（人手）
   // ---------------------------
@@ -321,8 +330,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   }
 
   List<_FlowStep> _buildFlowSteps(List<Recipe> menus) {
-    // ✅ 改成 ipynb 版：資源容量 + 事件佇列（離散事件模擬）
-    // UI 完全唔改，只係改「步驟排序/時間軸」同「Step vs Tile timer 規則」
+    // ✅ 新規則（依你最新要求）：
+    // 1) 每道菜必須「上一 step 完成」先可以開始下一 step（用 endTime 形成 chain）
+    // 2) isConcurrent=true 代表「6 格 Tile 背景計時」，可去做其他食譜 step；但同一食譜下一步要等 timer 完成
+    // 3) 排程優先開 Tile timer（盡量減少空窗期），再做需要 attention 的 step
+    // 4) 全部仍然按每道菜 step 次序（1->2->3...），UI 版面不變
     if (menus.isEmpty) return const [];
 
     final stepsByRecipe = <List<RecipeStep>>[];
@@ -330,183 +342,33 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       stepsByRecipe.add(r.steps);
     }
 
-    final numRecipes = menus.length;
-    final currentIdx = List<int>.filled(numRecipes, 0);
+    final n = menus.length;
+    final idx = List<int>.filled(n, 0);
 
-    // ipynb: capacity.get(res, 1)
+    // ✅ 每道菜：下一步最早可開始時間（上一 step 結束後）
+    final readyAt = List<int>.filled(n, 0);
+
+    // ✅ 資源用量（cookware/electric/oven + attention）
+    final usage = <String, int>{};
+
     int capOf(String res) {
       switch (res) {
-        case 'stove':
-          return 2;
+        case 'cookware':
+          return 2; // 兩格：pot + stove
         case 'electric':
-          return 2;
+          return 2; // 兩格：electric + electric2
         case 'oven':
           return 1;
         case 'attention':
           return 1;
         default:
-          return 1;
+          return 9999;
       }
     }
 
-    int usageOf(Map<String, int> usage, String res) => usage[res] ?? 0;
+    int useOf(String res) => usage[res] ?? 0;
 
-    final usage = <String, int>{}; // 'stove'/'oven'/'attention'
-    final eventQueue = <_IpynbEvent>[];
-    final schedule = <_IpynbSched>[];
-
-    int currentTime = 0;
-
-    bool hasRemaining() {
-      for (int r = 0; r < numRecipes; r++) {
-        if (currentIdx[r] < stepsByRecipe[r].length) return true;
-      }
-      return false;
-    }
-
-    // 取出 eventQueue 入面 endSec 最細嗰個（O(n)，步驟數通常唔大）
-    _IpynbEvent popMinEvent() {
-      int best = 0;
-      int bestEnd = eventQueue[0].endSec;
-      for (int i = 1; i < eventQueue.length; i++) {
-        final e = eventQueue[i];
-        if (e.endSec < bestEnd) {
-          bestEnd = e.endSec;
-          best = i;
-        }
-      }
-      return eventQueue.removeAt(best);
-    }
-
-    int peekMinEnd() {
-      int bestEnd = eventQueue[0].endSec;
-      for (int i = 1; i < eventQueue.length; i++) {
-        bestEnd = min(bestEnd, eventQueue[i].endSec);
-      }
-      return bestEnd;
-    }
-
-    while (hasRemaining()) {
-      // 1) 收割完成事件（end <= currentTime），釋放資源
-      while (eventQueue.isNotEmpty) {
-        // 找到最早完成嘅 event；如果佢都未到 currentTime，就停
-        int minEnd = peekMinEnd();
-        if (minEnd > currentTime) break;
-
-        final done = popMinEvent();
-        schedule.add(
-          _IpynbSched(
-            recipeIndex: done.recipeIndex,
-            stepIndex: done.stepIndex,
-            startSec: done.startSec,
-            endSec: done.endSec,
-          ),
-        );
-
-        if (done.equipment.isNotEmpty) {
-          usage[done.equipment] = usageOf(usage, done.equipment) - 1;
-        }
-        if (done.needsAttention) {
-          usage['attention'] = usageOf(usage, 'attention') - 1;
-        }
-      }
-
-      // 2) 嘗試喺「同一個 currentTime」繼續塞下一步（ipynb 行為：只要今輪有排到，就唔跳時間）
-      bool scheduledAny = false;
-
-      for (int r = 0; r < numRecipes; r++) {
-        if (currentIdx[r] >= stepsByRecipe[r].length) continue;
-
-        final st = stepsByRecipe[r][currentIdx[r]];
-        final eqRaw = _normEquipment(_readRequiredEquipment(st));
-        // ✅ 資源名（同時也對齊 6 個 Tile slot）：
-        // - stove/pot => 'stove'（兩格 Cookware）
-        // - electric => 'electric'（兩格 Electric）
-        // - oven => 'oven'（一格）
-        // - 無設備但可離手 => 當 'electric'（佔用其中一格 Electric 作背景 timer）
-        final eq = (eqRaw == 'pot')
-            ? 'stove'
-            : (eqRaw.isEmpty && st.isConcurrent)
-            ? 'electric'
-            : eqRaw;
-        final needsAttention = !st.isConcurrent;
-
-        bool can = true;
-
-        if (eq.isNotEmpty) {
-          if (usageOf(usage, eq) >= capOf(eq)) can = false;
-        }
-        if (needsAttention) {
-          if (usageOf(usage, 'attention') >= capOf('attention')) can = false;
-        }
-
-        if (can) {
-          final dur = _stepDurationSec(st);
-          final start = currentTime;
-          final end = currentTime + dur;
-
-          eventQueue.add(
-            _IpynbEvent(
-              recipeIndex: r,
-              stepIndex: currentIdx[r],
-              startSec: start,
-              endSec: end,
-              equipment: eq,
-              needsAttention: needsAttention,
-            ),
-          );
-
-          if (eq.isNotEmpty) {
-            usage[eq] = usageOf(usage, eq) + 1;
-          }
-          if (needsAttention) {
-            usage['attention'] = usageOf(usage, 'attention') + 1;
-          }
-
-          currentIdx[r] += 1;
-          scheduledAny = true;
-        }
-      }
-
-      // 3) 如果今輪冇任何一步可排，就跳到下一個最早完成時間
-      if (!scheduledAny && eventQueue.isNotEmpty) {
-        currentTime = peekMinEnd();
-      } else if (!scheduledAny && eventQueue.isEmpty) {
-        break;
-      }
-    }
-
-    // 4) 把剩餘事件全部收割（按 endSec 先後）
-    while (eventQueue.isNotEmpty) {
-      final done = popMinEvent();
-      schedule.add(
-        _IpynbSched(
-          recipeIndex: done.recipeIndex,
-          stepIndex: done.stepIndex,
-          startSec: done.startSec,
-          endSec: done.endSec,
-        ),
-      );
-    }
-
-    // 5) ipynb 最後係按 start_time 排序輸出時間軸
-    schedule.sort((a, b) {
-      final c = a.startSec.compareTo(b.startSec);
-      if (c != 0) return c;
-      // 同一時間開始：保持 recipe 順序，再保持 stepIndex
-      final cr = a.recipeIndex.compareTo(b.recipeIndex);
-      if (cr != 0) return cr;
-      return a.stepIndex.compareTo(b.stepIndex);
-    });
-
-    final total = schedule.length;
-    if (total <= 0) return const [];
-
-    final out = <_FlowStep>[];
-
-    // ✅ 將「同類設備」分配到 6 個 Tile slot（兩個 Cookware / 兩個 Electric / 一個 Oven / 一個 Hands-Prep）
-    // 目標：同一時間如果有兩個 stove/cookware 任務，就會各自佔用 pot + stove 兩格（圖標一樣但 timer 獨立）
-    // 注意：Hands Tile 已合併到 prep；hands 只作內部分類，顯示一律用 prep。
+    // ✅ 6 格 Tile slot（busyUntil 用嚟確保「同一時間兩個 stove 會落兩格」）
     final slotBusyUntil = <_ToolKey, int>{
       _ToolKey.pot: 0,
       _ToolKey.stove: 0,
@@ -516,70 +378,263 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       _ToolKey.prep: 0,
     };
 
-    _ToolKey pickFreeSlot(List<_ToolKey> candidates, int startSec) {
-      // 先揀已空閒的；如果都唔空閒（理論上唔應該，因為排程容量已限制），就揀最早釋放嗰個
-      for (final k in candidates) {
+    _ToolKey pickFreeSlot(List<_ToolKey> cands, int startSec) {
+      for (final k in cands) {
         if ((slotBusyUntil[k] ?? 0) <= startSec) return k;
       }
-      _ToolKey best = candidates.first;
+      // 理論上唔會發生（cap 已限制），但保底：揀最早釋放
+      _ToolKey best = cands.first;
       int bestEnd = slotBusyUntil[best] ?? 0;
-      for (final k in candidates.skip(1)) {
-        final end = slotBusyUntil[k] ?? 0;
-        if (end < bestEnd) {
-          bestEnd = end;
+      for (final k in cands.skip(1)) {
+        final e = slotBusyUntil[k] ?? 0;
+        if (e < bestEnd) {
           best = k;
+          bestEnd = e;
         }
       }
       return best;
     }
 
-    String _eqGroup(String eqNorm) {
-      if (eqNorm == 'stove' || eqNorm == 'pot') return 'cookware';
-      if (eqNorm == 'electric') return 'electric';
-      if (eqNorm == 'oven') return 'oven';
+    String _groupOf(RecipeStep st) {
+      final eqRaw = _normEquipment(_readRequiredEquipment(st));
+      final eq = (eqRaw == 'pot') ? 'cookware' : eqRaw;
+
+      if (eq == 'stove' || eq == 'cookware') return 'cookware';
+      if (eq == 'electric') return 'electric';
+      if (eq == 'oven') return 'oven';
+
+      // ✅ 無設備但 isConcurrent=true：當 electric 背景 timer（佔用其中一格）
+      if (eqRaw.isEmpty && st.isConcurrent) return 'electric';
+
       return '';
     }
 
+    bool _canStart({required String group, required bool needsAttention}) {
+      if (group.isNotEmpty && useOf(group) >= capOf(group)) return false;
+      if (needsAttention && useOf('attention') >= capOf('attention'))
+        return false;
+      return true;
+    }
+
+    // ✅ 事件：用嚟釋放資源 & 推進時間
+    final eventQ = <_IpynbEvent>[];
+    int peekMinEnd() {
+      int best = eventQ[0].endSec;
+      for (int i = 1; i < eventQ.length; i++) {
+        best = min(best, eventQ[i].endSec);
+      }
+      return best;
+    }
+
+    _IpynbEvent popMinEvent() {
+      int bestI = 0;
+      int bestEnd = eventQ[0].endSec;
+      for (int i = 1; i < eventQ.length; i++) {
+        final e = eventQ[i];
+        if (e.endSec < bestEnd) {
+          bestEnd = e.endSec;
+          bestI = i;
+        }
+      }
+      return eventQ.removeAt(bestI);
+    }
+
+    bool hasRemaining() {
+      for (int r = 0; r < n; r++) {
+        if (idx[r] < stepsByRecipe[r].length) return true;
+      }
+      return false;
+    }
+
+    final schedule = <_IpynbSched>[];
+    int t = 0;
+
+    while (hasRemaining()) {
+      // A) 收割完成事件（end <= t）
+      while (eventQ.isNotEmpty) {
+        final minEnd = peekMinEnd();
+        if (minEnd > t) break;
+
+        final done = popMinEvent();
+        if (done.equipment.isNotEmpty) {
+          usage[done.equipment] = useOf(done.equipment) - 1;
+        }
+        if (done.needsAttention) {
+          usage['attention'] = useOf('attention') - 1;
+        }
+      }
+
+      // B) 盡量喺同一個 t 塞得幾多得幾多
+      bool scheduledAny = false;
+      bool loopAgain = true;
+
+      while (loopAgain) {
+        loopAgain = false;
+
+        // (1) 先開 Tile timer：isConcurrent=true
+        for (int r = 0; r < n; r++) {
+          if (idx[r] >= stepsByRecipe[r].length) continue;
+          if (readyAt[r] > t) continue;
+
+          final st = stepsByRecipe[r][idx[r]];
+          if (!st.isConcurrent) continue;
+
+          final group = _groupOf(st);
+          final needsAttention = false;
+
+          if (!_canStart(group: group, needsAttention: needsAttention))
+            continue;
+
+          final dur = _stepDurationSec(st);
+          final start = t;
+          final end = t + dur;
+
+          // ✅ 分配 6 格 Tile slot（獨立）
+          _ToolKey tool;
+          if (group == 'cookware') {
+            tool = pickFreeSlot(const [_ToolKey.pot, _ToolKey.stove], start);
+            slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
+          } else if (group == 'electric') {
+            tool = pickFreeSlot(const [
+              _ToolKey.electric,
+              _ToolKey.electric2,
+            ], start);
+            slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
+          } else if (group == 'oven') {
+            tool = _ToolKey.oven;
+            slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
+          } else {
+            tool = pickFreeSlot(const [
+              _ToolKey.electric,
+              _ToolKey.electric2,
+            ], start);
+            slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
+          }
+
+          schedule.add(
+            _IpynbSched(
+              recipeIndex: r,
+              stepIndex: idx[r],
+              startSec: start,
+              endSec: end,
+              tool: tool,
+            ),
+          );
+
+          eventQ.add(
+            _IpynbEvent(
+              recipeIndex: r,
+              stepIndex: idx[r],
+              startSec: start,
+              endSec: end,
+              equipment: group,
+              needsAttention: needsAttention,
+            ),
+          );
+
+          if (group.isNotEmpty) {
+            usage[group] = useOf(group) + 1;
+          }
+
+          idx[r] += 1;
+          readyAt[r] = end; // ✅ 同一食譜下一步要等完成
+          scheduledAny = true;
+          loopAgain = true;
+        }
+
+        // (2) 再做需要 attention 的 step（一次只會開到 1 個，因為 attention=1）
+        if (useOf('attention') < capOf('attention')) {
+          for (int r = 0; r < n; r++) {
+            if (idx[r] >= stepsByRecipe[r].length) continue;
+            if (readyAt[r] > t) continue;
+
+            final st = stepsByRecipe[r][idx[r]];
+            if (st.isConcurrent) continue;
+
+            final group = _groupOf(st);
+            final needsAttention = true;
+
+            if (!_canStart(group: group, needsAttention: needsAttention))
+              continue;
+
+            final dur = _stepDurationSec(st);
+            final start = t;
+            final end = t + dur;
+
+            final inferred = _toolFromRecipeStep(st);
+            final tool = (inferred == _ToolKey.hands)
+                ? _ToolKey.prep
+                : inferred;
+
+            schedule.add(
+              _IpynbSched(
+                recipeIndex: r,
+                stepIndex: idx[r],
+                startSec: start,
+                endSec: end,
+                tool: tool,
+              ),
+            );
+
+            eventQ.add(
+              _IpynbEvent(
+                recipeIndex: r,
+                stepIndex: idx[r],
+                startSec: start,
+                endSec: end,
+                equipment: group,
+                needsAttention: needsAttention,
+              ),
+            );
+
+            if (group.isNotEmpty) {
+              usage[group] = useOf(group) + 1;
+            }
+            usage['attention'] = useOf('attention') + 1;
+
+            idx[r] += 1;
+            readyAt[r] = end;
+            scheduledAny = true;
+            loopAgain = true;
+            break; // attention=1
+          }
+        }
+      }
+
+      // C) 如果呢個時間點完全塞唔到，就跳去下一個最早完成事件
+      if (!scheduledAny) {
+        if (eventQ.isNotEmpty) {
+          t = peekMinEnd();
+        } else {
+          break;
+        }
+      }
+    }
+
+    schedule.sort((a, b) {
+      final c = a.startSec.compareTo(b.startSec);
+      if (c != 0) return c;
+      final cr = a.recipeIndex.compareTo(b.recipeIndex);
+      if (cr != 0) return cr;
+      return a.stepIndex.compareTo(b.stepIndex);
+    });
+
+    final total = schedule.length;
+    if (total == 0) return const [];
+
+    final out = <_FlowStep>[];
     for (int g = 0; g < schedule.length; g++) {
-      final it = schedule[g];
-      final r = menus[it.recipeIndex];
-      final st = r.steps[it.stepIndex];
-      final dishTotal = r.steps.length;
+      final s = schedule[g];
+      final r = menus[s.recipeIndex];
+      final st = r.steps[s.stepIndex];
 
-      final stepNo = st.stepNumber; // 1-based
-      final eq = _normEquipment(_readRequiredEquipment(st));
-
-      final startSec = it.startSec;
-      final endSec = it.endSec;
+      final startSec = s.startSec;
+      final endSec = s.endSec;
       final durMs = max(0, (endSec - startSec) * 1000);
 
-      // 以設備/可離手性決定 tile slot
-      final group = _eqGroup(eq);
-      _ToolKey tool;
-      if (group == 'cookware') {
-        tool = pickFreeSlot(const [_ToolKey.pot, _ToolKey.stove], startSec);
-        slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, endSec);
-      } else if (group == 'electric') {
-        tool = pickFreeSlot(const [
-          _ToolKey.electric,
-          _ToolKey.electric2,
-        ], startSec);
-        slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, endSec);
-      } else if (group == 'oven') {
-        tool = _ToolKey.oven;
-        slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, endSec);
-      } else if (st.isConcurrent) {
-        // 無設備但可離手：用 Electric slot 當背景 timer（兩格可同時跑）
-        tool = pickFreeSlot(const [
-          _ToolKey.electric,
-          _ToolKey.electric2,
-        ], startSec);
-        slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, endSec);
-      } else {
-        // 需要人手：用文字推斷（最後顯示一律落到 prep tile）
-        final inferred = _inferTool(st.text);
-        tool = (inferred == _ToolKey.hands) ? _ToolKey.prep : inferred;
-      }
+      final stepNo = (st.stepNumber <= 0) ? (s.stepIndex + 1) : st.stepNumber;
+      final dishTotal = r.steps.length;
+      final eq = _normEquipment(_readRequiredEquipment(st));
 
       out.add(
         _FlowStep(
@@ -598,7 +653,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           isConcurrent: st.isConcurrent,
           text: st.text,
           durationMs: durMs,
-          tool: tool,
+          tool: s.tool,
         ),
       );
     }
@@ -612,6 +667,65 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     // ✅ 對齊 ipynb：isConcurrent=true => 不需要 attention => 當器具/背景 timer（可離手）
     // （UI 不改：仍然用 Tile timer 呈現，Step timer 就鎖 Next）
     return s.isConcurrent;
+  }
+
+  Map<int, int> _buildPrevSameRecipeMap(List<_FlowStep> steps) {
+    final last = <String, int>{};
+    final out = <int, int>{};
+    for (final s in steps) {
+      final prev = last[s.menuId] ?? 0;
+      out[s.globalNo] = prev;
+      last[s.menuId] = s.globalNo;
+    }
+    return out;
+  }
+
+  bool _isCurrentHumanDone(_FlowStep cur) {
+    if (_isToolTimerStep(cur)) return true;
+    if (_stepMs <= 0) return true;
+    return _leftMs <= 0;
+  }
+
+  bool _prereqDoneForTargetIndex(int targetIndex, _FlowStep cur) {
+    if (targetIndex < 0 || targetIndex >= _steps.length) return false;
+    final target = _steps[targetIndex];
+
+    final prev = _prevSameRecipe[target.globalNo] ?? 0;
+    if (prev == 0) return true;
+
+    if (_doneGlobalNos.contains(prev)) return true;
+
+    // ✅ 允許：prev 就係而家呢一步，而且係「人手步」已倒數完
+    // （因為人手步係按 Next 先入 _doneGlobalNos）
+    if (prev == cur.globalNo &&
+        !_isToolTimerStep(cur) &&
+        _isCurrentHumanDone(cur)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _calcCanNext() {
+    if (!_flowStarted) return false;
+    if (_steps.isEmpty) return false;
+
+    final cur = _steps[_idx];
+    final curHumanDone = _isCurrentHumanDone(cur);
+
+    // ✅ 最後一步：必須完成自己先可以結束
+    if (_idx >= _steps.length - 1) {
+      if (_isToolTimerStep(cur)) {
+        return _doneGlobalNos.contains(cur.globalNo);
+      }
+      return curHumanDone;
+    }
+
+    // ✅ 人手步：未倒數完一定唔可以走
+    if (!_isToolTimerStep(cur) && !curHumanDone) return false;
+
+    // ✅ 下一步：必須「該食譜」上一個 step 完成
+    return _prereqDoneForTargetIndex(_idx + 1, cur);
   }
 
   // ---------- A) Step countdown control (human) ----------
@@ -669,7 +783,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         setState(() {
           _leftMs = 0;
           _running = false;
-          _finished = true;
+          _finished = _calcCanNext();
         });
       }
     });
@@ -677,7 +791,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   // ---------- B) Tool countdown control (tile) ----------
 
-  void _startOrKeepToolTimer(_ToolKey tool, int ms) {
+  void _startOrKeepToolTimer(
+    _ToolKey tool,
+    int ms, {
+    required int ownerGlobalNo,
+  }) {
     if (ms <= 0) return;
 
     final existing = _toolTimers[tool];
@@ -687,6 +805,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     }
 
     _toolTimers[tool] = _ToolTimerState(
+      ownerGlobalNo: ownerGlobalNo,
       totalMs: ms,
       startAt: DateTime.now(),
       leftMs: ms,
@@ -771,8 +890,19 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     );
 
     // ✅ 用戶按 OK = 確認完成 -> Tile reset（鬧鐘/遮罩/數字全部消失）
+    final owner = _toolTimers[k]?.ownerGlobalNo;
     _toolTimers.remove(k);
-    if (mounted) setState(() {});
+
+    if (owner != null) {
+      _doneGlobalNos.add(owner);
+    }
+
+    if (mounted) {
+      setState(() {
+        // ✅ 任何一個 tile 完成 + OK，都可能令「其他食譜下一步」變得可做
+        _finished = _calcCanNext();
+      });
+    }
 
     _okShowing = false;
 
@@ -789,18 +919,21 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     final isTool = _isToolTimerStep(s);
 
-    // ✅ 人手倒數：只喺 hands/prep（或你將來更精準規則）
+    // ✅ 人手倒數：isConcurrent=false
     final humanMs = isTool ? 0 : s.durationMs;
 
-    // ✅ 器具倒數：只喺 pot/stove/electric/oven
+    // ✅ Tile 倒數：isConcurrent=true
     final toolMs = isTool ? s.durationMs : 0;
 
     _resetToStepHuman(humanMs, startIfFlowStarted: startIfFlowStarted);
 
-    // ✅ 器具 timer：只要 flow 已 start，進入器具 step 即開（可離手）
+    // ✅ 進入 Tile step：flow 已 start 就開 timer（可離手）
     if (startIfFlowStarted && _flowStarted && toolMs > 0) {
-      _startOrKeepToolTimer(s.tool, toolMs);
+      _startOrKeepToolTimer(s.tool, toolMs, ownerGlobalNo: s.globalNo);
     }
+
+    // ✅ Next Step 是否可按：由「目前 step 狀態」+「下一步所屬食譜的上一個 step 是否完成」決定
+    _finished = _calcCanNext();
   }
 
   void _startOnce() {
@@ -816,8 +949,17 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   void _goNext() {
     if (_steps.isEmpty) return;
 
-    // 人手倒數未完：唔俾 next
+    final cur = _steps[_idx];
+    final isTool = _isToolTimerStep(cur);
+
+    // ✅ 1) non-tool：必須等人手倒數完成先可以 Next
+    // ✅ 2) tool：只有「下一步同一 startSec」或「timer 完成+按 OK」先可以 Next
     if (!_finished) return;
+
+    // ✅ 非 tool：按 Next 才算真正完成（出 ✓）
+    if (!isTool) {
+      _doneGlobalNos.add(cur.globalNo);
+    }
 
     if (_idx >= _steps.length - 1) {
       // ✅ 1) 入 session history（一次 Cook Flow = 一條記錄）
@@ -826,9 +968,6 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         widget.snapshot,
         widget.totalPlannedMinutes,
       );
-
-      // （可選）如果你 Finish 之後想清空購物車：
-      // app.clearCart();
 
       // ✅ 2) 返回上一頁
       Navigator.pop(context);
@@ -950,6 +1089,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                             style: const TextStyle(
                               fontWeight: FontWeight.w900,
                               fontSize: 16,
+                              color: Color.fromARGB(255, 19, 42, 116),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -972,9 +1112,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
                         final curNo = _steps[_idx].globalNo;
                         final isCurrent = s.globalNo == curNo;
-                        final done =
-                            (s.globalNo < curNo) ||
-                            (s.globalNo == curNo && _finished);
+                        final done = (s.globalNo < curNo);
 
                         return ListTile(
                           dense: true,
@@ -997,7 +1135,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: Colors.green.shade700,
+                              color: const Color.fromARGB(255, 19, 42, 116),
                             ),
                           ),
 
@@ -1024,13 +1162,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                               ),
                             ],
                           ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            setState(() {
-                              _idx = s.globalNo - 1;
-                              _applyStep(_idx, startIfFlowStarted: true);
-                            });
-                          },
+                          onTap: null,
                         );
                       },
                     ),
@@ -1121,6 +1253,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
               steps: _steps,
               currentGlobalNo: step?.globalNo ?? 0,
               currentFinished: _finished,
+              isDone: (g) => _doneGlobalNos.contains(g),
               onOpenRatio: _onSheetOpenRatio,
               onJumpToGlobalIndex: (globalNo) {
                 if (globalNo <= 0 || globalNo > _steps.length) return;
@@ -1509,7 +1642,7 @@ class _StartOnceBar extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          started ? ' ' : ' ', //在Started按鈕下面的字
+          started ? ' ' : ' ',
           //started ? 'Step 卡係人手倒數；器具倒數會留喺 Tile（到時彈 is ok）。' : '按 Start 一次開始；人手步驟要等完先 Next。',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -1614,6 +1747,7 @@ class _CookStepsSheet extends StatefulWidget {
   final List<_FlowStep> steps;
   final int currentGlobalNo; // 1-based
   final bool currentFinished;
+  final bool Function(int globalNo) isDone;
   final ValueChanged<double> onOpenRatio;
   final ValueChanged<int> onJumpToGlobalIndex;
 
@@ -1621,6 +1755,7 @@ class _CookStepsSheet extends StatefulWidget {
     required this.steps,
     required this.currentGlobalNo,
     required this.currentFinished,
+    required this.isDone,
     required this.onOpenRatio,
     required this.onJumpToGlobalIndex,
   });
@@ -1732,10 +1867,7 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                       final s = widget.steps[i];
 
                       final isCurrent = s.globalNo == widget.currentGlobalNo;
-                      final done =
-                          (s.globalNo < widget.currentGlobalNo) ||
-                          (s.globalNo == widget.currentGlobalNo &&
-                              widget.currentFinished);
+                      final done = widget.isDone(s.globalNo);
 
                       return ListTile(
                         dense: true,
@@ -1758,7 +1890,7 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: Colors.green.shade700,
+                            color: const Color.fromARGB(255, 19, 42, 116),
                           ),
                         ),
 
@@ -1784,7 +1916,7 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                           ],
                         ),
 
-                        onTap: () => widget.onJumpToGlobalIndex(s.globalNo),
+                        onTap: null,
                       );
                     },
                   ),

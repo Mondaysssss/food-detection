@@ -2,6 +2,8 @@
 // lib/data/recipes_data.dart
 // Static data: all recipes and indexes (kRecipes / kRecipeById / kAllIngredients).
 
+//totalTimeMinutes時間和durationSec步驟的全部加理都不同
+
 import '../domain/models/recipe.dart';
 
 const List<Recipe> kRecipes = [
@@ -281,7 +283,7 @@ const List<Recipe> kRecipes = [
     menuId: 'r6',
     name: 'Winter Melon Soup with Pork Ribs',
     type: 'Chinese',
-    totalTimeMinutes: 205,
+    totalTimeMinutes: 205, //時間和步驟不同
     taste: ['Light', 'Umami'],
     recipeIngredients: const [
       // Main ingredients
@@ -342,7 +344,7 @@ const List<Recipe> kRecipes = [
       ),
       RecipeStep(
         'Prepare winter melon, cut into bite-size pieces',
-        5400,
+        300,
         stepNumber: 4,
         requiredEquipment: ' ',
         isContinuous: true,
