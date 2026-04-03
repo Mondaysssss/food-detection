@@ -125,12 +125,13 @@ class _MyHomePageState extends State<MyHomePage> {
         Map<String, Map<String, dynamic>> bestScores = {};
         final int boxLen = output[0].length;
         final int classProbStart = 4;
+        final int classCount = classNames.length;
         for (int i = 0; i < output[0][0].length; i++) {
           List<double> box = [];
           for (int j = 0; j < boxLen; j++) {
             box.add(output[0][j][i]);
           }
-          List<double> classScores = box.sublist(classProbStart, boxLen);
+          List<double> classScores = box.sublist(classProbStart, classProbStart + classCount > boxLen ? boxLen : classProbStart + classCount);
           for (int k = 0; k < classScores.length; k++) {
             double score = classScores[k];
             if (!bestScores.containsKey(classNames[k]) || score > bestScores[classNames[k]]!['score']) {
@@ -205,7 +206,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     box.add(_response![0][j][i]);
                   }
                   List<double> classScores = box.sublist(classProbStart, classProbStart + classCount > boxLen ? boxLen : classProbStart + classCount);
-                  print('classNames.length: ${classNames.length}, classScores.length: ${classScores.length}');
+                  //print('classNames.length: ${classNames.length}, classScores.length: ${classScores.length}');
                   for (int k = 0; k < classScores.length; k++) {
                     double score = classScores[k];
                     if (!bestScores.containsKey(classNames[k]) || score > bestScores[classNames[k]]!['score']) {
