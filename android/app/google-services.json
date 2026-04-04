@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "1034636586264",
+    "firebase_url": "https://fooddetection-69088-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "fooddetection-69088",
+    "storage_bucket": "fooddetection-69088.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1034636586264:android:1dd4de77d7da4f4c60826d",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1034636586264-qu0lctqpr7a4pee13997nk2ak0d7j8hs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4pcBjHHo24ExW7kf0P1dlplI26NnhpoA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1034636586264-qu0lctqpr7a4pee13997nk2ak0d7j8hs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

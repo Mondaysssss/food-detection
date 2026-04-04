@@ -7,6 +7,9 @@ import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
 import '../widgets/glass.dart';
 
+import '../../domain/services/auth_service.dart';
+import 'login_screen.dart';
+
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
@@ -148,6 +151,30 @@ class SettingsPage extends StatelessWidget {
                 onPressed: () => context.read<AppState>().resetAll(),
                 icon: const Icon(Icons.delete),
                 label: const Text('Reset all data'),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          glass(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.orange.shade200.withValues(alpha: .2),
+                ),
+                onPressed: () async {
+                  await AuthService().signOut();
+                  if (context.mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (_) => false,
+                    );
+                  }
+                },
+                icon: const Icon(Icons.logout),
+                label: const Text('Log out'),
               ),
             ),
           ),

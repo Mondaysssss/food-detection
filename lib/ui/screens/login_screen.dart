@@ -1,10 +1,12 @@
 // [OOP] 登入頁：示範用的登入流程/跳過，進入主頁。
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // add
 
 import 'home_shell.dart';
 import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
+import '../../domain/services/auth_service.dart'; // add
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +19,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
+  final _auth = AuthService(); // add
+  bool _loading = false; // add
 
   @override
   void dispose() {
@@ -36,6 +40,39 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$what — coming soon')));
+  }
+
+  Future<void> _doLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _loading = true);
+    try {
+      await _auth.login(email: _email.text, password: _password.text);
+      if (mounted) _goHome();
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message ?? 'Login failed')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _doGoogleLogin() async {
+    setState(() => _loading = true);
+    try {
+      final user = await _auth.signInWithGoogle();
+      if (user != null && mounted) _goHome();
+    } on FirebaseException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Google sign-in failed')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -122,9 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           validator: (v) => (v == null || v.length < 4)
                               ? 'At least 4 characters'
                               : null,
-                          onFieldSubmitted: (_) {
-                            if (_formKey.currentState!.validate()) _goHome();
-                          },
+                          onFieldSubmitted: (_) => _doLogin(),
                         ),
                       ],
                     ),
@@ -133,16 +168,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
 
                   ElevatedButton.icon(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) _goHome();
-                    },
-                    icon: const Icon(Icons.login),
+                    onPressed: _loading
+                        ? null
+                        : _doLogin, // disabled while loading
+                    icon: _loading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.login),
                     label: const Text('Log in'),
                   ),
                   const SizedBox(height: 8),
 
                   OutlinedButton.icon(
-                    onPressed: _goHome,
+                    onPressed: _loading ? null : _doGoogleLogin,
                     icon: const Icon(Icons.account_circle),
                     label: const Text('Continue with Google'),
                   ),

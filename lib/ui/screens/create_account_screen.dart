@@ -3,8 +3,9 @@
 // Create account screen: UI + basic form validation (no backend yet).
 
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart'; // add
 import 'home_shell.dart';
+import '../../domain/services/auth_service.dart'; // add
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -15,6 +16,8 @@ class CreateAccountScreen extends StatefulWidget {
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _auth = AuthService(); // add
+  bool _loading = false; // add
 
   final _name = TextEditingController();
   final _email = TextEditingController();
@@ -41,21 +44,42 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
     if (!_agree) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please accept terms to continue')),
       );
       return;
     }
-
-    // 暫時：無後端，當作註冊成功
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Account created')));
-    _goHome();
+    setState(() => _loading = true);
+    try {
+      await _auth.signUp(
+        email: _email.text,
+        password: _password.text,
+        username: _name.text,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Account created!')));
+        _goHome();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message ?? 'Sign up failed')));
+      }
+    } on FirebaseException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message ?? 'Sign up failed')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -194,8 +218,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   const SizedBox(height: 8),
 
                   ElevatedButton.icon(
-                    onPressed: _submit,
-                    icon: const Icon(Icons.check_circle_outline),
+                    onPressed: _loading ? null : _submit,
+                    icon: _loading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check_circle_outline),
                     label: const Text('Create account'),
                   ),
 
