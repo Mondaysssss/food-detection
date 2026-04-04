@@ -65,6 +65,27 @@ class AuthService {
     return user;
   }
 
+  Future<void> savePreferences({
+    required String uid,
+    String? gender,
+    required int age,
+    required Map<String, int> appliances,
+    required List<String> allergies,
+  }) async {
+    await _db.collection('users').doc(uid).set({
+      'gender': gender,
+      'age': age,
+      'appliances': appliances,
+      'allergies': allergies,
+    }, SetOptions(merge: true)); // merge: don't overwrite email/username/etc.
+  }
+
+  Future<Map<String, dynamic>?> loadPreferences(String uid) async {
+    final doc = await _db.collection('users').doc(uid).get();
+    if (!doc.exists) return null;
+    return doc.data();
+  }
+
   Future<void> sendPasswordReset(String email) async {
     await _auth.sendPasswordResetEmail(email: email.trim());
   }

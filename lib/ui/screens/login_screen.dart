@@ -8,6 +8,9 @@ import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
 import '../../domain/services/auth_service.dart'; // add
 
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -46,7 +49,24 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      await _auth.login(email: _email.text, password: _password.text);
+      final user = await _auth.login(
+        email: _email.text,
+        password: _password.text,
+      );
+      // ── load cloud preferences ──
+      if (user != null) {
+        final data = await _auth.loadPreferences(user.uid);
+        if (data != null && mounted) {
+          final appState = context.read<AppState>();
+          appState.setPersona(
+            newGender: data['gender'],
+            newAge: data['age'],
+            newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+          );
+          appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
+          if (data['username'] != null) appState.userName = data['username'];
+        }
+      }
       if (mounted) _goHome();
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -63,7 +83,21 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
     try {
       final user = await _auth.signInWithGoogle();
-      if (user != null && mounted) _goHome();
+      // ── load cloud preferences (returning Google user) ──
+      if (user != null) {
+        final data = await _auth.loadPreferences(user.uid);
+        if (data != null && mounted) {
+          final appState = context.read<AppState>();
+          appState.setPersona(
+            newGender: data['gender'],
+            newAge: data['age'],
+            newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+          );
+          appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
+          if (data['username'] != null) appState.userName = data['username'];
+        }
+        if (mounted) _goHome();
+      }
     } on FirebaseException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -72,6 +106,21 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  // save persona wizard preferences to Firestore
+  Future<void> _savePersonaPreferences() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final appState = context.read<AppState>();
+      await _auth.savePreferences(
+        uid: user.uid,
+        gender: appState.gender,
+        age: appState.age,
+        appliances: Map<String, int>.from(appState.appliances),
+        allergies: appState.allergies.toList(),
+      );
     }
   }
 
