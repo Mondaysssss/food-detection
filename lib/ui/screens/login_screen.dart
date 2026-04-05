@@ -54,18 +54,32 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _password.text,
       );
       // ── load cloud preferences ──
-      if (user != null) {
+      if (user != null && mounted) {
+        final appState = context.read<AppState>();
         final data = await _auth.loadPreferences(user.uid);
-        if (data != null && mounted) {
-          final appState = context.read<AppState>();
+
+        if (data != null && data.containsKey('gender')) {
+          // Firestore has preferences → cloud wins
           appState.setPersona(
             newGender: data['gender'],
             newAge: data['age'],
             newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
           );
           appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
-          if (data['username'] != null) appState.userName = data['username'];
+        } else {
+          // Firestore has NO preferences → save local wizard data up
+          await _auth.savePreferences(
+            uid: user.uid,
+            gender: appState.gender,
+            age: appState.age,
+            appliances: Map<String, int>.from(appState.appliances),
+            allergies: appState.allergies.toList(),
+          );
         }
+
+        // Always set username from Firestore or Firebase Auth displayName
+        final name = data?['username'] ?? user.displayName ?? '';
+        if (name.isNotEmpty) appState.userName = name;
       }
       if (mounted) _goHome();
     } on FirebaseAuthException catch (e) {
@@ -84,18 +98,33 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await _auth.signInWithGoogle();
       // ── load cloud preferences (returning Google user) ──
-      if (user != null) {
+      if (user != null && mounted) {
+        final appState = context.read<AppState>();
         final data = await _auth.loadPreferences(user.uid);
-        if (data != null && mounted) {
-          final appState = context.read<AppState>();
+
+        if (data != null && data.containsKey('gender')) {
+          // Firestore has preferences → cloud wins
           appState.setPersona(
             newGender: data['gender'],
             newAge: data['age'],
             newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
           );
           appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
-          if (data['username'] != null) appState.userName = data['username'];
+        } else {
+          // Firestore has NO preferences → save local wizard data up
+          await _auth.savePreferences(
+            uid: user.uid,
+            gender: appState.gender,
+            age: appState.age,
+            appliances: Map<String, int>.from(appState.appliances),
+            allergies: appState.allergies.toList(),
+          );
         }
+
+        // Always set username from Firestore or Firebase Auth displayName
+        final name = data?['username'] ?? user.displayName ?? '';
+        if (name.isNotEmpty) appState.userName = name;
+
         if (mounted) _goHome();
       }
     } on FirebaseException catch (e) {

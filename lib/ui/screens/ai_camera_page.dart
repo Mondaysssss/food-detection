@@ -87,6 +87,23 @@ class _AiCameraPageState extends State<AiCameraPage> {
             },
           ),
         );
+      } else if (mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('No ingredients detected'),
+            content: const Text(
+              'We could not identify any ingredients in this photo. '
+              'Please try again with a clearer image or different angle.',
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     } on TimeoutException catch (e) {
       setState(() {

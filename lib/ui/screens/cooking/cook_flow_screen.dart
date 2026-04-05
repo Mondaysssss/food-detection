@@ -1786,6 +1786,7 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
           1.0,
         );
         widget.onOpenRatio(ratio);
+        setState(() {});
         return false;
       },
       child: DraggableScrollableSheet(
@@ -1845,13 +1846,29 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        tooltip: 'Open',
-                        onPressed: () => _ctl.animateTo(
-                          0.92,
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOut,
+                        tooltip: _ctl.isAttached && _ctl.size > 0.5
+                            ? 'Close'
+                            : 'Open',
+                        onPressed: () {
+                          if (_ctl.isAttached && _ctl.size > 0.5) {
+                            _ctl.animateTo(
+                              0.12,
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            );
+                          } else {
+                            _ctl.animateTo(
+                              0.92,
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            );
+                          }
+                        },
+                        icon: Icon(
+                          _ctl.isAttached && _ctl.size > 0.5
+                              ? Icons.keyboard_arrow_down
+                              : Icons.keyboard_arrow_up,
                         ),
-                        icon: const Icon(Icons.keyboard_arrow_up),
                       ),
                     ],
                   ),
