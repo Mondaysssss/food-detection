@@ -48,7 +48,8 @@ class AppState extends ChangeNotifier {
     final v = _appliances[key] ?? 0;
     final max = applianceMax[key] ?? 999;
     if (v < 0) return 0;
-    if (v > max) return max;
+    final mn = applianceMin[key] ?? 0;
+    if (v < mn) return mn;
     return v;
   }
 

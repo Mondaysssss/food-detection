@@ -259,7 +259,11 @@ class _PreferencePageState extends State<_PreferencePage> {
     _inited = true;
   }
 
-  int _tempValue(String key) => _tempAppliances[key] ?? 0;
+  int _tempValue(String key) {
+    final v = _tempAppliances[key] ?? 0;
+    final mn = AppState.applianceMin[key] ?? 0;
+    return v < mn ? mn : v;
+  }
 
   void _setTempAppliance(String key, int v) {
     final max = AppState.applianceMax[key] ?? 999;
