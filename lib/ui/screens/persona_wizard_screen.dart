@@ -51,8 +51,8 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   int _age = 18;
 
   final Map<String, int> _appliances = {
-    'cookware': 0,
-    'stove': 0,
+    'cookware': 1,
+    'stove': 1,
     'electric': 0,
     'bake': 0,
   };
@@ -336,14 +336,15 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
           Builder(
             builder: (context) {
               final key = r.$2;
+              final min = _applianceMin[key] ?? 0;
               final max = _applianceMax[key] ?? 4;
 
               final ddItems = List<DropdownMenuItem<int>>.generate(
-                max + 1,
+                max - min + 1,
                 (i) => DropdownMenuItem(
-                  value: i,
+                  value: i + min,
                   child: Text(
-                    i.toString(),
+                    (i + min).toString(),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -363,10 +364,23 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                r.$1,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 17),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    r.$1,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontSize: 17),
+                                  ),
+                                  if ((_applianceMin[key] ?? 0) > 0)
+                                    Text(
+                                      '(min: ${_applianceMin[key]})',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
