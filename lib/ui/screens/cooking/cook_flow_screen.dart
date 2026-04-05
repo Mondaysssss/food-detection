@@ -707,15 +707,107 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     return false;
   }
 
+  // ---------- equipment contention helpers ----------
+
+  /// 返回 _ToolKey 所屬設備分組（與排程器保持一致）
+  String _equipmentGroupOf(_ToolKey k) {
+    switch (k) {
+      case _ToolKey.pot:
+      case _ToolKey.stove:
+        return 'cookware';
+      case _ToolKey.electric:
+      case _ToolKey.electric2:
+        return 'electric';
+      case _ToolKey.oven:
+        return 'oven';
+      default:
+        return ''; // prep / hands：無設備，不佔用
+    }
+  }
+
+  int _equipmentCap(String group) {
+    switch (group) {
+      case 'cookware':
+        return 2;
+      case 'electric':
+        return 2;
+      case 'oven':
+        return 1;
+      default:
+        return 9999;
+    }
+  }
+
+  String _equipmentDisplayName(String group) {
+    switch (group) {
+      case 'cookware':
+        return 'stove / pot';
+      case 'electric':
+        return 'electric cooker';
+      case 'oven':
+        return 'oven';
+      default:
+        return group;
+    }
+  }
+
+  /// 若當前 tile step 所需設備已被佔滿，返回提示字串；否則返回 null（可按）
+  String? _startTimerBlockReason() {
+    if (_steps.isEmpty) return null;
+    final cur = _steps[_idx];
+    if (!_isToolTimerStep(cur)) return null; // human step：唔受設備限制
+
+    final group = _equipmentGroupOf(cur.tool);
+    if (group.isEmpty) return null; // 無設備：唔阻
+
+    // 數算正在跑緊嘅 timer 中屬於同一分組嘅數量
+    int running = 0;
+    _toolTimers.forEach((k, t) {
+      if (t.running && _equipmentGroupOf(k) == group) running++;
+    });
+
+    if (running >= _equipmentCap(group)) {
+      final name = _equipmentDisplayName(group);
+      return 'Waiting for $name to be free…';
+    }
+    return null;
+  }
+
+  /// 若當前 step 所屬食譜有「前置」tile timer 仍在跑中，Next 應被阻挡
+  bool _hasPrecedingRunningTileTimer() {
+    if (_steps.isEmpty) return false;
+    final cur = _steps[_idx];
+
+    for (final entry in _toolTimers.entries) {
+      final t = entry.value;
+      if (!t.running) continue;
+
+      // 找到 ownerGlobalNo 對應的 step
+      final ownerIdx = t.ownerGlobalNo - 1; // globalNo 係 1-based
+      if (ownerIdx < 0 || ownerIdx >= _steps.length) continue;
+
+      final ownerStep = _steps[ownerIdx];
+      // 同一食譜 + 比當前步更早
+      if (ownerStep.menuId == cur.menuId &&
+          ownerStep.globalNo < cur.globalNo) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool _calcCanNext() {
     if (!_flowStarted) return false;
     if (_steps.isEmpty) return false;
 
     final cur = _steps[_idx];
 
+    // ✅ 同食譜有前置 tile timer 仍在跑：Next 鎖住
+    if (_hasPrecedingRunningTileTimer()) return false;
+
     // ✅ 最後一步
     if (_idx >= _steps.length - 1) {
-      // tile step 最後一步：仍需 timer 完成 + 用戶按 OK（避免直接 Finish 跳過烹飪）
+      // tile step 最後一步：仍需 timer 完成 + 用戶按 OK
       if (_isToolTimerStep(cur)) {
         return _doneGlobalNos.contains(cur.globalNo);
       }
@@ -857,7 +949,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         _toolTick = null;
       }
 
-      if (needSetState) setState(() {});
+      if (needSetState) setState(() {
+        // ✅ 設備釋放 / timer 完成時，同步更新 Next 按鈕與 Start Timer 狀態
+        _finished = _calcCanNext();
+      });
     });
   }
 
@@ -1270,6 +1365,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                       countdownDone: _stepMs > 0 && _leftMs <= 0,
                       canPrev: _idx > 0,
                       timerStarted: _stepTimerStarted,
+                      startTimerBlockReason: _startTimerBlockReason(),
                       leftText: stepTimeText,
                       onNext: _goNext,
                       onPrev: _goPrev,
@@ -1532,6 +1628,7 @@ class _StepCard extends StatelessWidget {
   final bool countdownDone; // ✅ 倒數已歸零（顏色轉紅）
   final bool canPrev;
   final bool timerStarted;  // ✅ 當前 step 的 timer 已啟動
+  final String? startTimerBlockReason; // ✅ 非 null = 設備被佔滿，禁用 + 顯示原因
   final String leftText;
   final VoidCallback onNext;
   final VoidCallback onPrev;
@@ -1545,6 +1642,7 @@ class _StepCard extends StatelessWidget {
     required this.countdownDone,
     required this.canPrev,
     required this.timerStarted,
+    this.startTimerBlockReason,
     required this.leftText,
     required this.onNext,
     required this.onPrev,
@@ -1632,30 +1730,58 @@ class _StepCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ✅ Start Timer 按鈕（有時長先顯示；啟動後灰掉）
+          // ✅ Start Timer 按鈕（有時長先顯示；啟動後灰掉；設備被佔用時禁用並顯示原因）
           if (onStartTimer != null) ...[
             SizedBox(
               height: 48,
-              child: FilledButton.icon(
-                onPressed: (flowStarted && !timerStarted) ? onStartTimer : null,
-                icon: const Icon(Icons.timer_outlined, size: 18),
-                label: Text(
-                  timerStarted ? 'Timer started' : 'Start Timer',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                  ),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.22),
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
-                  disabledForegroundColor: Colors.white.withValues(alpha: 0.40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
+              child: startTimerBlockReason != null
+                  // 設備被佔滿：禁用 + 顯示等待原因
+                  ? FilledButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.hourglass_empty, size: 18),
+                      label: Text(
+                        startTimerBlockReason!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C3A00).withValues(alpha: 0.30),
+                        foregroundColor: const Color(0xFFFBBF24),
+                        disabledBackgroundColor: const Color(0xFF7C3A00).withValues(alpha: 0.30),
+                        disabledForegroundColor: const Color(0xFFFBBF24),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: const BorderSide(
+                            color: Color(0xFFFBBF24),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                    )
+                  // 正常狀態
+                  : FilledButton.icon(
+                      onPressed: (flowStarted && !timerStarted) ? onStartTimer : null,
+                      icon: const Icon(Icons.timer_outlined, size: 18),
+                      label: Text(
+                        timerStarted ? 'Timer started' : 'Start Timer',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.22),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
+                        disabledForegroundColor: Colors.white.withValues(alpha: 0.40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
             ),
             const SizedBox(height: 8),
           ],
