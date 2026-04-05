@@ -2575,3 +2575,10 @@ final List<String> kAllIngredients = [
     'salt',
   },
 ].toList()..sort();
+
+const Map<String, List<String>> allergyIngredientMap = {
+  'Eggs': ['egg'],
+  'Fish': ['golden_threadfin_bream', 'salmon_steak'],
+  'Shellfish (shrimp, crab, lobster)': ['clam', 'crab', 'shrimp'],
+  'Beef / pork': ['beef_steak', 'pork'],
+};

@@ -418,14 +418,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       'Shellfish (shrimp, crab, lobster)',
       'Wheat (gluten)',
       'Soy (soybeans / soy products)',
-      'Mango',
-      'Kiwi',
-      'Avocado',
-      'Sesame / sesame oil',
-      'Coconut',
-      'Tomato',
       'Beef / pork',
-      'Taro',
     ];
 
     return Padding(
