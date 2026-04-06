@@ -203,6 +203,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   // ✅ 每一步：同一食譜的上一個 global step（用嚟判斷「可唔可以進入下一步」）
   late final Map<int, int> _prevSameRecipe = _buildPrevSameRecipeMap(_steps);
+
+  // ✅ Dynamic tool assignment（priority scheduling 用：runtime 分配 tile slot）
+  final Map<int, _ToolKey> _dynamicToolAssignment = {};
+
   // ---------------------------
   // A) Step countdown（人手）
   // ---------------------------
@@ -225,6 +229,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   final List<_ToolKey> _okQueue = [];
   bool _okShowing = false;
 
+  // ✅ 等待 tile 完成（冇 attention step 可做，但有 tile 跑緊）
+  bool _waitingForTile = false;
+
   // bottom sheet open ratio -> hide right menu threshold
   double _sheetOpenRatio = 0.0;
   bool _hideRightMenus = false;
@@ -234,7 +241,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     super.initState();
 
     if (_steps.isNotEmpty) {
-      // 未開始：只設定 Step 顯示（唔自動開始）
+      // ✅ Priority scheduling：用優先級揀第一步（而唔係固定 index 0）
+      _idx = _pickNextStepIndex() ?? 0;
       _applyStep(_idx, startIfFlowStarted: false);
     }
   }
@@ -661,12 +669,188 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     return out;
   }
 
+  // ---------- Priority Scheduling（動態派步） ----------
+
+  /// Equipment group for a step
+  String _equipGroup(_FlowStep s) {
+    final eq = s.requiredEquipment;
+    if (eq == 'pot' || eq == 'stove' || eq == 'cookware' || eq == 'wok')
+      return 'cookware';
+    if (eq == 'oven') return 'oven';
+    if (eq == 'electric' || eq == 'electric2') return 'electric';
+    if (s.isConcurrent && eq.isEmpty) return 'electric';
+    return '';
+  }
+
+  /// Map _ToolKey to equipment group
+  String _toolKeyGroup(_ToolKey k) {
+    switch (k) {
+      case _ToolKey.pot:
+      case _ToolKey.stove:
+        return 'cookware';
+      case _ToolKey.electric:
+      case _ToolKey.electric2:
+        return 'electric';
+      case _ToolKey.oven:
+        return 'oven';
+      default:
+        return '';
+    }
+  }
+
+  /// Tile 是否正在跑 timer
+  bool _toolTimerBusy(_ToolKey k) {
+    final t = _toolTimers[k];
+    return t != null && t.running;
+  }
+
+  /// Count active tool timers in an equipment group
+  int _activeInGroup(String group) {
+    if (group.isEmpty) return 0;
+    int count = 0;
+    for (final entry in _toolTimers.entries) {
+      if (!entry.value.running) continue;
+      if (_toolKeyGroup(entry.key) == group) count++;
+    }
+    return count;
+  }
+
+  /// Check if equipment is available for a concurrent step
+  bool _equipAvailable(_FlowStep s) {
+    if (!s.isConcurrent) return true;
+    final group = _equipGroup(s);
+    if (group.isEmpty) return true;
+    final cap = group == 'oven' ? 1 : 2;
+    return _activeInGroup(group) < cap;
+  }
+
+  /// ✅ Priority 公式（priority scheduling 核心）
+  /// isContinuous → 用戶必須專注 → 最高優先
+  /// 長時間 (>300s) → 盡早啟動背景 timer
+  /// isConcurrent → 純等待 → 優先級稍低
+  /// 短步驟 (<180s) → 快速釋放資源
+  int _calculatePriority(_FlowStep step) {
+    int p = 0;
+    if (step.isContinuous) p += 100;
+    final sec = step.durationMs ~/ 1000;
+    if (sec > 300) p += 60;
+    if (step.isConcurrent) p -= 30;
+    if (sec < 180) p += 10;
+    return p;
+  }
+
+  /// 找出所有「可以執行」的 step indices
+  /// Hard constraints: recipe dependency met + equipment available + not done/running
+  List<int> _getReadyStepIndices({int? assumeDoneGlobalNo}) {
+    final done = Set<int>.from(_doneGlobalNos);
+    if (assumeDoneGlobalNo != null) done.add(assumeDoneGlobalNo);
+
+    final ready = <int>[];
+    for (int i = 0; i < _steps.length; i++) {
+      final s = _steps[i];
+      // 已完成
+      if (done.contains(s.globalNo)) continue;
+      // 正在 tile 上跑 timer
+      if (_toolTimers.values
+          .any((t) => t.ownerGlobalNo == s.globalNo && t.running)) continue;
+      // Recipe dependency 未滿足
+      final prev = _prevSameRecipe[s.globalNo] ?? 0;
+      if (prev != 0 && !done.contains(prev)) continue;
+      // Equipment 唔夠位
+      if (!_equipAvailable(s)) continue;
+      ready.add(i);
+    }
+    return ready;
+  }
+
+  /// ✅ 用 priority scheduling 揀下一個 **attention** step（isConcurrent=false）
+  /// Concurrent steps 由 _launchReadyConcurrentSteps() 自動啟動到 tile
+  int? _pickNextStepIndex({int? assumeDoneGlobalNo}) {
+    final ready = _getReadyStepIndices(
+      assumeDoneGlobalNo: assumeDoneGlobalNo,
+    );
+    if (ready.isEmpty) return null;
+
+    // ✅ 只揀 attention steps（isConcurrent=false）
+    final attentionReady = ready.where((i) => !_steps[i].isConcurrent).toList();
+    if (attentionReady.isEmpty) return null;
+
+    attentionReady.sort((a, b) {
+      final pa = _calculatePriority(_steps[a]);
+      final pb = _calculatePriority(_steps[b]);
+      if (pa != pb) return pb.compareTo(pa); // 高 priority 排前
+      return a.compareTo(b); // tie-break: greedy 排序靠前嘅優先
+    });
+
+    return attentionReady.first;
+  }
+
+  /// ✅ 自動啟動所有 ready 嘅 concurrent steps 到 tile
+  /// 唔使 user 手動按 Next — 背景 timer 即刻開始
+  void _launchReadyConcurrentSteps() {
+    bool launched = true;
+    while (launched) {
+      launched = false;
+      final done = Set<int>.from(_doneGlobalNos);
+
+      for (int i = 0; i < _steps.length; i++) {
+        final s = _steps[i];
+        if (!s.isConcurrent) continue;
+        if (done.contains(s.globalNo)) continue;
+        // 已經跑緊
+        if (_toolTimers.values
+            .any((t) => t.ownerGlobalNo == s.globalNo && t.running)) continue;
+        // Recipe dependency
+        final prev = _prevSameRecipe[s.globalNo] ?? 0;
+        if (prev != 0 && !done.contains(prev)) continue;
+        // Equipment capacity
+        if (!_equipAvailable(s)) continue;
+
+        final tool = _assignDynamicTool(s);
+        _dynamicToolAssignment[s.globalNo] = tool;
+        _startOrKeepToolTimer(tool, s.durationMs, ownerGlobalNo: s.globalNo);
+        launched = true;
+      }
+    }
+  }
+
+  /// 動態分配 free tile slot（runtime，唔用 greedy 預分配）
+  _ToolKey _assignDynamicTool(_FlowStep step) {
+    final group = _equipGroup(step);
+
+    if (group == 'cookware') {
+      if (!_toolTimerBusy(_ToolKey.pot)) return _ToolKey.pot;
+      if (!_toolTimerBusy(_ToolKey.stove)) return _ToolKey.stove;
+      return _ToolKey.pot;
+    } else if (group == 'electric') {
+      if (!_toolTimerBusy(_ToolKey.electric)) return _ToolKey.electric;
+      if (!_toolTimerBusy(_ToolKey.electric2)) return _ToolKey.electric2;
+      return _ToolKey.electric;
+    } else if (group == 'oven') {
+      return _ToolKey.oven;
+    }
+
+    // 無設備 fallback
+    if (!_toolTimerBusy(_ToolKey.electric)) return _ToolKey.electric;
+    if (!_toolTimerBusy(_ToolKey.electric2)) return _ToolKey.electric2;
+    return _ToolKey.prep;
+  }
+
   // ---------- rules: human vs tool ----------
 
   bool _isToolTimerStep(_FlowStep s) {
     // ✅ 對齊 ipynb：isConcurrent=true => 不需要 attention => 當器具/背景 timer（可離手）
-    // （UI 不改：仍然用 Tile timer 呈現，Step timer 就鎖 Next）
     return s.isConcurrent;
+  }
+
+  /// ✅ 判斷完成這個 step 之後，是否就全部結束（用來控制 Finish/Next 按鍵文字）
+  bool _isLastAttentionStep(_FlowStep s) {
+    final done = Set<int>.from(_doneGlobalNos);
+    done.add(s.globalNo);
+    return _steps.every((other) =>
+        done.contains(other.globalNo) ||
+        _toolTimers.values
+            .any((t) => t.ownerGlobalNo == other.globalNo && t.running));
   }
 
   Map<int, int> _buildPrevSameRecipeMap(List<_FlowStep> steps) {
@@ -709,23 +893,31 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   bool _calcCanNext() {
     if (!_flowStarted) return false;
     if (_steps.isEmpty) return false;
+    if (_waitingForTile) return false;
 
     final cur = _steps[_idx];
-    final curHumanDone = _isCurrentHumanDone(cur);
 
-    // ✅ 最後一步：必須完成自己先可以結束
-    if (_idx >= _steps.length - 1) {
+    // ✅ 人手步：未倒數完一定唔可以走
+    if (!_isToolTimerStep(cur) && !_isCurrentHumanDone(cur)) return false;
+
+    // ✅ 判斷係咪最後一步（所有其他 step 都 done 或 tile 跑緊）
+    final allOtherHandled = _steps.every((s) =>
+        s.globalNo == cur.globalNo ||
+        _doneGlobalNos.contains(s.globalNo) ||
+        _toolTimers.values
+            .any((t) => t.ownerGlobalNo == s.globalNo && t.running));
+
+    if (allOtherHandled) {
+      // 最後一步
       if (_isToolTimerStep(cur)) {
         return _doneGlobalNos.contains(cur.globalNo);
       }
-      return curHumanDone;
+      return _isCurrentHumanDone(cur);
     }
 
-    // ✅ 人手步：未倒數完一定唔可以走
-    if (!_isToolTimerStep(cur) && !curHumanDone) return false;
-
-    // ✅ 下一步：必須「該食譜」上一個 step 完成
-    return _prereqDoneForTargetIndex(_idx + 1, cur);
+    // ✅ Priority scheduling：check 有冇 ready step（假設 current 即將完成）
+    final nextIdx = _pickNextStepIndex(assumeDoneGlobalNo: cur.globalNo);
+    return nextIdx != null;
   }
 
   // ---------- A) Step countdown control (human) ----------
@@ -898,10 +1090,39 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     }
 
     if (mounted) {
-      setState(() {
-        // ✅ 任何一個 tile 完成 + OK，都可能令「其他食譜下一步」變得可做
-        _finished = _calcCanNext();
-      });
+      // ✅ Tile 完成後：自動啟動新 ready concurrent steps
+      _launchReadyConcurrentSteps();
+
+      // ✅ 如果之前等緊 tile，再試揀 attention step
+      if (_waitingForTile) {
+        final nextIdx = _pickNextStepIndex();
+        if (nextIdx != null) {
+          setState(() {
+            _waitingForTile = false;
+            _idx = nextIdx;
+            _applyStep(_idx, startIfFlowStarted: true);
+          });
+        } else {
+          // 檢查全部完成
+          final allDone = _steps.every(
+            (s) => _doneGlobalNos.contains(s.globalNo),
+          );
+          if (allDone) {
+            final app = context.read<AppState>();
+            app.addSessionFromCartSnapshot(
+              widget.snapshot,
+              widget.totalPlannedMinutes,
+            );
+            Navigator.pop(context);
+          } else {
+            setState(() => _finished = false);
+          }
+        }
+      } else {
+        setState(() {
+          _finished = _calcCanNext();
+        });
+      }
     }
 
     _okShowing = false;
@@ -927,12 +1148,14 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     _resetToStepHuman(humanMs, startIfFlowStarted: startIfFlowStarted);
 
-    // ✅ 進入 Tile step：flow 已 start 就開 timer（可離手）
+    // ✅ 進入 Tile step：flow 已 start 就開 timer
+    // ✅ Priority scheduling：動態分配 tile slot（runtime）
     if (startIfFlowStarted && _flowStarted && toolMs > 0) {
-      _startOrKeepToolTimer(s.tool, toolMs, ownerGlobalNo: s.globalNo);
+      final dynamicTool = _assignDynamicTool(s);
+      _dynamicToolAssignment[s.globalNo] = dynamicTool;
+      _startOrKeepToolTimer(dynamicTool, toolMs, ownerGlobalNo: s.globalNo);
     }
 
-    // ✅ Next Step 是否可按：由「目前 step 狀態」+「下一步所屬食譜的上一個 step 是否完成」決定
     _finished = _calcCanNext();
   }
 
@@ -942,6 +1165,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     setState(() {
       _flowStarted = true;
+      // ✅ 先啟動所有 ready concurrent steps 到 tile
+      _launchReadyConcurrentSteps();
       _applyStep(_idx, startIfFlowStarted: true);
     });
   }
@@ -952,8 +1177,6 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     final cur = _steps[_idx];
     final isTool = _isToolTimerStep(cur);
 
-    // ✅ 1) non-tool：必須等人手倒數完成先可以 Next
-    // ✅ 2) tool：只有「下一步同一 startSec」或「timer 完成+按 OK」先可以 Next
     if (!_finished) return;
 
     // ✅ 非 tool：按 Next 才算真正完成（出 ✓）
@@ -961,21 +1184,37 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       _doneGlobalNos.add(cur.globalNo);
     }
 
-    if (_idx >= _steps.length - 1) {
-      // ✅ 1) 入 session history（一次 Cook Flow = 一條記錄）
-      final app = context.read<AppState>();
-      app.addSessionFromCartSnapshot(
-        widget.snapshot,
-        widget.totalPlannedMinutes,
-      );
+    // ✅ 自動啟動所有 ready concurrent steps 到 tile
+    _launchReadyConcurrentSteps();
 
-      // ✅ 2) 返回上一頁
-      Navigator.pop(context);
+    // ✅ Priority scheduling：揀下一個 attention step
+    final nextIdx = _pickNextStepIndex();
+
+    if (nextIdx == null) {
+      // 檢查係咪全部完成
+      final allDone = _steps.every(
+        (s) => _doneGlobalNos.contains(s.globalNo),
+      );
+      if (allDone) {
+        final app = context.read<AppState>();
+        app.addSessionFromCartSnapshot(
+          widget.snapshot,
+          widget.totalPlannedMinutes,
+        );
+        Navigator.pop(context);
+        return;
+      }
+      // ✅ 冇 attention step 但有 tile 跑緊 → 進入等待
+      setState(() {
+        _waitingForTile = true;
+        _finished = false;
+      });
       return;
     }
 
     setState(() {
-      _idx++;
+      _waitingForTile = false;
+      _idx = nextIdx;
       _applyStep(_idx, startIfFlowStarted: true);
     });
   }
@@ -1112,7 +1351,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
                         final curNo = _steps[_idx].globalNo;
                         final isCurrent = s.globalNo == curNo;
-                        final done = (s.globalNo < curNo);
+                        final done = _doneGlobalNos.contains(s.globalNo);
 
                         return ListTile(
                           dense: true,
@@ -1182,7 +1421,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   Widget build(BuildContext context) {
     final step = _steps.isEmpty ? null : _steps[_idx];
 
-    final activeToolRaw = step?.tool ?? _ToolKey.prep;
+    // ✅ Priority scheduling：用動態分配嘅 tool（如有），否則用 greedy 預分配
+    final activeToolRaw = step == null
+        ? _ToolKey.prep
+        : (_dynamicToolAssignment[step.globalNo] ?? step.tool);
     final activeTool = (activeToolRaw == _ToolKey.hands)
         ? _ToolKey.prep
         : activeToolRaw;
@@ -1237,6 +1479,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                       flowStarted: _flowStarted,
                       running: _running,
                       finished: _finished,
+                      waitingForTile: _waitingForTile,
+                      isLastStep: step != null && _isLastAttentionStep(step),
                       leftText: stepTimeText,
                       onNext: _goNext,
                     ),
@@ -1492,6 +1736,8 @@ class _StepCard extends StatelessWidget {
   final bool flowStarted;
   final bool running;
   final bool finished;
+  final bool waitingForTile;
+  final bool isLastStep;
   final String leftText;
   final VoidCallback onNext;
 
@@ -1500,6 +1746,8 @@ class _StepCard extends StatelessWidget {
     required this.flowStarted,
     required this.running,
     required this.finished,
+    required this.waitingForTile,
+    required this.isLastStep,
     required this.leftText,
     required this.onNext,
   });
@@ -1517,6 +1765,43 @@ class _StepCard extends StatelessWidget {
         child: const Text(
           'No steps',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+      );
+    }
+
+    // ✅ 等待 tile 完成：顯示等待提示
+    if (waitingForTile) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.timer_outlined, color: Colors.white54, size: 36),
+            const SizedBox(height: 12),
+            const Text(
+              'Waiting for equipment to finish...',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Check the tiles above for active timers',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.45),
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -1598,7 +1883,7 @@ class _StepCard extends StatelessWidget {
                 ),
               ),
               child: Text(
-                (s.globalNo >= s.globalTotal) ? 'Finish' : 'Next step →',
+                isLastStep ? 'Finish' : 'Next step →',
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
