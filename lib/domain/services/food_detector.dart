@@ -14,7 +14,9 @@ class FoodDetector {
 
   /// Load metadata.yaml to get class names
   Future<void> loadMetadata() async {
-    final yamlStr = await rootBundle.loadString('assets/model_new/metadata.yaml');
+    final yamlStr = await rootBundle.loadString(
+      'assets/model_new/metadata.yaml',
+    );
     final yamlMap = loadYaml(yamlStr);
     final namesMap = yamlMap['names'];
     classNames = List.generate(namesMap.length, (i) => namesMap[i].toString());
@@ -22,7 +24,9 @@ class FoodDetector {
 
   /// Load the TFLite model
   Future<void> loadModel() async {
-    _interpreter = await Interpreter.fromAsset('assets/model_new/best_int8.tflite');
+    _interpreter = await Interpreter.fromAsset(
+      'assets/model_new/best_int8.tflite',
+    );
     _inputShape = _interpreter!.getInputTensor(0).shape;
     _outputShape = _interpreter!.getOutputTensor(0).shape;
   }
@@ -40,17 +44,18 @@ class FoodDetector {
     img.Image? image = img.decodeImage(bytes);
     if (image == null) throw Exception('Cannot decode image');
 
-    img.Image resized = img.copyResize(image, width: inputSize, height: inputSize);
+    img.Image resized = img.copyResize(
+      image,
+      width: inputSize,
+      height: inputSize,
+    );
 
     return List.generate(
       inputSize,
-          (y) => List.generate(
-        inputSize,
-            (x) {
-          final pixel = resized.getPixel(x, y);
-          return [pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0];
-        },
-      ),
+      (y) => List.generate(inputSize, (x) {
+        final pixel = resized.getPixel(x, y);
+        return [pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0];
+      }),
     );
   }
 
@@ -71,16 +76,20 @@ class FoodDetector {
   }
 
   /// Internal detection logic
-  Future<List<String>> _detectInternal(File imageFile, {double threshold = 0.25}) async {
+  Future<List<String>> _detectInternal(
+    File imageFile, {
+    double threshold = 0.25,
+  }) async {
     if (!isReady) throw StateError('FoodDetector not initialized');
 
     final input = [await _preprocessImage(imageFile)];
 
     var output = List.generate(
       _outputShape![0],
-          (_) => List.generate(
+      (_) => List.generate(
         _outputShape!.length > 1 ? _outputShape![1] : 1,
-            (_) => List.filled(_outputShape!.length > 2 ? _outputShape![2] : 1, 0.0),
+        (_) =>
+            List.filled(_outputShape!.length > 2 ? _outputShape![2] : 1, 0.0),
       ),
     );
 
@@ -100,11 +109,14 @@ class FoodDetector {
       }
       List<double> classScores = box.sublist(
         classProbStart,
-        classProbStart + classCount > boxLen ? boxLen : classProbStart + classCount,
+        classProbStart + classCount > boxLen
+            ? boxLen
+            : classProbStart + classCount,
       );
       for (int k = 0; k < classScores.length; k++) {
         double score = classScores[k];
-        if (!bestScores.containsKey(classNames[k]) || score > bestScores[classNames[k]]!) {
+        if (!bestScores.containsKey(classNames[k]) ||
+            score > bestScores[classNames[k]]!) {
           bestScores[classNames[k]] = score;
         }
       }
