@@ -1258,17 +1258,9 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Cut scallions into 1.5-inch pieces, separate white and green',
-        60,
+        'Cut scallions into 1.5-inch pieces (separate white and green), slice onion thinly',
+        120,
         stepNumber: 5,
-        requiredEquipment: '',
-        isContinuous: true,
-        isConcurrent: false,
-      ),
-      RecipeStep(
-        'Slice onion thinly lengthwise',
-        60,
-        stepNumber: 6,
         requiredEquipment: '',
         isContinuous: true,
         isConcurrent: false,
@@ -1276,7 +1268,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Mix dark soy, light soy, oyster sauce, sugar, water in bowl',
         60,
-        stepNumber: 7,
+        stepNumber: 6,
         requiredEquipment: '',
         isContinuous: true,
         isConcurrent: false,
@@ -1284,7 +1276,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Heat wok over high until smoking, add 1 Tbsp corn oil',
         180,
-        stepNumber: 8,
+        stepNumber: 7,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1292,7 +1284,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Stir-fry scallion whites and onion for 1 minute, set aside',
         60,
-        stepNumber: 9,
+        stepNumber: 8,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1300,7 +1292,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Reheat wok over high, add 1 Tbsp oil, spread noodles in an even layer',
         60,
-        stepNumber: 10,
+        stepNumber: 9,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1308,7 +1300,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Fry undisturbed 3 minutes until bottom is golden and crispy',
         180,
-        stepNumber: 11,
+        stepNumber: 10,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1316,7 +1308,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Flip noodles, add 1 Tbsp oil around edge, fry 3 minutes',
         180,
-        stepNumber: 12,
+        stepNumber: 11,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1324,7 +1316,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Push noodles aside, add any julienned vegetables, cover with noodles, steam 30–45 seconds',
         45,
-        stepNumber: 13,
+        stepNumber: 12,
         requiredEquipment: 'stove',
         isContinuous: false,
         isConcurrent: true,
@@ -1332,7 +1324,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Return scallions and onions, stir-fry 1–2 minutes',
         120,
-        stepNumber: 14,
+        stepNumber: 13,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1340,7 +1332,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Pour sauce mixture over noodles, stir-fry 1 minute until absorbed',
         60,
-        stepNumber: 15,
+        stepNumber: 14,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1348,7 +1340,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Drizzle sesame oil, toss and stir-fry 1–2 minutes',
         120,
-        stepNumber: 16,
+        stepNumber: 15,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1356,7 +1348,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Taste and adjust, add more dark soy sauce if deeper color desired',
         60,
-        stepNumber: 17,
+        stepNumber: 16,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1364,7 +1356,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Transfer to a plate and serve immediately',
         60,
-        stepNumber: 18,
+        stepNumber: 17,
         requiredEquipment: '',
         isContinuous: true,
         isConcurrent: false,
@@ -1594,25 +1586,9 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Thinly slice onion into half-moon shapes',
-        60,
+        'Thinly slice onion, cut green onion diagonally (separate white and green), cut chicken into bite-size pieces',
+        180,
         stepNumber: 2,
-        requiredEquipment: '',
-        isContinuous: true,
-        isConcurrent: false,
-      ),
-      RecipeStep(
-        'Cut green onion diagonally, separate white and green parts',
-        60,
-        stepNumber: 3,
-        requiredEquipment: '',
-        isContinuous: true,
-        isConcurrent: false,
-      ),
-      RecipeStep(
-        'Cut chicken breast into bite-size pieces',
-        120,
-        stepNumber: 4,
         requiredEquipment: '',
         isContinuous: true,
         isConcurrent: false,
@@ -1620,7 +1596,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Beat 2 eggs lightly with chopsticks, do not over-mix',
         60,
-        stepNumber: 5,
+        stepNumber: 3,
         requiredEquipment: '',
         isContinuous: true,
         isConcurrent: false,
@@ -1628,7 +1604,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Combine water, dashi powder, soy sauce, mirin, and sugar in a cold pot',
         60,
-        stepNumber: 6,
+        stepNumber: 4,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1636,7 +1612,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Add sliced onion and scallion white parts to the pot',
         60,
-        stepNumber: 7,
+        stepNumber: 5,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1644,7 +1620,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Add chicken in single layer, cook on medium-high 3 minutes',
         180,
-        stepNumber: 8,
+        stepNumber: 6,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1652,7 +1628,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Flip chicken pieces, cook another 1–2 minutes until done',
         120,
-        stepNumber: 9,
+        stepNumber: 7,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1660,7 +1636,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Reduce to medium, drizzle egg in a spiral pattern, scatter green scallion',
         60,
-        stepNumber: 10,
+        stepNumber: 8,
         requiredEquipment: 'stove',
         isContinuous: true,
         isConcurrent: false,
@@ -1668,7 +1644,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Cook until egg is just set but still slightly runny, turn off heat',
         60,
-        stepNumber: 11,
+        stepNumber: 9,
         requiredEquipment: 'stove',
         isContinuous: false,
         isConcurrent: true,
@@ -1676,7 +1652,7 @@ const List<Recipe> kRecipes = [
       RecipeStep(
         'Slide onto a bowl of rice, sprinkle shichimi togarashi if desired',
         60,
-        stepNumber: 12,
+        stepNumber: 10,
         requiredEquipment: '',
         isContinuous: true,
         isConcurrent: false,
