@@ -56,7 +56,22 @@ class FoodDetector {
 
   /// Run detection on an image file. Returns list of detected class names
   /// (filtered by confidence threshold).
+  /// Note: This runs on the main thread but yields periodically to keep UI responsive
   Future<List<String>> detect(File imageFile, {double threshold = 0.25}) async {
+    if (!isReady) throw StateError('FoodDetector not initialized');
+
+    // Allow UI to update before starting heavy computation
+    await Future.delayed(Duration.zero);
+
+    try {
+      return await _detectInternal(imageFile, threshold: threshold);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Internal detection logic
+  Future<List<String>> _detectInternal(File imageFile, {double threshold = 0.25}) async {
     if (!isReady) throw StateError('FoodDetector not initialized');
 
     final input = [await _preprocessImage(imageFile)];
@@ -69,6 +84,7 @@ class FoodDetector {
       ),
     );
 
+    // Run interpreter
     _interpreter!.run(input, output);
 
     // Parse YOLO output: find best score per class

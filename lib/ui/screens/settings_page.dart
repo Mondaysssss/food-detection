@@ -277,23 +277,39 @@ class _PreferencePageState extends State<_PreferencePage> {
     });
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
     final app = context.read<AppState>();
 
-    // 套用 appliance
     for (final r in applianceRows) {
       final key = r.$2;
       app.setAppliance(key, _tempAppliances[key] ?? 0);
     }
-
-    // 套用 allergies
     app.setAllergies(Set<String>.from(_tempAllergies));
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Preference updated')));
+    final auth = AuthService();
+    final user = auth.currentUser;
+    debugPrint('>>> _confirm: user = ${user?.uid}'); // ADD THIS
+    if (user != null) {
+      try {
+        await auth.savePreferences(
+          uid: user.uid,
+          gender: app.gender,
+          age: app.age,
+          appliances: Map<String, int>.from(app.appliances),
+          allergies: app.allergies.toList(),
+        );
+        debugPrint('>>> preferences saved OK'); // ADD THIS
+      } catch (e) {
+        debugPrint('>>> savePreferences FAILED: $e'); // ADD THIS
+      }
+    }
 
-    Navigator.pop(context);
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Preference updated')));
+      Navigator.pop(context);
+    }
   }
 
   @override

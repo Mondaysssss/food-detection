@@ -9,6 +9,9 @@ import '../../domain/services/auth_service.dart'; // add
 import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
 
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
+
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
 
@@ -62,7 +65,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         username: _name.text,
       );
 
-      // save persona wizard preferences to Firestore
+      // ── save persona wizard preferences to Firestore ──
       final user = _auth.currentUser;
       if (user != null && mounted) {
         final appState = context.read<AppState>();

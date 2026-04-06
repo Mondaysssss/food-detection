@@ -1,5 +1,6 @@
 // [OOP] 相機/偵測頁：模擬 AI 偵測食材，寫入 AppState，並顯示結果。
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -57,7 +58,13 @@ class _AiCameraPageState extends State<AiCameraPage> {
     });
 
     try {
-      final results = await _detector.detect(file);
+      // Add timeout to prevent hanging
+      final results = await _detector
+          .detect(file)
+          .timeout(Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException('Detection took too long');
+      });
+
       // filter out seasonings (same logic as your existing mock)
       final filtered = results
           .where((x) => !kSeasoningKeys.contains(x))
@@ -98,11 +105,17 @@ class _AiCameraPageState extends State<AiCameraPage> {
           ),
         );
       }
+    } on TimeoutException catch (e) {
+      setState(() {
+        _isLoading = false;
+        _statusText = 'Detection timeout: ${e.message}. Try a smaller image.';
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
         _statusText = 'Detection error: $e';
       });
+      print('Detection error details: $e');
     }
   }
 

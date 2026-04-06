@@ -10,6 +10,9 @@ import '../../domain/services/auth_service.dart'; // add
 import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
 
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -52,11 +55,13 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _email.text,
         password: _password.text,
       );
+      // ── load cloud preferences ──
       if (user != null && mounted) {
         final appState = context.read<AppState>();
         final data = await _auth.loadPreferences(user.uid);
 
         if (data != null && data.containsKey('gender')) {
+          // Firestore has preferences → cloud wins
           appState.setPersona(
             newGender: data['gender'],
             newAge: data['age'],
@@ -64,6 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
         } else {
+          // Firestore has NO preferences → save local wizard data up
           await _auth.savePreferences(
             uid: user.uid,
             gender: appState.gender,
@@ -73,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
 
+        // Always set username from Firestore or Firebase Auth displayName
         final name = data?['username'] ?? user.displayName ?? '';
         if (name.isNotEmpty) appState.userName = name;
       }
@@ -92,11 +99,13 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
     try {
       final user = await _auth.signInWithGoogle();
+      // ── load cloud preferences (returning Google user) ──
       if (user != null && mounted) {
         final appState = context.read<AppState>();
         final data = await _auth.loadPreferences(user.uid);
 
         if (data != null && data.containsKey('gender')) {
+          // Firestore has preferences → cloud wins
           appState.setPersona(
             newGender: data['gender'],
             newAge: data['age'],
@@ -104,6 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
         } else {
+          // Firestore has NO preferences → save local wizard data up
           await _auth.savePreferences(
             uid: user.uid,
             gender: appState.gender,
@@ -113,6 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
 
+        // Always set username from Firestore or Firebase Auth displayName
         final name = data?['username'] ?? user.displayName ?? '';
         if (name.isNotEmpty) appState.userName = name;
 
@@ -126,6 +137,21 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  // save persona wizard preferences to Firestore
+  Future<void> _savePersonaPreferences() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final appState = context.read<AppState>();
+      await _auth.savePreferences(
+        uid: user.uid,
+        gender: appState.gender,
+        age: appState.age,
+        appliances: Map<String, int>.from(appState.appliances),
+        allergies: appState.allergies.toList(),
+      );
     }
   }
 

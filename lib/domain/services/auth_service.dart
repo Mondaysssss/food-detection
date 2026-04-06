@@ -77,7 +77,7 @@ class AuthService {
       'age': age,
       'appliances': appliances,
       'allergies': allergies,
-    }, SetOptions(merge: true));
+    }, SetOptions(merge: true)); // merge: don't overwrite email/username/etc.
   }
 
   Future<Map<String, dynamic>?> loadPreferences(String uid) async {

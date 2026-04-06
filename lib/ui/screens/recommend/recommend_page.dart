@@ -36,7 +36,6 @@ class _RecommendPageState extends State<RecommendPage> {
             if (cmp != 0) return cmp;
             return a.mr.missing.length.compareTo(b.mr.missing.length);
           });
-
     final types = [
       'All',
       ...{for (final r in kRecipes) r.type},
