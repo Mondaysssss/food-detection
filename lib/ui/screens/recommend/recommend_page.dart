@@ -31,7 +31,11 @@ class _RecommendPageState extends State<RecommendPage> {
 
     final list =
         kRecipes.map((r) => (recipe: r, mr: computeMatch(r, detected))).toList()
-          ..sort((a, b) => a.mr.missing.length.compareTo(b.mr.missing.length));
+          ..sort((a, b) {
+            final cmp = b.mr.match.length.compareTo(a.mr.match.length);
+            if (cmp != 0) return cmp;
+            return a.mr.missing.length.compareTo(b.mr.missing.length);
+          });
 
     final types = [
       'All',

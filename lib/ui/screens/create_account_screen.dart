@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // add
 import 'home_shell.dart';
 import '../../domain/services/auth_service.dart'; // add
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -59,6 +61,20 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         password: _password.text,
         username: _name.text,
       );
+
+      // save persona wizard preferences to Firestore
+      final user = _auth.currentUser;
+      if (user != null && mounted) {
+        final appState = context.read<AppState>();
+        await _auth.savePreferences(
+          uid: user.uid,
+          gender: appState.gender,
+          age: appState.age,
+          appliances: Map<String, int>.from(appState.appliances),
+          allergies: appState.allergies.toList(),
+        );
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(
           context,
