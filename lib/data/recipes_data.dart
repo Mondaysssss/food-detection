@@ -16,6 +16,7 @@ const List<Recipe> kRecipes = [
     type: 'Chinese',
     totalTimeMinutes: 10,
     taste: ['Savory', 'Slightly sweet'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'tomato', quantity: '2', unit: 'pcs'),
@@ -33,7 +34,7 @@ const List<Recipe> kRecipes = [
         'https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=1200&auto=format&fit=crop',
     steps: [
       RecipeStep(
-        'Cut tomatoes',
+        'Wash 2 tomatoes and cut into large wedges',
         180,
         stepNumber: 1,
         requiredEquipment: '',
@@ -41,7 +42,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Heat pan, add oil',
+        'Heat pan over high, add 1 Tbsp oil until shimmering',
         120,
         stepNumber: 2,
         requiredEquipment: 'stove',
@@ -49,7 +50,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add eggs and stir-fry',
+        'Pour in beaten eggs, stir-fry until just set, push aside',
         120,
         stepNumber: 3,
         requiredEquipment: 'stove',
@@ -57,7 +58,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add tomatoes & season',
+        'Add tomato wedges, return eggs, season with salt to taste',
         180,
         stepNumber: 4,
         requiredEquipment: 'stove',
@@ -73,6 +74,7 @@ const List<Recipe> kRecipes = [
     type: 'Western',
     totalTimeMinutes: 11,
     taste: ['Rich', 'Umami'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'shrimp', quantity: '250', unit: 'g'),
@@ -95,7 +97,7 @@ const List<Recipe> kRecipes = [
         'https://www.jocooks.com/wp-content/uploads/2021/09/garlic-butter-shrimp-1-10.jpg',
     steps: [
       RecipeStep(
-        'Thaw & devein shrimp',
+        'Thaw shrimp if frozen, peel and devein',
         240,
         stepNumber: 1,
         requiredEquipment: '',
@@ -103,7 +105,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Heat butter, sauté minced garlic',
+        'Melt 2 Tbsp butter over medium, sauté minced garlic until fragrant',
         120,
         stepNumber: 2,
         requiredEquipment: 'stove',
@@ -111,7 +113,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add shrimp and cook until color changes',
+        'Add shrimp in single layer, cook 2 minutes per side until pink',
         240,
         stepNumber: 3,
         requiredEquipment: 'stove',
@@ -119,7 +121,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Season & serve',
+        'Season with salt and pepper to taste, serve immediately',
         60,
         stepNumber: 4,
         requiredEquipment: '',
@@ -135,6 +137,7 @@ const List<Recipe> kRecipes = [
     type: 'Japanese',
     totalTimeMinutes: 7,
     taste: ['Fresh', 'Sour'],
+    kitchenEquipmentNeeded: const [],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'lettuce', quantity: '1', unit: 'head'),
@@ -151,7 +154,7 @@ const List<Recipe> kRecipes = [
         'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=1200&auto=format&fit=crop',
     steps: [
       RecipeStep(
-        'Wash & cut veggies',
+        'Wash and tear lettuce, dice tomato, slice cucumber into rounds',
         180,
         stepNumber: 1,
         requiredEquipment: '',
@@ -159,7 +162,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Mix wafu dressing',
+        'Whisk 1 Tbsp each of soy sauce, vinegar, and oil in a small bowl',
         120,
         stepNumber: 2,
         requiredEquipment: '',
@@ -167,7 +170,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Toss and sprinkle sesame',
+        'Toss vegetables with dressing, sprinkle 1 tsp sesame seeds on top',
         120,
         stepNumber: 3,
         requiredEquipment: '',
@@ -183,6 +186,7 @@ const List<Recipe> kRecipes = [
     type: 'Thai',
     totalTimeMinutes: 8,
     taste: ['Spicy', 'Herby'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'pork', quantity: '200', unit: 'g'),
@@ -199,7 +203,7 @@ const List<Recipe> kRecipes = [
         'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop',
     steps: [
       RecipeStep(
-        'Sauté garlic and chili',
+        'Heat 1 Tbsp oil over high, sauté minced garlic and sliced chili until fragrant',
         120,
         stepNumber: 1,
         requiredEquipment: 'stove',
@@ -207,7 +211,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add pork and stir-fry until crumbly',
+        'Add pork mince, stir-fry on high heat until crumbly and browned',
         240,
         stepNumber: 2,
         requiredEquipment: 'stove',
@@ -215,7 +219,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Season, add Thai basil and toss',
+        'Add soy sauce and sugar, toss in Thai basil leaves, stir until wilted',
         120,
         stepNumber: 3,
         requiredEquipment: 'stove',
@@ -231,6 +235,7 @@ const List<Recipe> kRecipes = [
     type: 'Western',
     totalTimeMinutes: 11,
     taste: ['Herby', 'Rich'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'pasta', quantity: '200', unit: 'g'),
@@ -250,7 +255,7 @@ const List<Recipe> kRecipes = [
         'https://images.unsplash.com/photo-1467003909585-2f8a72700288?q=80&w=1200&auto=format&fit=crop',
     steps: [
       RecipeStep(
-        'Cook pasta',
+        'Boil 200g pasta in salted water per package directions, reserve some pasta water',
         360,
         stepNumber: 1,
         requiredEquipment: 'pot',
@@ -258,7 +263,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Sauté garlic and mushrooms',
+        'Heat oil, sauté minced garlic and sliced mushrooms until golden',
         180,
         stepNumber: 2,
         requiredEquipment: 'stove',
@@ -266,7 +271,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add pesto and toss',
+        'Drain pasta, add to mushrooms with pesto, toss to coat evenly',
         120,
         stepNumber: 3,
         requiredEquipment: '',
@@ -285,17 +290,18 @@ const List<Recipe> kRecipes = [
     type: 'Chinese',
     totalTimeMinutes: 205, //時間和步驟不同
     taste: ['Light', 'Umami'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
         ingredientId: 'pork_ribs',
-        quantity: '2',
-        unit: 'pounds',
+        quantity: '900',
+        unit: 'g',
       ),
       RecipeIngredient(
         ingredientId: 'winter_melon',
-        quantity: '1.5',
-        unit: 'pounds',
+        quantity: '680',
+        unit: 'g',
       ),
       RecipeIngredient(ingredientId: 'water', quantity: '10', unit: 'cups'),
 
@@ -335,7 +341,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add ribs, ginger, 9 cups water, boil then simmer 90 minutes',
+        'Add ribs and ginger to 9 cups water, bring to boil, reduce to low and simmer 90 minutes',
         5400,
         stepNumber: 3,
         requiredEquipment: 'stove',
@@ -343,7 +349,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Prepare winter melon, cut into bite-size pieces',
+        'Peel winter melon, remove seeds, cut into bite-size chunks',
         300,
         stepNumber: 4,
         requiredEquipment: ' ',
@@ -351,7 +357,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Skim fat, add winter melon and salt, simmer 15 minutes',
+        'Skim surface fat, add winter melon and salt, simmer 15 minutes until tender',
         900,
         stepNumber: 5,
         requiredEquipment: 'stove',
@@ -359,7 +365,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Season with white pepper, add scallions/cilantro',
+        'Season with white pepper, garnish with chopped scallions and cilantro',
         60,
         stepNumber: 6,
         requiredEquipment: ' ',
@@ -367,7 +373,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Serve ribs with light soy sauce on side',
+        'Ladle into bowls, serve with light soy sauce on the side for ribs',
         60,
         stepNumber: 7,
         requiredEquipment: ' ',
@@ -383,6 +389,7 @@ const List<Recipe> kRecipes = [
     type: 'Japanese',
     totalTimeMinutes: 30,
     taste: ['Umami', 'Rich'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'water', quantity: '1', unit: 'cup'),
@@ -410,7 +417,7 @@ const List<Recipe> kRecipes = [
         'https://www.marionskitchen.com/wp-content/uploads/2019/07/Katsudon-02.jpg',
     steps: [
       RecipeStep(
-        'Heat 1 cup of water with 1 dashi packet. Bring to a boil over medium heat, then reduce to low heat and simmer for 2 minutes. Remove the dashi packet',
+        'Heat 1 cup water with dashi packet, boil then simmer 2 minutes, remove packet',
         300,
         stepNumber: 1,
         requiredEquipment: 'stove',
@@ -418,7 +425,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Add 2 tsp sugar, 2 Tbsp mirin, and 2 Tbsp soy sauce to make the broth',
+        'Add sugar, mirin, and soy sauce to the dashi to make the broth',
         60,
         stepNumber: 2,
         requiredEquipment: 'stove',
@@ -434,7 +441,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Cut the green onion into sections for garnish',
+        'Cut green onion into short sections for garnish',
         30,
         stepNumber: 4,
         requiredEquipment: ' ',
@@ -442,7 +449,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Beat 3 eggs. Lightly lift and stir with chopsticks 5–6 times to break up the egg whites',
+        'Beat 3 eggs lightly with chopsticks, do not over-mix',
         60,
         stepNumber: 5,
         requiredEquipment: ' ',
@@ -450,7 +457,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Cut the pork cutlet into 1-inch thick slices',
+        'Cut tonkatsu into 1-inch wide slices',
         60,
         stepNumber: 6,
         requiredEquipment: ' ',
@@ -458,7 +465,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Arrange the onion slices in a single layer in a large pot and pour in the broth',
+        'Layer onion slices in pot, pour broth over',
         60,
         stepNumber: 7,
         requiredEquipment: 'stove',
@@ -466,7 +473,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Cover and cook over medium heat until the onions are soft and translucent',
+        'Cover, cook over medium heat until onions are soft and translucent',
         300,
         stepNumber: 8,
         requiredEquipment: 'stove',
@@ -474,7 +481,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Add sugar, mirin, and soy sauce and mix well',
+        'Stir in sugar, mirin, and soy sauce, mix well',
         60,
         stepNumber: 9,
         requiredEquipment: 'stove',
@@ -482,7 +489,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Place the pork cutlet on top of the onions. Cover and heat until the broth boils, then cook for 2 minutes',
+        'Place sliced tonkatsu on top of onions, cover and simmer 2 minutes',
         120,
         stepNumber: 10,
         requiredEquipment: 'stove',
@@ -490,7 +497,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Evenly drizzle the beaten eggs over the pork cutlet and onions, avoiding the edges of the pot',
+        'Drizzle beaten egg evenly over pork and onions, keep away from pot edges',
         60,
         stepNumber: 11,
         requiredEquipment: 'stove',
@@ -498,7 +505,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Cover and cook for 1 minute until the eggs are half set',
+        'Cover, cook 1 minute until egg is half-set and glossy',
         60,
         stepNumber: 12,
         requiredEquipment: 'stove',
@@ -506,7 +513,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Serve rice in a bowl. Top with the pork cutlet, onions, and egg mixture, then sprinkle with chopped green onion',
+        'Serve over rice, top with pork, onions, and egg, garnish with green onion',
         60,
         stepNumber: 13,
         requiredEquipment: ' ',
@@ -522,6 +529,7 @@ const List<Recipe> kRecipes = [
     type: 'French',
     totalTimeMinutes: 80,
     taste: ['Rich', 'Herby'],
+    kitchenEquipmentNeeded: const ['stove', 'oven'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'lamb_rack', quantity: '2', unit: 'racks'),
@@ -560,7 +568,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Preheat oven to 350°F',
+        'Preheat oven to 350°F (175°C)',
         600,
         stepNumber: 2,
         requiredEquipment: 'oven',
@@ -568,7 +576,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Quarter potatoes, boil in cold water for 10 minutes',
+        'Quarter potatoes, place in cold salted water, boil for 10 minutes',
         600,
         stepNumber: 3,
         requiredEquipment: 'stove',
@@ -576,7 +584,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Score fat cap in crisscross pattern',
+        'Score lamb fat cap in a crisscross pattern with a sharp knife',
         120,
         stepNumber: 4,
         requiredEquipment: ' ',
@@ -584,7 +592,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Season lamb with salt, Espelette pepper, Herbes de Provence',
+        'Rub lamb with salt, Espelette pepper, and Herbes de Provence',
         60,
         stepNumber: 5,
         requiredEquipment: ' ',
@@ -592,7 +600,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Drizzle oil in pan, place lamb fat side up',
+        'Drizzle olive oil in roasting pan, place lamb fat side up',
         60,
         stepNumber: 6,
         requiredEquipment: 'oven',
@@ -608,7 +616,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Drain potatoes, spread on sheet, coat with oil and herbs, add garlic',
+        'Drain potatoes, toss with oil, herbs, and garlic cloves on baking sheet',
         180,
         stepNumber: 8,
         requiredEquipment: 'oven',
@@ -616,7 +624,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Drizzle oil over lamb',
+        'Drizzle remaining olive oil over lamb racks',
         60,
         stepNumber: 9,
         requiredEquipment: ' ',
@@ -624,7 +632,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Roast lamb 12–22 minutes depending on doneness',
+        'Roast at 350°F for 12–22 minutes depending on desired doneness',
         1320,
         stepNumber: 10,
         requiredEquipment: 'oven',
@@ -632,7 +640,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Broil on high 15 minutes for crust',
+        'Switch to broil on high for 15 minutes to form a golden crust',
         900,
         stepNumber: 11,
         requiredEquipment: 'oven',
@@ -640,7 +648,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Rest lamb 5 minutes',
+        'Rest lamb loosely tented with foil for 5 minutes',
         300,
         stepNumber: 12,
         requiredEquipment: ' ',
@@ -648,7 +656,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Slice between bones and serve',
+        'Slice between bones into individual chops and serve with potatoes',
         120,
         stepNumber: 13,
         requiredEquipment: ' ',
@@ -664,6 +672,7 @@ const List<Recipe> kRecipes = [
     type: 'Japanese',
     totalTimeMinutes: 30,
     taste: ['Umami', 'Sweet'],
+    kitchenEquipmentNeeded: const ['oven'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
@@ -702,7 +711,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Combine miso and sugar in a bowl to dissolve',
+        'Combine 3 Tbsp miso and 1 Tbsp sugar in a bowl, stir to dissolve',
         60,
         stepNumber: 2,
         requiredEquipment: 'bowl',
@@ -710,7 +719,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add mirin and sake, stir to desired consistency',
+        'Add mirin and sake to the miso mixture, stir until smooth',
         60,
         stepNumber: 3,
         requiredEquipment: 'bowl',
@@ -718,7 +727,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Cut eggplants in half lengthwise, halve crosswise if long',
+        'Halve eggplants lengthwise, cut crosswise if too long to fit sheet',
         120,
         stepNumber: 4,
         requiredEquipment: 'knife',
@@ -742,7 +751,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Drain eggplants, pat dry, place cut side up on baking sheet',
+        'Drain eggplants, pat dry with paper towel, place cut side up on baking sheet',
         60,
         stepNumber: 7,
         requiredEquipment: 'baking sheet',
@@ -750,7 +759,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Brush cut side with sesame oil',
+        'Brush cut side evenly with sesame oil',
         60,
         stepNumber: 8,
         requiredEquipment: 'brush',
@@ -758,7 +767,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Turn eggplants cut side down',
+        'Flip eggplants cut side down on the baking sheet',
         30,
         stepNumber: 9,
         requiredEquipment: 'baking sheet',
@@ -766,7 +775,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Bake at 220°C for 15 minutes',
+        'Bake at 220°C (430°F) for 15 minutes',
         900,
         stepNumber: 10,
         requiredEquipment: 'oven',
@@ -774,7 +783,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Slice green onion, julienne shiso leaves',
+        'Thinly slice green onion and julienne shiso leaves for topping',
         120,
         stepNumber: 11,
         requiredEquipment: 'knife',
@@ -782,7 +791,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'After 15 min, eggplants tender, skin shriveled, switch to broiler',
+        'When eggplants are tender and skin shriveled, switch oven to broil',
         60,
         stepNumber: 12,
         requiredEquipment: 'oven',
@@ -790,7 +799,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Turn eggplants cut side up, brush with miso glaze',
+        'Flip eggplants cut side up, brush generously with miso glaze',
         120,
         stepNumber: 13,
         requiredEquipment: 'brush',
@@ -806,7 +815,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Sprinkle sesame seeds, green onion, shiso; optional yuzu kosho',
+        'Top with sesame seeds, green onion, and shiso leaves before serving',
         60,
         stepNumber: 15,
         requiredEquipment: 'plate',
@@ -822,12 +831,13 @@ const List<Recipe> kRecipes = [
     type: 'Korean',
     totalTimeMinutes: 60,
     taste: ['Spicy', 'Sweet', 'Umami'],
+    kitchenEquipmentNeeded: const ['oven'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
         ingredientId: 'chicken_wings',
-        quantity: '3',
-        unit: 'lb',
+        quantity: '1360',
+        unit: 'g',
       ),
       RecipeIngredient(ingredientId: 'apple', quantity: '1', unit: 'pcs'),
 
@@ -862,7 +872,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Whisk marinade ingredients in a bowl',
+        'Whisk soy sauce, mirin, sugar, gochujang, garlic, sesame oil, and honey in a bowl',
         180,
         stepNumber: 2,
         requiredEquipment: '',
@@ -870,7 +880,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Marinate chicken wings in sauce for 4 hours to overnight',
+        'Add wings to marinade, seal and refrigerate 4 hours to overnight',
         14400,
         stepNumber: 3,
         requiredEquipment: '',
@@ -878,7 +888,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Preheat oven to 200°C',
+        'Preheat oven to 200°C (400°F)',
         300,
         stepNumber: 4,
         requiredEquipment: 'oven',
@@ -886,7 +896,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Place chicken in single layer on foil-lined baking sheet',
+        'Arrange wings in single layer on foil-lined baking sheet, reserve excess marinade',
         60,
         stepNumber: 5,
         requiredEquipment: 'oven',
@@ -902,7 +912,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Broil 2–3 minutes if not charred',
+        'Broil 2–3 minutes for extra char if needed, watch closely to avoid burning',
         180,
         stepNumber: 7,
         requiredEquipment: 'oven',
@@ -918,12 +928,13 @@ const List<Recipe> kRecipes = [
     type: 'Cantonese',
     totalTimeMinutes: 80,
     taste: ['Sweet', 'Umami', 'Rich'],
+    kitchenEquipmentNeeded: const ['oven'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
         ingredientId: 'pork_shoulder',
-        quantity: '3',
-        unit: 'lb',
+        quantity: '1360',
+        unit: 'g',
       ),
 
       // Seasonings
@@ -988,7 +999,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Poke both sides of each slice with a fork',
+        'Poke both sides of each slice with a fork to help marinade absorb',
         120,
         stepNumber: 2,
         requiredEquipment: '',
@@ -996,7 +1007,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Mix marinade ingredients in a bowl',
+        'Combine all marinade ingredients in a bowl, stir until sugar dissolves',
         180,
         stepNumber: 3,
         requiredEquipment: '',
@@ -1020,7 +1031,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Refrigerate to marinate overnight or 6–8 hours',
+        'Seal bag, refrigerate to marinate overnight or at least 6 hours',
         28800,
         stepNumber: 6,
         requiredEquipment: '',
@@ -1028,7 +1039,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Preheat oven to 218°C',
+        'Preheat oven to 218°C (425°F)',
         300,
         stepNumber: 7,
         requiredEquipment: 'oven',
@@ -1036,7 +1047,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Line baking pan with foil, place rack, add water to pan',
+        'Line baking pan with foil, set wire rack on top, pour some water into the pan',
         60,
         stepNumber: 8,
         requiredEquipment: 'oven',
@@ -1044,7 +1055,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Lay pork on rack',
+        'Lay marinated pork slices on rack in a single layer',
         60,
         stepNumber: 9,
         requiredEquipment: 'oven',
@@ -1052,7 +1063,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Bake 15 minutes, baste both sides with marinade',
+        'Bake 15 minutes, flip and baste both sides with reserved marinade',
         900,
         stepNumber: 10,
         requiredEquipment: 'oven',
@@ -1060,7 +1071,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Bake another 15 minutes, baste again',
+        'Bake another 15 minutes, baste again with marinade',
         900,
         stepNumber: 11,
         requiredEquipment: 'oven',
@@ -1068,7 +1079,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Bake 10 minutes, baste with diluted honey',
+        'Bake 10 more minutes, baste with honey diluted in water',
         600,
         stepNumber: 12,
         requiredEquipment: 'oven',
@@ -1076,7 +1087,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Turn to 230°C, bake 5 minutes, baste with honey',
+        'Increase to 230°C (450°F), bake 5 minutes, brush with honey for a glossy finish',
         300,
         stepNumber: 13,
         requiredEquipment: 'oven',
@@ -1084,7 +1095,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Cool 5 minutes, slice and serve',
+        'Rest 5 minutes, slice into strips and serve',
         300,
         stepNumber: 14,
         requiredEquipment: '',
@@ -1100,12 +1111,13 @@ const List<Recipe> kRecipes = [
     type: 'Asian',
     totalTimeMinutes: 20,
     taste: ['Sweet', 'Umami'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
         ingredientId: 'pork_belly',
-        quantity: '0.75',
-        unit: 'lb',
+        quantity: '340',
+        unit: 'g',
       ),
 
       // Seasonings
@@ -1199,12 +1211,13 @@ const List<Recipe> kRecipes = [
     type: 'Cantonese',
     totalTimeMinutes: 30,
     taste: ['Savory', 'Umami'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
         ingredientId: 'hk_pan_noodles',
-        quantity: '12',
-        unit: 'oz',
+        quantity: '340',
+        unit: 'g',
       ),
       RecipeIngredient(ingredientId: 'onion', quantity: '0.5', unit: 'pcs'),
 
@@ -1242,7 +1255,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Steam fresh unsteamed noodles for 10 minutes',
+        'Steam fresh noodles over boiling water for 10 minutes',
         600,
         stepNumber: 2,
         requiredEquipment: 'stove',
@@ -1250,7 +1263,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Dip steamed noodles in boiling water 15–30 seconds',
+        'Briefly dip steamed noodles in boiling water for 15–30 seconds to loosen',
         30,
         stepNumber: 3,
         requiredEquipment: 'stove',
@@ -1258,7 +1271,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Drain, loosen with chopsticks, cool 3–5 minutes',
+        'Drain noodles, loosen gently with chopsticks, cool 3–5 minutes',
         300,
         stepNumber: 4,
         requiredEquipment: '',
@@ -1290,7 +1303,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Heat wok to 350–400°F, add 1 Tbsp corn oil',
+        'Heat wok over high until smoking, add 1 Tbsp corn oil',
         180,
         stepNumber: 8,
         requiredEquipment: 'stove',
@@ -1306,7 +1319,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Reheat wok, add 1 Tbsp oil, add noodles in single layer',
+        'Reheat wok over high, add 1 Tbsp oil, spread noodles in an even layer',
         60,
         stepNumber: 10,
         requiredEquipment: 'stove',
@@ -1314,7 +1327,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Fry bottom side crispy for 3 minutes, do not flip frequently',
+        'Fry undisturbed 3 minutes until bottom is golden and crispy',
         180,
         stepNumber: 11,
         requiredEquipment: 'stove',
@@ -1338,7 +1351,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Add scallions and onions, stir-fry 1–2 minutes',
+        'Return scallions and onions, stir-fry 1–2 minutes',
         120,
         stepNumber: 14,
         requiredEquipment: 'stove',
@@ -1346,7 +1359,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Pour sauce, stir-fry 1 minute until sauce reduces',
+        'Pour sauce mixture over noodles, stir-fry 1 minute until absorbed',
         60,
         stepNumber: 15,
         requiredEquipment: 'stove',
@@ -1354,7 +1367,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add sesame oil, stir-fry 1–2 minutes',
+        'Drizzle sesame oil, toss and stir-fry 1–2 minutes',
         120,
         stepNumber: 16,
         requiredEquipment: 'stove',
@@ -1362,7 +1375,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Taste, add extra dark soy if darker color desired',
+        'Taste and adjust, add more dark soy sauce if deeper color desired',
         60,
         stepNumber: 17,
         requiredEquipment: 'stove',
@@ -1370,7 +1383,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Plate and serve',
+        'Transfer to a plate and serve immediately',
         60,
         stepNumber: 18,
         requiredEquipment: '',
@@ -1386,6 +1399,7 @@ const List<Recipe> kRecipes = [
     type: 'Japanese',
     totalTimeMinutes: 30,
     taste: ['Spicy', 'Umami'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
@@ -1473,7 +1487,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Season chicken with salt and pepper',
+        'Season chicken with ¼ tsp salt and a pinch of pepper',
         60,
         stepNumber: 4,
         requiredEquipment: '',
@@ -1481,7 +1495,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Dust chicken with potato starch',
+        'Coat chicken evenly with 3 Tbsp potato starch',
         60,
         stepNumber: 5,
         requiredEquipment: '',
@@ -1489,7 +1503,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Fry chicken in batches 3 minutes per side until golden',
+        'Heat oil, fry chicken in batches 3 minutes per side until golden and crispy',
         360,
         stepNumber: 6,
         requiredEquipment: 'stove',
@@ -1497,7 +1511,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Remove cooked chicken',
+        'Remove cooked chicken to a plate, set aside',
         60,
         stepNumber: 7,
         requiredEquipment: 'stove',
@@ -1505,7 +1519,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Make slurry with starch and water',
+        'Mix ½ tsp potato starch with 1 tsp water to make a slurry',
         60,
         stepNumber: 8,
         requiredEquipment: '',
@@ -1513,7 +1527,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add sauce ingredients to cold pan',
+        'Add soy sauce, mirin, sugar, sriracha, and minced garlic to a cold pan',
         60,
         stepNumber: 9,
         requiredEquipment: 'stove',
@@ -1521,7 +1535,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Heat until bubbling, add slurry to thicken',
+        'Heat over medium until sauce bubbles, stir in slurry to thicken',
         180,
         stepNumber: 10,
         requiredEquipment: 'stove',
@@ -1529,7 +1543,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Toss chicken in hot glaze',
+        'Return chicken to pan, toss to coat evenly in the hot glaze',
         60,
         stepNumber: 11,
         requiredEquipment: 'stove',
@@ -1556,13 +1570,14 @@ const List<Recipe> kRecipes = [
     type: 'Japanese',
     totalTimeMinutes: 20,
     taste: ['Umami', 'Light'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'onion', quantity: '0.25', unit: 'pcs'),
       RecipeIngredient(
         ingredientId: 'chicken_breast',
-        quantity: '5',
-        unit: 'oz',
+        quantity: '140',
+        unit: 'g',
       ),
       RecipeIngredient(ingredientId: 'egg', quantity: '2', unit: 'large'),
       RecipeIngredient(ingredientId: 'rice', quantity: '1', unit: 'serving'),
@@ -1600,7 +1615,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Slice onion thinly',
+        'Thinly slice onion into half-moon shapes',
         60,
         stepNumber: 2,
         requiredEquipment: '',
@@ -1624,7 +1639,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Beat eggs lightly, cut whites with chopsticks',
+        'Beat 2 eggs lightly with chopsticks, do not over-mix',
         60,
         stepNumber: 5,
         requiredEquipment: '',
@@ -1632,7 +1647,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add water, dashi powder, soy sauce, mirin, sugar to cold pot',
+        'Combine water, dashi powder, soy sauce, mirin, and sugar in a cold pot',
         60,
         stepNumber: 6,
         requiredEquipment: 'stove',
@@ -1640,7 +1655,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add onion and scallion whites',
+        'Add sliced onion and scallion white parts to the pot',
         60,
         stepNumber: 7,
         requiredEquipment: 'stove',
@@ -1656,7 +1671,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Flip chicken, cook another 1–2 minutes',
+        'Flip chicken pieces, cook another 1–2 minutes until done',
         120,
         stepNumber: 9,
         requiredEquipment: 'stove',
@@ -1664,7 +1679,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Reduce to medium, drizzle egg in spiral, add green scallion',
+        'Reduce to medium, drizzle egg in a spiral pattern, scatter green scallion',
         60,
         stepNumber: 10,
         requiredEquipment: 'stove',
@@ -1672,7 +1687,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Cook until egg just sets, turn off heat',
+        'Cook until egg is just set but still slightly runny, turn off heat',
         60,
         stepNumber: 11,
         requiredEquipment: 'stove',
@@ -1680,7 +1695,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Serve over rice, optional shichimi togarashi',
+        'Slide onto a bowl of rice, sprinkle shichimi togarashi if desired',
         60,
         stepNumber: 12,
         requiredEquipment: '',
@@ -1696,12 +1711,13 @@ const List<Recipe> kRecipes = [
     type: 'Japanese',
     totalTimeMinutes: 30,
     taste: ['Umami', 'Herby'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
         ingredientId: 'chicken_breast',
-        quantity: '1',
-        unit: 'lb',
+        quantity: '450',
+        unit: 'g',
       ),
 
       // Seasonings
@@ -1729,7 +1745,7 @@ const List<Recipe> kRecipes = [
         'https://glebekitchen.com/wp-content/uploads/2017/03/koreangrilledchickenfront.jpg',
     steps: [
       RecipeStep(
-        'Mix garlic, ginger, miso, neutral oil, sesame oil, soy sauce, sambal oelek in bowl',
+        'Combine garlic, ginger, miso, oils, soy sauce, and sambal oelek in a bowl',
         180,
         stepNumber: 1,
         requiredEquipment: '',
@@ -1745,7 +1761,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Marinate chicken in sauce for at least 3 hours in fridge',
+        'Coat chicken with marinade, refrigerate for at least 3 hours',
         10800,
         stepNumber: 3,
         requiredEquipment: '',
@@ -1753,7 +1769,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Bring chicken to room temperature',
+        'Remove chicken from fridge, let sit at room temperature 10 minutes',
         600,
         stepNumber: 4,
         requiredEquipment: '',
@@ -1761,7 +1777,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Heat grill on high, spray with oil',
+        'Heat grill pan over high, spray or brush with oil',
         300,
         stepNumber: 5,
         requiredEquipment: 'grill',
@@ -1769,7 +1785,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Grill chicken 4 minutes on first side',
+        'Place chicken on grill, cook 4 minutes on first side without moving',
         240,
         stepNumber: 6,
         requiredEquipment: 'grill',
@@ -1777,7 +1793,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Flip and grill another 4 minutes until cooked',
+        'Flip and grill 4 more minutes until cooked through',
         240,
         stepNumber: 7,
         requiredEquipment: 'grill',
@@ -1785,7 +1801,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Rest chicken before serving',
+        'Rest chicken 5 minutes before slicing and serving',
         300,
         stepNumber: 8,
         requiredEquipment: '',
@@ -1801,6 +1817,7 @@ const List<Recipe> kRecipes = [
     type: 'Japanese',
     totalTimeMinutes: 375,
     taste: ['Spicy', 'Sour', 'Fresh'],
+    kitchenEquipmentNeeded: const [],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
@@ -1829,7 +1846,7 @@ const List<Recipe> kRecipes = [
         'https://thejapanesepantry.com/cdn/shop/articles/Spicy_Sesame_Cucumber_Salad.jpg?v=1621634486&width=1200',
     steps: [
       RecipeStep(
-        'Whisk soy sauce, sesame oil, la-yu, sugar in a bowl',
+        'Whisk 2 Tbsp soy sauce, sesame oil, la-yu, and sugar together in a bowl',
         60,
         stepNumber: 1,
         requiredEquipment: '',
@@ -1837,7 +1854,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Peel cucumbers in striped pattern',
+        'Peel cucumbers in alternating strips for a striped pattern',
         120,
         stepNumber: 2,
         requiredEquipment: '',
@@ -1845,7 +1862,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Cut cucumbers using rangiri technique',
+        'Cut cucumbers at an angle, rotating between cuts (rangiri technique)',
         180,
         stepNumber: 3,
         requiredEquipment: '',
@@ -1853,7 +1870,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Sprinkle salt and rub cucumbers',
+        'Sprinkle ½ tsp salt over cucumbers and rub gently',
         60,
         stepNumber: 4,
         requiredEquipment: '',
@@ -1861,7 +1878,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Rest 5 minutes, rinse salt',
+        'Let sit 5 minutes, then rinse off salt under cold water',
         300,
         stepNumber: 5,
         requiredEquipment: '',
@@ -1869,7 +1886,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Pat dry excess moisture',
+        'Pat cucumbers dry with paper towel',
         60,
         stepNumber: 6,
         requiredEquipment: '',
@@ -1877,7 +1894,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add cucumbers to container/bag with sauce, mix well',
+        'Add cucumbers to a container or zip bag with sauce, toss to coat',
         120,
         stepNumber: 7,
         requiredEquipment: '',
@@ -1885,7 +1902,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Seal and refrigerate for 6 hours or overnight',
+        'Seal and refrigerate at least 6 hours or overnight for best flavor',
         21600,
         stepNumber: 8,
         requiredEquipment: '',
@@ -1893,7 +1910,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Serve, sprinkle sesame seeds',
+        'Plate and sprinkle with sesame seeds before serving',
         60,
         stepNumber: 9,
         requiredEquipment: '',
@@ -1909,6 +1926,7 @@ const List<Recipe> kRecipes = [
     type: 'Asian',
     totalTimeMinutes: 30,
     taste: ['Sweet', 'Savory'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(ingredientId: 'carrot', quantity: '1', unit: 'cup'),
@@ -1919,8 +1937,8 @@ const List<Recipe> kRecipes = [
       ),
       RecipeIngredient(
         ingredientId: 'chicken_breast',
-        quantity: '1',
-        unit: 'lb',
+        quantity: '450',
+        unit: 'g',
       ),
       RecipeIngredient(
         ingredientId: 'chicken_broth',
@@ -1965,7 +1983,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add broccoli and carrots, cook 4 minutes until tender',
+        'Add broccoli and carrots, stir-fry 4 minutes until tender-crisp',
         240,
         stepNumber: 2,
         requiredEquipment: 'stove',
@@ -1973,7 +1991,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Remove vegetables, cover plate',
+        'Remove vegetables to a plate, cover to keep warm',
         30,
         stepNumber: 3,
         requiredEquipment: '',
@@ -1989,7 +2007,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Season chicken, cook in single layer 3–4 minutes per side until golden',
+        'Season chicken with salt and pepper, cook in single layer 3–4 minutes per side until golden',
         480,
         stepNumber: 5,
         requiredEquipment: 'stove',
@@ -1997,7 +2015,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add garlic, cook 30 seconds',
+        'Add minced garlic, stir 30 seconds until fragrant',
         30,
         stepNumber: 6,
         requiredEquipment: 'stove',
@@ -2005,7 +2023,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add vegetables back, cook 2 minutes',
+        'Return vegetables to pan, toss and cook 2 minutes',
         120,
         stepNumber: 7,
         requiredEquipment: 'stove',
@@ -2021,7 +2039,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Mix cornstarch with cold water',
+        'Mix cornstarch with 1 Tbsp cold water to make a slurry',
         30,
         stepNumber: 9,
         requiredEquipment: '',
@@ -2037,7 +2055,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add cornstarch slurry, boil 1 minute until thickened',
+        'Stir in cornstarch slurry, boil 1 minute until sauce thickens and coats',
         60,
         stepNumber: 11,
         requiredEquipment: 'stove',
@@ -2053,6 +2071,7 @@ const List<Recipe> kRecipes = [
     type: 'American',
     totalTimeMinutes: 25,
     taste: ['Light', 'Fresh'],
+    kitchenEquipmentNeeded: const ['oven'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
@@ -2087,7 +2106,7 @@ const List<Recipe> kRecipes = [
         'https://kalejunkie.com/wp-content/uploads/2023/04/SalmonwithTomatoLemonSauce_Shot6_172.jpg',
     steps: [
       RecipeStep(
-        'Place salmon filets in baking dish or cast iron skillet',
+        'Place salmon fillets skin-side down in a baking dish',
         60,
         stepNumber: 1,
         requiredEquipment: 'oven',
@@ -2095,7 +2114,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Drizzle ⅓ olive oil, season with ⅓ salt, pepper, lemon powder',
+        'Drizzle ⅓ of olive oil over salmon, season with ⅓ of salt, pepper, lemon powder',
         60,
         stepNumber: 2,
         requiredEquipment: '',
@@ -2103,7 +2122,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Place tomatoes evenly over salmon, drizzle ⅓ oil, season ⅓',
+        'Layer sliced tomatoes over salmon, drizzle ⅓ oil and ⅓ seasoning',
         60,
         stepNumber: 3,
         requiredEquipment: '',
@@ -2111,7 +2130,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Place onions evenly over tomatoes, drizzle remaining oil, season',
+        'Layer sliced onions over tomatoes, drizzle remaining oil and seasoning',
         60,
         stepNumber: 4,
         requiredEquipment: '',
@@ -2119,7 +2138,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Optional: Place lemon slices over onion',
+        'Optionally top with lemon slices for extra citrus flavor',
         60,
         stepNumber: 5,
         requiredEquipment: '',
@@ -2127,7 +2146,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Bake at 350°F for 20–30 minutes depending on thickness',
+        'Bake at 350°F (175°C) for 20–30 minutes until salmon flakes easily',
         1800,
         stepNumber: 6,
         requiredEquipment: 'oven',
@@ -2135,7 +2154,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Garnish with chopped parsley',
+        'Garnish with chopped parsley and serve immediately',
         60,
         stepNumber: 7,
         requiredEquipment: '',
@@ -2151,6 +2170,7 @@ const List<Recipe> kRecipes = [
     type: 'Asian',
     totalTimeMinutes: 30,
     taste: ['Savory', 'Umami'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
@@ -2160,8 +2180,8 @@ const List<Recipe> kRecipes = [
       ),
       RecipeIngredient(
         ingredientId: 'chicken_breast',
-        quantity: '1',
-        unit: 'pound',
+        quantity: '450',
+        unit: 'g',
       ),
       RecipeIngredient(ingredientId: 'carrot', quantity: '1', unit: 'small'),
       RecipeIngredient(
@@ -2212,7 +2232,7 @@ const List<Recipe> kRecipes = [
         'https://maplejubilee.com/wp-content/uploads/2021/07/Chicken-stir-fry-V1-1152x1536.jpg',
     steps: [
       RecipeStep(
-        'Whisk sauce ingredients together',
+        'Whisk tamari, white wine, honey, sesame oil, rice vinegar, and cornstarch in a bowl',
         120,
         stepNumber: 1,
         requiredEquipment: '',
@@ -2220,7 +2240,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Heat pan, add oil, cook chicken in single layer with seasoning',
+        'Heat pan over high, add 1 Tbsp oil, lay seasoned chicken in single layer',
         60,
         stepNumber: 2,
         requiredEquipment: 'stove',
@@ -2228,7 +2248,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Cook chicken 4–5 minutes per side until browned and cooked',
+        'Sear chicken 4–5 minutes per side until golden and cooked through',
         540,
         stepNumber: 3,
         requiredEquipment: 'stove',
@@ -2236,7 +2256,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Remove chicken to plate',
+        'Remove chicken to a plate, set aside',
         30,
         stepNumber: 4,
         requiredEquipment: '',
@@ -2244,7 +2264,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add oil, cook vegetables 3–4 minutes until tender',
+        'Add 1 Tbsp oil, stir-fry broccoli, carrots, bell pepper, and onion 3–4 minutes',
         240,
         stepNumber: 5,
         requiredEquipment: 'stove',
@@ -2252,7 +2272,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add chicken back, stir in ginger and garlic for 30 seconds',
+        'Return chicken, add ginger and garlic, stir 30 seconds until fragrant',
         30,
         stepNumber: 6,
         requiredEquipment: 'stove',
@@ -2260,7 +2280,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Pour sauce, stir-fry 1–2 minutes until thickened',
+        'Pour sauce over everything, stir-fry 1–2 minutes until sauce thickens',
         120,
         stepNumber: 7,
         requiredEquipment: 'stove',
@@ -2276,12 +2296,13 @@ const List<Recipe> kRecipes = [
     type: 'Chinese',
     totalTimeMinutes: 20,
     taste: ['Savory', 'Umami'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
         ingredientId: 'beef_sirloin',
-        quantity: '0.5',
-        unit: 'lb',
+        quantity: '225',
+        unit: 'g',
       ),
       RecipeIngredient(
         ingredientId: 'broccoli_florets',
@@ -2316,7 +2337,7 @@ const List<Recipe> kRecipes = [
         'https://natashaskitchen.com/wp-content/uploads/2019/08/Beef-and-Broccoli-2-1024x1536.jpg',
     steps: [
       RecipeStep(
-        'Marinate beef with soy sauce and cornstarch for 15 minutes',
+        'Toss sliced beef with soy sauce and cornstarch, marinate 15 minutes',
         900,
         stepNumber: 1,
         requiredEquipment: '',
@@ -2324,7 +2345,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Prepare sauce with water, soy sauce, oyster sauce, sesame oil, brown sugar',
+        'Whisk water, soy sauce, oyster sauce, sesame oil, and brown sugar in a bowl',
         60,
         stepNumber: 2,
         requiredEquipment: '',
@@ -2332,7 +2353,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Prepare cornstarch slurry',
+        'Mix cornstarch with a splash of water to make a slurry',
         60,
         stepNumber: 3,
         requiredEquipment: '',
@@ -2340,7 +2361,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Heat wok with oil, stir-fry beef until no longer pink',
+        'Heat wok over high with oil, stir-fry beef quickly until just no longer pink',
         60,
         stepNumber: 4,
         requiredEquipment: 'stove',
@@ -2348,7 +2369,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Remove beef from wok',
+        'Remove beef to a plate, do not overcook',
         30,
         stepNumber: 5,
         requiredEquipment: '',
@@ -2356,7 +2377,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add oil and minced garlic, stir-fry briefly',
+        'Add a splash of oil and minced garlic, stir-fry until fragrant',
         30,
         stepNumber: 6,
         requiredEquipment: 'stove',
@@ -2364,7 +2385,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add broccoli, stir-fry 1 minute',
+        'Add broccoli florets, stir-fry 1 minute on high heat',
         60,
         stepNumber: 7,
         requiredEquipment: 'stove',
@@ -2372,7 +2393,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add sauce, stir-fry broccoli to desired doneness',
+        'Pour in sauce, stir-fry broccoli until tender to your liking',
         60,
         stepNumber: 8,
         requiredEquipment: 'stove',
@@ -2380,7 +2401,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Push broccoli aside, add cornstarch slurry to thicken sauce',
+        'Push broccoli to one side, stir slurry into sauce until thickened',
         60,
         stepNumber: 9,
         requiredEquipment: 'stove',
@@ -2388,7 +2409,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Add beef back, stir to combine',
+        'Return beef to wok, toss everything to coat evenly',
         60,
         stepNumber: 10,
         requiredEquipment: 'stove',
@@ -2396,7 +2417,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Transfer to serving bowl, garnish with sesame seeds if desired',
+        'Transfer to a serving bowl, garnish with sesame seeds',
         60,
         stepNumber: 11,
         requiredEquipment: '',
@@ -2412,6 +2433,7 @@ const List<Recipe> kRecipes = [
     type: 'Japanese',
     totalTimeMinutes: 60,
     taste: ['Sweet', 'Umami'],
+    kitchenEquipmentNeeded: const ['stove'],
     recipeIngredients: const [
       // Main ingredients
       RecipeIngredient(
@@ -2468,7 +2490,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Mix teriyaki sauce ingredients in a bowl',
+        'Whisk soy sauce, sake, mirin, ginger juice, and sugar in a bowl',
         120,
         stepNumber: 2,
         requiredEquipment: '',
@@ -2476,7 +2498,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Marinate steaks with 4 Tbsp sauce for 30 minutes',
+        'Coat steaks with 4 Tbsp sauce, marinate for 30 minutes',
         1800,
         stepNumber: 3,
         requiredEquipment: '',
@@ -2484,7 +2506,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Bring steaks to room temperature',
+        'Let steaks come to room temperature while marinating',
         600,
         stepNumber: 4,
         requiredEquipment: '',
@@ -2492,7 +2514,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Prepare slurry if thick sauce desired',
+        'Mix potato starch and water to make a slurry for thicker sauce',
         60,
         stepNumber: 5,
         requiredEquipment: '',
@@ -2500,7 +2522,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Heat remaining sauce, add slurry if thickening',
+        'Heat remaining sauce in a small pot, stir in slurry if thicker sauce desired',
         120,
         stepNumber: 6,
         requiredEquipment: 'stove',
@@ -2508,7 +2530,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Pat steaks dry, heat pan with oil',
+        'Pat steaks dry with paper towel, heat pan over high with oil',
         60,
         stepNumber: 7,
         requiredEquipment: 'stove',
@@ -2516,7 +2538,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Sear steaks 2 minutes on first side',
+        'Sear steaks 2 minutes on first side until caramelized',
         120,
         stepNumber: 8,
         requiredEquipment: 'stove',
@@ -2524,7 +2546,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Flip and sear 1.5 minutes on second side',
+        'Flip and sear 1.5 minutes for medium-rare',
         90,
         stepNumber: 9,
         requiredEquipment: 'stove',
@@ -2532,7 +2554,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Pour 2 Tbsp sauce over each steak',
+        'Spoon 2 Tbsp teriyaki sauce over each steak in the pan',
         60,
         stepNumber: 10,
         requiredEquipment: 'stove',
@@ -2540,7 +2562,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: false,
       ),
       RecipeStep(
-        'Rest steaks 5–10 minutes',
+        'Rest steaks on cutting board for 5–10 minutes',
         600,
         stepNumber: 11,
         requiredEquipment: ' ',
@@ -2548,7 +2570,7 @@ const List<Recipe> kRecipes = [
         isConcurrent: true,
       ),
       RecipeStep(
-        'Slice, garnish with sesame and green onion, serve with remaining sauce',
+        'Slice against the grain, garnish with sesame and green onion, serve with sauce',
         120,
         stepNumber: 12,
         requiredEquipment: ' ',

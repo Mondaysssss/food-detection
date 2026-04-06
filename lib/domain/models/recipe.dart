@@ -16,6 +16,9 @@ class Recipe {
   /// 真正食材資料來源（全系統只用呢個）
   final List<RecipeIngredient> recipeIngredients;
 
+  /// 所需大件廚具（統一名稱：stove / oven / microven / ricecooker）
+  final List<String> kitchenEquipmentNeeded;
+
   const Recipe({
     required this.menuId,
     required this.name,
@@ -26,6 +29,7 @@ class Recipe {
     required this.steps,
     required this.totalTimeMinutes,
     this.recipeIngredients = const [],
+    this.kitchenEquipmentNeeded = const [],
   });
 
   List<String> get ingredientIds =>
