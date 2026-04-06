@@ -14,14 +14,21 @@ import '../../widgets/glass.dart';
 import '../../widgets/recipe_detail_sheet.dart';
 import '../../widgets/ui_helpers.dart';
 
-class HistoryPage extends StatelessWidget {
+class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
+
+  @override
+  State<HistoryPage> createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends State<HistoryPage> {
+  bool _newestFirst = true;
 
   String _fmt2(int v) => v.toString().padLeft(2, '0');
 
-  // yyyy.MM.dd, HH.mm
+  // yyyy.MM.dd, HH：mm
   String _fmtDone(DateTime dt) {
-    return '${dt.year}.${_fmt2(dt.month)}.${_fmt2(dt.day)}, ${_fmt2(dt.hour)}.${_fmt2(dt.minute)}';
+    return '${dt.year}.${_fmt2(dt.month)}.${_fmt2(dt.day)}, ${_fmt2(dt.hour)}:${_fmt2(dt.minute)}';
   }
 
   void _openSessionSheet(BuildContext context, CookSession s) {
@@ -29,72 +36,137 @@ class HistoryPage extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFF1E1E1E),
       builder: (_) => _SessionDetailSheet(session: s, fmtDone: _fmtDone),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final sessions = context.watch<AppState>().sessions;
+    final rawSessions = context.watch<AppState>().sessions;
 
-    // ✅ 有 sessions：顯示你要嘅長方形卡片 list
+    // 排序
+    final sessions = _newestFirst
+        ? rawSessions.toList()
+        : rawSessions.reversed.toList();
+
     if (sessions.isNotEmpty) {
-      return ListView.separated(
-        itemCount: sessions.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, i) {
-          final s = sessions[i];
-          final totalDishes = s.items.values.fold<int>(0, (sum, v) => sum + v);
-
-          return InkWell(
-            onTap: () => _openSessionSheet(context, s),
-            child: glass(
-              padding: EdgeInsets.zero,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '✅ Completed $totalDishes dishes',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Completed at: ${_fmtDone(s.completedAt)}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.white70,
-                            ),
-                          ),
-                          Text(
-                            'Total time: ${s.totalMinutes} minutes',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
+      return Column(
+        children: [
+          // 排序按鈕列
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ActionChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_newestFirst ? 'Recent' : 'Oldest'),
+                    const SizedBox(width: 4),
+                    Icon(
+                      _newestFirst ? Icons.arrow_downward : Icons.arrow_upward,
+                      size: 16,
                     ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(right: 8),
-                    child: Icon(Icons.chevron_right),
-                  ),
-                ],
+                  ],
+                ),
+                onPressed: () => setState(() => _newestFirst = !_newestFirst),
               ),
             ),
-          );
-        },
-      );
+          ),
+          // 列表
+          Expanded(
+            child: ListView.separated(
+              itemCount: sessions.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (_, i) {
+                final s = sessions[i];
+                final totalDishes = s.items.values.fold<int>(
+                  0,
+                  (sum, v) => sum + v,
+                );
+
+                // 取第一個食譜的封面圖
+                final firstMenuId = s.items.keys.first;
+                final firstRecipe = kRecipeById[firstMenuId];
+                final cover = firstRecipe?.cover;
+
+                // 拼所有食譜名字，用 " + " 連接
+                final names = s.items.keys
+                    .map((id) => kRecipeById[id]?.name ?? id)
+                    .join(' + ');
+
+                return InkWell(
+                  onTap: () => _openSessionSheet(context, s),
+                  child: glass(
+                    padding: EdgeInsets.zero,
+                    child: Row(
+                      children: [
+                        // 左邊圖片
+                        ClipRRect(
+                          borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(18),
+                          ),
+                          child: SizedBox(
+                            width: 80,
+                            height: 80,
+                            child: cover != null
+                                ? Image.network(cover, fit: BoxFit.cover)
+                                : Container(
+                                    color: Colors.white12,
+                                    child: const Icon(Icons.restaurant),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // 右邊文字
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 食譜名字（一行，超長顯示 ...）
+                                Text(
+                                  names,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '✅ Completed $totalDishes dishes',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                Text(
+                                  '⏱️ ${s.totalMinutes} minutes',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                Text(
+                                  '📅 ${_fmtDone(s.completedAt)}',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Icon(Icons.chevron_right),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ), // ListView.separated 結尾
+          ), // Expanded
+        ],
+      ); // Column
     }
 
     // ✅ 冇 sessions：fallback 用單菜 history grid（你原本嗰套）
