@@ -7,6 +7,8 @@ import 'home_shell.dart';
 import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
 import '../../domain/services/auth_service.dart'; // add
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
 
 import 'package:provider/provider.dart';
 import '../../state/app_state.dart';

@@ -219,14 +219,7 @@ class _PreferencePageState extends State<_PreferencePage> {
     'Shellfish (shrimp, crab, lobster)',
     'Wheat (gluten)',
     'Soy (soybeans / soy products)',
-    'Mango',
-    'Kiwi',
-    'Avocado',
-    'Sesame / sesame oil',
-    'Coconut',
-    'Tomato',
     'Beef / pork',
-    'Taro',
   ];
 
   bool _inited = false;
@@ -259,7 +252,11 @@ class _PreferencePageState extends State<_PreferencePage> {
     _inited = true;
   }
 
-  int _tempValue(String key) => _tempAppliances[key] ?? 0;
+  int _tempValue(String key) {
+    final v = _tempAppliances[key] ?? 0;
+    final mn = AppState.applianceMin[key] ?? 0;
+    return v < mn ? mn : v;
+  }
 
   void _setTempAppliance(String key, int v) {
     final max = AppState.applianceMax[key] ?? 999;
@@ -365,14 +362,15 @@ class _PreferencePageState extends State<_PreferencePage> {
                     Builder(
                       builder: (context) {
                         final key = r.$2;
+                        final min = AppState.applianceMin[key] ?? 0;
                         final max = AppState.applianceMax[key] ?? 4;
 
                         final ddItems = List<DropdownMenuItem<int>>.generate(
-                          max + 1,
+                          max - min + 1,
                           (i) => DropdownMenuItem(
-                            value: i,
+                            value: i + min,
                             child: Text(
-                              i.toString(),
+                              (i + min).toString(),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -386,9 +384,22 @@ class _PreferencePageState extends State<_PreferencePage> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                  r.$1,
-                                  style: const TextStyle(fontSize: 15),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      r.$1,
+                                      style: const TextStyle(fontSize: 15),
+                                    ),
+                                    if ((AppState.applianceMin[key] ?? 0) > 0)
+                                      Text(
+                                        '(min: ${AppState.applianceMin[key]})',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -404,12 +415,6 @@ class _PreferencePageState extends State<_PreferencePage> {
                       },
                     ),
                   ],
-
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Note: Persona Wizard requires cookware >= 1 and stove >= 1 to proceed.',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
                 ],
               ),
             ),
