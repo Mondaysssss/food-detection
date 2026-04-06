@@ -41,46 +41,48 @@ class RecommendScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              width: double.infinity,
-              child: glass(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    titleText('Current ingredients (${ingredients.length})'),
-                    if (ingredients.isEmpty)
-                      const Text(
-                        'No ingredients added yet. Please go back to add or detect.',
-                        style: TextStyle(color: Colors.white70),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final i in ingredients)
-                            Chip(
-                              label: Text(
-                                i,
-                                style: TextStyle(
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: SingleChildScrollView(
+                child: glass(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      titleText('Current ingredients (${ingredients.length})'),
+                      if (ingredients.isEmpty)
+                        const Text(
+                          'No ingredients added yet. Please go back to add or detect.',
+                          style: TextStyle(color: Colors.white70),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final i in ingredients)
+                              Chip(
+                                label: Text(
+                                  i,
+                                  style: TextStyle(
+                                    color: usedIngredients.contains(i)
+                                        ? Colors.greenAccent
+                                        : Colors.redAccent,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                backgroundColor: usedIngredients.contains(i)
+                                    ? Colors.green.withValues(alpha: 0.15)
+                                    : Colors.red.withValues(alpha: 0.15),
+                                side: BorderSide(
                                   color: usedIngredients.contains(i)
-                                      ? Colors.greenAccent
-                                      : Colors.redAccent,
-                                  fontWeight: FontWeight.w600,
+                                      ? Colors.green.withValues(alpha: 0.4)
+                                      : Colors.red.withValues(alpha: 0.4),
                                 ),
                               ),
-                              backgroundColor: usedIngredients.contains(i)
-                                  ? Colors.green.withValues(alpha: 0.15)
-                                  : Colors.red.withValues(alpha: 0.15),
-                              side: BorderSide(
-                                color: usedIngredients.contains(i)
-                                    ? Colors.green.withValues(alpha: 0.4)
-                                    : Colors.red.withValues(alpha: 0.4),
-                              ),
-                            ),
-                        ],
-                      ),
-                  ],
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
