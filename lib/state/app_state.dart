@@ -155,7 +155,8 @@ class AppState extends ChangeNotifier {
   int cartCountOf(String menuId) => _cart[menuId] ?? 0;
   int get cartTotalCount => _cart.values.fold(0, (s, v) => s + v);
 
-  void addToCart(String menuId, [int delta = 1]) {
+  bool addToCart(String menuId, [int delta = 1]) {
+    if (delta > 0 && cartTotalCount >= 5) return false; // ← 新增
     final n = (_cart[menuId] ?? 0) + delta;
     if (n <= 0) {
       _cart.remove(menuId);
@@ -163,6 +164,7 @@ class AppState extends ChangeNotifier {
       _cart[menuId] = n;
     }
     notifyListeners();
+    return true; // ← 新增
   }
 
   void setCartCount(String menuId, int count) {

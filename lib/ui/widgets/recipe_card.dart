@@ -223,12 +223,26 @@ class RecipeCard extends StatelessWidget {
                           ),
                         ),
                         IconButton.filled(
-                          onPressed: () => app.addToCart(recipe.menuId, 1),
+                          onPressed: app.cartTotalCount >= 5
+                              ? () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Maximum 5 recipes in cart',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : () => app.addToCart(recipe.menuId, 1),
                           icon: const Icon(Icons.add),
                           tooltip: 'Increase 1',
                           style: IconButton.styleFrom(
                             fixedSize: const Size(40, 40),
                             padding: EdgeInsets.zero,
+                            backgroundColor: app.cartTotalCount >= 5
+                                ? Colors
+                                      .grey // ← 灰色
+                                : null, // ← 正常顏色
                           ),
                         ),
                       ],

@@ -71,6 +71,12 @@ class _RecommendPageState extends State<RecommendPage> {
         }
       }
 
+      // 隱藏 user 沒有的 appliance 所需食譜
+      final userAppliances = app.appliances;
+      for (final needed in e.recipe.requiredAppliances) {
+        if ((userAppliances[needed] ?? 0) <= 0) return false;
+      }
+
       if (onlyFav && !favSet.contains(e.recipe.menuId)) return false;
 
       return true;
