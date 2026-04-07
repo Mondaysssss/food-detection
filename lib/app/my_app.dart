@@ -10,6 +10,7 @@ import '../domain/services/auth_service.dart';
 import '../ui/screens/intro_start_screen.dart';
 import '../ui/screens/home_shell.dart';
 import '../ui/screens/persona_wizard_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -84,11 +85,29 @@ class _AuthGateState extends State<_AuthGate> {
       appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
       final name = data['username'] ?? user.displayName ?? '';
       if (name.isNotEmpty) appState.userName = name;
+
+      // ✅ Load cook sessions from Firestore (non-fatal if it fails)
+      try {
+        final sessions = await auth.loadCookSessions(user.uid);
+        for (final s in sessions) {
+          final ts = s['completedAt'];
+          final dt = ts is Timestamp ? ts.toDate() : DateTime.now();
+          appState.addSessionFromFirestore(
+            items: Map<String, int>.from(s['items'] ?? {}),
+            totalMinutes: s['totalMinutes'] ?? 0,
+            completedAt: dt,
+          );
+        }
+      } catch (_) {
+        // Sessions failed to load — continue without history
+      }
+
       return const HomeShell(initialIndex: 0);
     } else {
       // No preferences → wizard
       final name = data?['username'] ?? user.displayName ?? '';
       if (name.isNotEmpty) appState.userName = name;
+
       return const PersonaWizardScreen(goHomeAfterFinish: true);
     }
   }
@@ -102,6 +121,9 @@ class _AuthGateState extends State<_AuthGate> {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
+        }
+        if (snap.hasError || snap.data == null) {
+          return const IntroStartScreen();
         }
         return snap.data!;
       },
