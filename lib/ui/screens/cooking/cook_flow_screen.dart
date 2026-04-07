@@ -1023,7 +1023,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     //    就把 _stepTimerStarted 設 true，令按鈕顯示 Complete
     if (isTool) {
       final existing = _toolTimers[s.tool];
-      _stepTimerStarted = existing != null && (existing.running || existing.finished);
+      _stepTimerStarted = existing != null &&
+          existing.ownerGlobalNo == s.globalNo &&  // ← add this
+          (existing.running || existing.finished);
     } else {
       _stepTimerStarted = false;
     }
@@ -1653,7 +1655,7 @@ class _ToolIconsFrame extends StatelessWidget {
                     ),
                   ),
 
-                // ✅ Finished 脈衝光暈（橙色 edge glow）— 提醒用戶去 Complete
+                // ✅ Finished 脈動光暈（橙色 edge glow）— 提醒用戶去 Complete
                 if (isFinished)
                   Positioned.fill(
                     child: _FinishedPulseOverlay(
