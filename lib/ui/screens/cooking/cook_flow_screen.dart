@@ -784,7 +784,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     for (final entry in _toolTimers.entries) {
       final t = entry.value;
-      if (!t.running) continue;
+      // ✅ 前置 tile timer running 或 finished（用戶尚未 Complete）都算「前置未完成」
+      if (!t.running && !t.finished) continue;
 
       // 找到 ownerGlobalNo 對應的 step
       final ownerIdx = t.ownerGlobalNo - 1; // globalNo 係 1-based
@@ -1018,11 +1019,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     final humanMs = isTool ? 0 : s.durationMs;
     _resetToStepHuman(humanMs, startIfFlowStarted: false);
 
-    // ✅ Tile step：唔自動啟動 timer；但如果呢個 tile 已經喺跑緊（用戶之前按過 Start Timer），
-    //    就把 _stepTimerStarted 設 true，令按鈕自動灰掉
+    // ✅ Tile step：唔自動啟動 timer；但如果呢個 tile 已經喺跑緊（或已完成等用戶 Complete），
+    //    就把 _stepTimerStarted 設 true，令按鈕顯示 Complete
     if (isTool) {
       final existing = _toolTimers[s.tool];
-      _stepTimerStarted = existing != null && existing.running;
+      _stepTimerStarted = existing != null && (existing.running || existing.finished);
     } else {
       _stepTimerStarted = false;
     }
@@ -1230,13 +1231,17 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   int _toolShakeMs(_ToolKey k) {
     final t = _toolTimers[k];
     if (t == null) return 420;
-    // ✅ Tile 自然完成後 alarm 靜止（不再搖擺），等用戶手動完成
-    if (t.finished) return 99999999;
+    // ✅ Tile 自然完成後 alarm 繼續響（提醒用戶去 peek → Complete）
+    if (t.finished) return 500;
     return _calcShakeMs(
       totalMs: t.totalMs,
       leftMs: t.leftMs,
       finished: t.finished,
     );
+  }
+
+  bool _toolTimerFinished(_ToolKey k) {
+    return _toolTimers[k]?.finished ?? false;
   }
 
   Future<void> _openMenuStepsDialog(Recipe r) async {
@@ -1390,15 +1395,21 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     // ✅ Peek mode：顯示 peeked tile 的步驟和倒數
     final peekedStep = _peekedTool == null ? null : _stepForTool(_peekedTool!);
     final displayStep = peekedStep ?? step;
-    final displayTimerText = _peekedTool != null
-        ? _toolCountText(_peekedTool!)
-        : stepTimeText;
     final displayTimerStarted = _peekedTool != null ? true : _stepTimerStarted;
     final isPeeking = _peekedTool != null;
+    // ✅ 當前展示的是一個已完成的 tile step（用或不用 peek 模式）
+    final currentTileFinished = !isPeeking &&
+        step != null &&
+        _isToolTimerStep(step) &&
+        (_toolTimers[step.tool]?.finished ?? false);
+    final displayTimerText = _peekedTool != null
+        ? _toolCountText(_peekedTool!)
+        : currentTileFinished
+            ? 'Done!'
+            : stepTimeText;
     final displayCountdownDone = isPeeking
         ? (_toolTimers[_peekedTool]?.finished ?? false)
-        : (_stepMs > 0 && _leftMs <= 0);
-
+        : currentTileFinished || (_stepMs > 0 && _leftMs <= 0);
     // 右邊菜單最多 5 個（已改為上方橫向 Row）
     final menusForRight = _menus.take(5).toList(growable: false);
 
@@ -1432,6 +1443,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                       activeTool: activeTool,
                       glowEnabled: _flowStarted,
                       timerActiveOf: _toolTimerActive,
+                      finishedOf: _toolTimerFinished,
                       shakeMsOf: _toolShakeMs,
                       countTextOf: _toolCountText,
                       peekedTool: _peekedTool,
@@ -1448,7 +1460,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                       countdownDone: displayCountdownDone,
                       canPrev: _idx > 0,
                       timerStarted: displayTimerStarted,
-                      startTimerBlockReason: isPeeking ? null : _startTimerBlockReason(),
+                      // ✅ 如果 timer 已啟動，就展示 Complete，不要變回「Waiting for area」
+                      startTimerBlockReason: (_stepTimerStarted || isPeeking) ? null : _startTimerBlockReason(),
                       leftText: displayTimerText,
                       isPeeking: isPeeking,
                       stepManuallyCompleted: _stepManuallyCompleted,
@@ -1496,6 +1509,7 @@ class _ToolIconsFrame extends StatelessWidget {
   final bool glowEnabled;
 
   final bool Function(_ToolKey) timerActiveOf;
+  final bool Function(_ToolKey) finishedOf; // ✅ tile 已完成但等 Complete
   final int Function(_ToolKey) shakeMsOf;
   final String Function(_ToolKey) countTextOf;
 
@@ -1507,6 +1521,7 @@ class _ToolIconsFrame extends StatelessWidget {
     required this.activeTool,
     required this.glowEnabled,
     required this.timerActiveOf,
+    required this.finishedOf,
     required this.shakeMsOf,
     required this.countTextOf,
     this.peekedTool,
@@ -1515,6 +1530,7 @@ class _ToolIconsFrame extends StatelessWidget {
 
   static const _accent = Color(0xFF16A34A);
   static const _peekAccent = Color(0xFFFBBF24); // Amber for peek highlight
+  static const _finishedAccent = Color(0xFFF59E0B); // Orange-amber for finished
 
   @override
   Widget build(BuildContext context) {
@@ -1553,33 +1569,44 @@ class _ToolIconsFrame extends StatelessWidget {
           final isPeeked = peekedTool == k;
 
           final timerActive = timerActiveOf(k);
+          final isFinished = finishedOf(k); // ✅ 完成但未 Complete
           final shakeMs = shakeMsOf(k);
           final countText = countTextOf(k);
 
-          // ✅ 邊框顏色優先順序：peek > active > 預設
-          final borderColor = isPeeked
-              ? _peekAccent.withValues(alpha: 0.85)
-              : active
-                  ? _accent.withValues(alpha: 0.65)
-                  : Colors.white.withValues(alpha: 0.10);
-          final borderWidth = (isPeeked || active) ? 2.5 : 1.0;
-          final shadows = isPeeked
+          // ✅ 邊框顏色優先順序：finished > peek > active > 預設
+          final borderColor = isFinished
+              ? _finishedAccent.withValues(alpha: 0.90)
+              : isPeeked
+                  ? _peekAccent.withValues(alpha: 0.85)
+                  : active
+                      ? _accent.withValues(alpha: 0.65)
+                      : Colors.white.withValues(alpha: 0.10);
+          final borderWidth = (isFinished || isPeeked || active) ? 2.5 : 1.0;
+          final shadows = isFinished
               ? [
                   BoxShadow(
-                    color: _peekAccent.withValues(alpha: 0.35),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
+                    color: _finishedAccent.withValues(alpha: 0.45),
+                    blurRadius: 22,
+                    offset: const Offset(0, 4),
                   ),
                 ]
-              : active
+              : isPeeked
                   ? [
                       BoxShadow(
-                        color: _accent.withValues(alpha: 0.25),
-                        blurRadius: 18,
+                        color: _peekAccent.withValues(alpha: 0.35),
+                        blurRadius: 20,
                         offset: const Offset(0, 6),
                       ),
                     ]
-                  : null;
+                  : active
+                      ? [
+                          BoxShadow(
+                            color: _accent.withValues(alpha: 0.25),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
+                          ),
+                        ]
+                      : null;
 
           return GestureDetector(
             onTap: timerActive ? () => onTileTap?.call(k) : null,
@@ -1623,6 +1650,14 @@ class _ToolIconsFrame extends StatelessWidget {
                         color: _peekAccent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                       ),
+                    ),
+                  ),
+
+                // ✅ Finished 脈衝光暈（橙色 edge glow）— 提醒用戶去 Complete
+                if (isFinished)
+                  Positioned.fill(
+                    child: _FinishedPulseOverlay(
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
 
@@ -1735,6 +1770,59 @@ class _AlarmOverlayState extends State<_AlarmOverlay>
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ✅ 脈動橙色邊緣光暈 — 提示用戶 tile 已完成但尚未 Complete
+class _FinishedPulseOverlay extends StatefulWidget {
+  final BorderRadius borderRadius;
+
+  const _FinishedPulseOverlay({required this.borderRadius});
+
+  @override
+  State<_FinishedPulseOverlay> createState() => _FinishedPulseOverlayState();
+}
+
+class _FinishedPulseOverlayState extends State<_FinishedPulseOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctl;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.10, end: 0.45).animate(
+      CurvedAnimation(parent: _ctl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _opacity,
+        builder: (_, __) => Container(
+          decoration: BoxDecoration(
+            borderRadius: widget.borderRadius,
+            border: Border.all(
+              color: const Color(0xFFF59E0B).withValues(alpha: _opacity.value * 2),
+              width: 2.5,
+            ),
+            color: const Color(0xFFF59E0B).withValues(alpha: _opacity.value),
           ),
         ),
       ),
