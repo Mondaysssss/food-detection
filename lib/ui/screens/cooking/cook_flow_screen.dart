@@ -15,6 +15,7 @@ import '../../../state/app_state.dart';
 
 import '../../../data/recipes_data.dart';
 import '../../../domain/models/recipe.dart';
+import '../../../domain/services/auth_service.dart';
 
 // ✅ 供全檔使用（包括 Bottom Sheet / Menu Modal）
 String _fmtLeft(int ms) {
@@ -803,8 +804,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
       final ownerStep = _steps[ownerIdx];
       // 同一食譜 + 比當前步更早
-      if (ownerStep.menuId == cur.menuId &&
-          ownerStep.globalNo < cur.globalNo) {
+      if (ownerStep.menuId == cur.menuId && ownerStep.globalNo < cur.globalNo) {
         return true;
       }
     }
@@ -964,10 +964,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         _toolTick = null;
       }
 
-      if (needSetState) setState(() {
-        // ✅ 設備釋放 / timer 完成時，同步更新 Next 按鈕與 Start Timer 狀態
-        _finished = _calcCanNext();
-      });
+      if (needSetState)
+        setState(() {
+          // ✅ 設備釋放 / timer 完成時，同步更新 Next 按鈕與 Start Timer 狀態
+          _finished = _calcCanNext();
+        });
     });
   }
 
@@ -1067,7 +1068,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       _stepTimerStarted = true;
       if (isTool) {
         if (s.durationMs > 0) {
-          _startOrKeepToolTimer(s.tool, s.durationMs, ownerGlobalNo: s.globalNo);
+          _startOrKeepToolTimer(
+            s.tool,
+            s.durationMs,
+            ownerGlobalNo: s.globalNo,
+          );
         }
       } else {
         if (s.durationMs > 0) {
@@ -1099,6 +1104,19 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         widget.snapshot,
         widget.totalPlannedMinutes,
       );
+
+      // ✅ 同步存到 Firestore
+      final auth = AuthService();
+      final user = auth.currentUser;
+      if (user != null) {
+        auth.saveCookSession(
+          uid: user.uid,
+          completedAt: DateTime.now(),
+          items: Map<String, int>.from(widget.snapshot),
+          totalMinutes: widget.totalPlannedMinutes,
+        );
+      }
+
       Navigator.pop(context);
       return;
     }
@@ -1642,10 +1660,10 @@ class _StepCard extends StatelessWidget {
   final _FlowStep? step;
   final bool flowStarted;
   final bool running;
-  final bool canNext;       // ✅ Next/Finish 按鈕 enabled
+  final bool canNext; // ✅ Next/Finish 按鈕 enabled
   final bool countdownDone; // ✅ 倒數已歸零（顏色轉紅）
   final bool canPrev;
-  final bool timerStarted;  // ✅ 當前 step 的 timer 已啟動
+  final bool timerStarted; // ✅ 當前 step 的 timer 已啟動
   final String? startTimerBlockReason; // ✅ 非 null = 設備被佔滿，禁用 + 顯示原因
   final String leftText;
   final VoidCallback onNext;
@@ -1766,9 +1784,13 @@ class _StepCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF7C3A00).withValues(alpha: 0.30),
+                        backgroundColor: const Color(
+                          0xFF7C3A00,
+                        ).withValues(alpha: 0.30),
                         foregroundColor: const Color(0xFFFBBF24),
-                        disabledBackgroundColor: const Color(0xFF7C3A00).withValues(alpha: 0.30),
+                        disabledBackgroundColor: const Color(
+                          0xFF7C3A00,
+                        ).withValues(alpha: 0.30),
                         disabledForegroundColor: const Color(0xFFFBBF24),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -1781,7 +1803,9 @@ class _StepCard extends StatelessWidget {
                     )
                   // 正常狀態
                   : FilledButton.icon(
-                      onPressed: (flowStarted && !timerStarted) ? onStartTimer : null,
+                      onPressed: (flowStarted && !timerStarted)
+                          ? onStartTimer
+                          : null,
                       icon: const Icon(Icons.timer_outlined, size: 18),
                       label: Text(
                         timerStarted ? 'Timer started' : 'Start Timer',
@@ -1793,8 +1817,12 @@ class _StepCard extends StatelessWidget {
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.white.withValues(alpha: 0.22),
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
-                        disabledForegroundColor: Colors.white.withValues(alpha: 0.40),
+                        disabledBackgroundColor: Colors.white.withValues(
+                          alpha: 0.08,
+                        ),
+                        disabledForegroundColor: Colors.white.withValues(
+                          alpha: 0.40,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -1817,8 +1845,12 @@ class _StepCard extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white.withValues(alpha: 0.12),
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.white.withValues(alpha: 0.06),
-                      disabledForegroundColor: Colors.white.withValues(alpha: 0.25),
+                      disabledBackgroundColor: Colors.white.withValues(
+                        alpha: 0.06,
+                      ),
+                      disabledForegroundColor: Colors.white.withValues(
+                        alpha: 0.25,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -1841,8 +1873,12 @@ class _StepCard extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white.withValues(alpha: 0.18),
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.white.withValues(alpha: 0.10),
-                      disabledForegroundColor: Colors.white.withValues(alpha: 0.35),
+                      disabledBackgroundColor: Colors.white.withValues(
+                        alpha: 0.10,
+                      ),
+                      disabledForegroundColor: Colors.white.withValues(
+                        alpha: 0.35,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),

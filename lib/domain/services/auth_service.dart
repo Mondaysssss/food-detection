@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'dart:developer' as logging;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -92,5 +93,30 @@ class AuthService {
 
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  // ── Cook Session persistence ──
+
+  Future<void> saveCookSession({
+    required String uid,
+    required DateTime completedAt,
+    required Map<String, int> items,
+    required int totalMinutes,
+  }) async {
+    await _db.collection('users').doc(uid).collection('sessions').add({
+      'completedAt': Timestamp.fromDate(completedAt),
+      'items': items,
+      'totalMinutes': totalMinutes,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> loadCookSessions(String uid) async {
+    final snap = await _db
+        .collection('users')
+        .doc(uid)
+        .collection('sessions')
+        .orderBy('completedAt', descending: true)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
   }
 }
