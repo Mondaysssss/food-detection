@@ -20,8 +20,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'sugar', quantity: '1', unit: 'tsp'),
       RecipeIngredient(ingredientId: 'oil', quantity: '2', unit: 'tbsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r1.jpg',
     steps: [
       RecipeStep(
         'Wash tomatoes and cut each into 6–8 wedges',
@@ -119,8 +118,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'pepper', quantity: '', unit: ''),
       RecipeIngredient(ingredientId: 'oil', quantity: '1', unit: 'tbsp'),
     ],
-    cover:
-        'https://www.jocooks.com/wp-content/uploads/2021/09/garlic-butter-shrimp-1-10.jpg',
+    cover: 'assets/images/recipes/r2.jpg',
     steps: [
       RecipeStep(
         'Peel and devein shrimp, rinse under cold water, pat dry with paper towels',
@@ -215,8 +213,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'oil', quantity: '2', unit: 'tbsp'),
       RecipeIngredient(ingredientId: 'sesame_oil', quantity: '1', unit: 'tsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r3.jpg',
     steps: [
       RecipeStep(
         'Slice chicken breast thinly against the grain into bite-sized pieces',
@@ -331,8 +328,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'oil', quantity: '1', unit: 'tbsp'),
       RecipeIngredient(ingredientId: 'sesame_oil', quantity: '1', unit: 'tsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r4.jpg',
     steps: [
       RecipeStep(
         'Soak clams in cold salted water for 30 minutes to purge sand, discard any that do not close when tapped',
@@ -427,8 +423,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'pepper', quantity: '', unit: ''),
       RecipeIngredient(ingredientId: 'butter', quantity: '1', unit: 'tbsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1467003909585-2f8a72700288?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r5.jpg',
     steps: [
       RecipeStep(
         'Pat salmon steaks dry with paper towels, season both sides generously with salt and pepper',
@@ -544,8 +539,7 @@ const List<Recipe> kRecipes = [
         unit: 'tbsp',
       ),
     ],
-    cover:
-        'https://smellylunchbox.com/wp-content/uploads/2023/09/fuzzymelonsoup-750x500.webp',
+    cover: 'assets/images/recipes/r6.jpg',
     steps: [
       RecipeStep(
         'Soak ribs in cold water for 1 hour to remove blood',
@@ -637,8 +631,7 @@ const List<Recipe> kRecipes = [
         unit: 'tbsp',
       ),
     ],
-    cover:
-        'https://thefrayedapron.com/wp-content/uploads/2019/07/oven-roasted-rack-of-lamb-with-pan-potatoes-1024x683.jpg',
+    cover: 'assets/images/recipes/r7.jpg',
     steps: [
       RecipeStep(
         'Bring lamb racks to room temperature for 1 hour before cooking',
@@ -776,8 +769,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'sugar', quantity: '0.5', unit: 'tsp'),
       RecipeIngredient(ingredientId: 'oil', quantity: '2', unit: 'tbsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r8.jpg',
     steps: [
       RecipeStep(
         'Slice pork into thin strips against the grain, marinate with 1 tbsp soy sauce and cornstarch for 10 minutes',
@@ -875,8 +867,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'pepper', quantity: '0.5', unit: 'tsp'),
       RecipeIngredient(ingredientId: 'butter', quantity: '2', unit: 'tbsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r9.jpg',
     steps: [
       RecipeStep(
         'Remove steaks from fridge and let come to room temperature for 30 minutes',
@@ -999,8 +990,7 @@ const List<Recipe> kRecipes = [
       ),
       RecipeIngredient(ingredientId: 'oil', quantity: '2', unit: 'tbsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r10.jpg',
     steps: [
       RecipeStep(
         'Chop chicken legs through the bone into 3–4 pieces each, rinse and pat dry',
@@ -1108,8 +1098,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'pepper', quantity: '0.25', unit: 'tsp'),
       RecipeIngredient(ingredientId: 'oil', quantity: '1', unit: 'tbsp'),
     ],
-    cover:
-        'https://i0.wp.com/beyondsweetandsavory.com/wp-content/uploads/2022/02/Korean-fried-chicken-wings-VyTran-6.jpg?resize=683%2C1024&ssl=1',
+    cover: 'assets/images/recipes/r11.jpg',
     steps: [
       RecipeStep(
         'Rinse chicken wings, pat thoroughly dry with paper towels, score each wing 2–3 times with a knife',
@@ -1211,8 +1200,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'soy_sauce', quantity: '1', unit: 'tbsp'),
       RecipeIngredient(ingredientId: 'oil', quantity: '2', unit: 'tbsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1583735240519-a8b99ad tried?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r12.jpg',
     steps: [
       RecipeStep(
         'Halve bitter gourd lengthwise, scoop out seeds and white pith with a spoon',
@@ -1314,8 +1302,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'sesame_oil', quantity: '1', unit: 'tsp'),
       RecipeIngredient(ingredientId: 'cornstarch', quantity: '1', unit: 'tbsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1547592166-23ac45744acd?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r13.jpg',
     steps: [
       RecipeStep(
         'Shuck corn and cut kernels off the cob by standing cob upright and slicing downward',
@@ -1421,8 +1408,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'cornstarch', quantity: '1', unit: 'tsp'),
       RecipeIngredient(ingredientId: 'oil', quantity: '3', unit: 'tbsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1511690743698-d9d18f7e20f1?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r14.jpg',
     steps: [
       RecipeStep(
         'Roll-cut eggplants into bite-sized chunks, soak in salted water for 10 minutes to prevent browning, drain and squeeze dry',
@@ -1527,8 +1513,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'salt', quantity: '0.5', unit: 'tsp'),
       RecipeIngredient(ingredientId: 'chili_oil', quantity: '1', unit: 'tsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1623855244183-52fd8d3ce2f7?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r15.jpg',
     steps: [
       RecipeStep(
         'Wash cucumbers, trim ends, place flat on cutting board and smash firmly with the flat side of a knife until they crack open',
@@ -1626,8 +1611,7 @@ const List<Recipe> kRecipes = [
       ),
       RecipeIngredient(ingredientId: 'sesame_oil', quantity: '1', unit: 'tsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1547592166-23ac45744acd?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r16.jpg',
     steps: [
       RecipeStep(
         'If using dried shiitake, soak in warm water for 30 minutes until fully softened, reserve soaking liquid; if fresh, clean and halve',
@@ -1725,8 +1709,7 @@ const List<Recipe> kRecipes = [
         unit: 'tsp',
       ),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r17.jpg',
     steps: [
       RecipeStep(
         'Chop pork ribs into 2-inch segments, soak in cold water for 30 minutes to remove blood',
@@ -1845,8 +1828,7 @@ const List<Recipe> kRecipes = [
         unit: 'tbsp',
       ),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1534939561126-855b8675edd7?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r18.jpg',
     steps: [
       RecipeStep(
         'Cut beef into 2cm cubes, soak in cold water for 20 minutes to remove blood, drain',
@@ -1965,8 +1947,7 @@ const List<Recipe> kRecipes = [
       ),
       RecipeIngredient(ingredientId: 'sugar', quantity: '0.5', unit: 'tsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r19.jpg',
     steps: [
       RecipeStep(
         'Clean fish thoroughly, remove scales, gut and rinse cavity, pat completely dry inside and out with paper towels',
@@ -2078,8 +2059,7 @@ const List<Recipe> kRecipes = [
       RecipeIngredient(ingredientId: 'oil', quantity: '2', unit: 'tbsp'),
       RecipeIngredient(ingredientId: 'sesame_oil', quantity: '1', unit: 'tsp'),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1543362906-acfc16c67564?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r20.jpg',
     steps: [
       RecipeStep(
         'Peel ridge gourd skin, remove tough ridges, cut diagonally into 1cm thick slices',
@@ -2197,8 +2177,7 @@ const List<Recipe> kRecipes = [
         unit: 'tsp',
       ),
     ],
-    cover:
-        'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?q=80&w=1200&auto=format&fit=crop',
+    cover: 'assets/images/recipes/r21.jpg',
     steps: [
       RecipeStep(
         'Clean crabs thoroughly with a brush under running water, remove top shell, discard gills and innards, crack claws with the back of a knife',

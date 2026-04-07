@@ -1977,7 +1977,7 @@ class _MenuIconButton extends StatelessWidget {
                   Icons.restaurant_menu,
                   color: Colors.white.withValues(alpha: 0.85),
                 )
-              : Image.network(
+              : Image.asset(
                   imgUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Icon(

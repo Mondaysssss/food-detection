@@ -59,7 +59,7 @@ class RecipeCard extends StatelessWidget {
                 children: [
                   AspectRatio(
                     aspectRatio: coverAspect,
-                    child: Image.network(
+                    child: Image.asset(
                       recipe.cover,
                       fit: BoxFit.cover,
                       cacheWidth: 600, // decode at smaller size to save memory

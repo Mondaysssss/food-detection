@@ -88,7 +88,7 @@ void showRecipeDetailSheet(
                       children: [
                         AspectRatio(
                           aspectRatio: 16 / 9,
-                          child: Image.network(recipe.cover, fit: BoxFit.cover),
+                          child: Image.asset(recipe.cover, fit: BoxFit.cover),
                         ),
                         Positioned(
                           left: 8,

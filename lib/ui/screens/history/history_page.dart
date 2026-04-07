@@ -111,7 +111,7 @@ class _HistoryPageState extends State<HistoryPage> {
                             width: 80,
                             height: 80,
                             child: cover != null
-                                ? Image.network(cover, fit: BoxFit.cover)
+                                ? Image.asset(cover, fit: BoxFit.cover)
                                 : Container(
                                     color: Colors.white12,
                                     child: const Icon(Icons.restaurant),
@@ -210,7 +210,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     ),
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
-                      child: Image.network(h.cover, fit: BoxFit.cover),
+                      child: Image.asset(h.cover, fit: BoxFit.cover),
                     ),
                   ),
                   Padding(
@@ -352,7 +352,7 @@ class _SessionDetailSheet extends StatelessWidget {
                                             size: 18,
                                           ),
                                         )
-                                      : Image.network(cover, fit: BoxFit.cover),
+                                      : Image.asset(cover, fit: BoxFit.cover),
                                 ),
                               ),
                               const SizedBox(width: 10),
