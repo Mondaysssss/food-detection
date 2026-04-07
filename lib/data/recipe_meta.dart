@@ -23,6 +23,9 @@ const Map<String, int> kRecipeServings = {
   'r19': 2, // Pan-Fried Golden Threadfin Bream
   'r20': 2, // Stir-fried Ridge Gourd with Shrimp and Egg
   'r21': 3, // Ginger and Scallion Crab
+  'r22': 3, // Classic Egg Fried Rice
+  'r23': 3, // Shrimp Fried Rice
+  'r24': 3, // Chicken and Broccoli Fried Rice
 };
 
 //難度等級(1-5)
@@ -48,6 +51,9 @@ const Map<String, int> kRecipeDifficulty = {
   'r19': 3, // Pan-Fried Golden Threadfin Bream
   'r20': 2, // Stir-fried Ridge Gourd with Shrimp and Egg
   'r21': 4, // Ginger and Scallion Crab
+  'r22': 1, // Classic Egg Fried Rice
+  'r23': 2, // Shrimp Fried Rice
+  'r24': 2, // Chicken and Broccoli Fried Rice
 };
 
 //主要烹調方法
@@ -73,6 +79,9 @@ const Map<String, String> kRecipeMethod = {
   'r19': 'Pan-fry', // Pan-Fried Golden Threadfin Bream
   'r20': 'Stir-fry', // Stir-fried Ridge Gourd with Shrimp and Egg
   'r21': 'Stir-fry', // Ginger and Scallion Crab
+  'r22': 'Stir-fry', // Classic Egg Fried Rice
+  'r23': 'Stir-fry', // Shrimp Fried Rice
+  'r24': 'Stir-fry', // Chicken and Broccoli Fried Rice
 };
 
 /// tot需要器材：每個食譜「所有步驟」會用到嘅器材總表
@@ -99,6 +108,9 @@ const Map<String, List<String>> kRecipeTotalEquipment = {
   'r19': ['stove'], // Pan-Fried Golden Threadfin Bream
   'r20': ['stove'], // Stir-fried Ridge Gourd with Shrimp and Egg
   'r21': ['stove'], // Ginger and Scallion Crab
+  'r22': ['stove', 'electric'], // Classic Egg Fried Rice
+  'r23': ['stove', 'electric'], // Shrimp Fried Rice
+  'r24': ['stove', 'electric'], // Chicken and Broccoli Fried Rice
 };
 
 //賣點 好似和recipes_data.dart的taste一樣,但沒太大問題,到時在看看
@@ -124,6 +136,9 @@ const Map<String, List<String>> kSellingPoints = {
   'r19': ['Crispy skin', 'Whole-fish', 'Savory sauce'],
   'r20': ['Light & fresh', 'Quick wok', 'Seasonal gourd'],
   'r21': ['Wok-fragrant', 'Cantonese classic', 'Rich umami'],
+  'r22': ['Quick & easy', 'Wok hei', 'Rice cooker'],
+  'r23': ['Protein-rich', 'Wok hei', 'One-bowl meal'],
+  'r24': ['High-protein', 'Colorful', 'Rice cooker'],
 };
 
 //更詳細版本步驟
@@ -359,5 +374,50 @@ const Map<String, List<String>> kStepsVerbose = {
     'Cover and cook for 5 minutes over medium heat until crab is fully cooked through.',
     'Uncover, increase heat to high, toss for 1 minute to reduce and thicken sauce.',
     'Drizzle sesame oil, transfer to serving plate, pour remaining sauce over crab and serve immediately.',
+  ],
+  'r22': [
+    'Rinse rice under cold water until water runs clear, drain and add to rice cooker with water.',
+    'Start rice cooker, cook rice until done about 20 minutes.',
+    'Dice carrot into small cubes, dice onion finely, mince garlic.',
+    'Beat eggs with a pinch of salt in a bowl.',
+    'When rice is done, spread on a plate and let cool slightly for 5 minutes to reduce moisture.',
+    'Heat wok over high heat until smoking, add 1 tbsp oil.',
+    'Pour in beaten eggs, scramble into large curds just until set, remove and set aside.',
+    'Add remaining oil to wok, sauté garlic and onion until fragrant about 30 seconds.',
+    'Add diced carrot and green peas, stir-fry 1 minute until carrot is slightly softened.',
+    'Add cooked rice, break up clumps with spatula, stir-fry on high heat for 2 minutes tossing constantly.',
+    'Add soy sauce along the edge of wok, toss rice to coat evenly, season with salt and white pepper.',
+    'Return scrambled eggs to wok, break into pieces, fold together with rice for 30 seconds.',
+    'Drizzle sesame oil, give a final toss, plate and serve immediately.',
+  ],
+  'r23': [
+    'Rinse rice under cold water until water runs clear, drain and add to rice cooker with water.',
+    'Start rice cooker, cook rice until done about 20 minutes.',
+    'Peel and devein shrimp, rinse under cold water, pat dry with paper towels, season with a pinch of salt.',
+    'Dice carrot into small cubes, cut corn kernels off the cob, dice onion finely, mince garlic.',
+    'Beat eggs with a pinch of salt in a bowl.',
+    'When rice is done, spread on a plate and let cool slightly for 5 minutes.',
+    'Heat wok over high heat, add 1 tbsp oil, sear shrimp 1 minute per side until pink, remove and set aside.',
+    'Add beaten eggs to wok, scramble into curds, remove and set aside.',
+    'Add remaining oil, sauté garlic and onion until fragrant about 30 seconds.',
+    'Add diced carrot and corn kernels, stir-fry 1 minute on high heat.',
+    'Add cooked rice, break up clumps, stir-fry 2 minutes tossing constantly on high heat.',
+    'Add soy sauce along edge of wok, toss to coat, season with salt and white pepper.',
+    'Return shrimp and scrambled eggs, fold together for 30 seconds, drizzle sesame oil, plate and serve.',
+  ],
+  'r24': [
+    'Rinse rice under cold water until water runs clear, drain and add to rice cooker with water.',
+    'Start rice cooker, cook rice until done about 20 minutes.',
+    'Dice chicken breast into 1cm cubes, marinate with 1 tbsp soy sauce for 10 minutes.',
+    'Cut broccoli into very small florets, dice onion finely, mince garlic, slice ginger.',
+    'Beat eggs with a pinch of salt in a bowl.',
+    'When rice is done, spread on a plate and let cool slightly for 5 minutes.',
+    'Heat wok over high heat, add 1 tbsp oil, stir-fry chicken cubes 2 minutes until cooked through, remove and set aside.',
+    'Pour in beaten eggs, scramble into large curds, remove and set aside.',
+    'Add remaining oil, sauté garlic, ginger and onion until fragrant about 30 seconds.',
+    'Add broccoli florets, stir-fry 1 minute on high heat until bright green.',
+    'Add rice, break up clumps, stir-fry 2 minutes tossing constantly.',
+    'Add remaining soy sauce and oyster sauce along edge of wok, toss to coat, season with salt and white pepper.',
+    'Return chicken and eggs, fold together 30 seconds, drizzle sesame oil, plate and serve.',
   ],
 };
