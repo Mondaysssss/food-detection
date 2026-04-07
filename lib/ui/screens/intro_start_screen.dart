@@ -152,7 +152,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
 
                 // 下方內容（標題 + 兩個按鈕）
                 Expanded(
-                  child: Padding(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -200,7 +200,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                           ),
                         ),
 
-                        const Spacer(),
+                        const SizedBox(height: 16),
 
                         // Start using（主按鈕）—— 文字強制白色 ✅
                         SizedBox(

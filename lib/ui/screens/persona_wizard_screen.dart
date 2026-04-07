@@ -8,9 +8,12 @@ import '../../state/app_state.dart';
 import '../widgets/page_frame.dart';
 import '../widgets/glass.dart';
 import 'login_screen.dart';
+import '../../domain/services/auth_service.dart'; // 新增
+import 'home_shell.dart'; // 新增
 
 class PersonaWizardScreen extends StatefulWidget {
-  const PersonaWizardScreen({super.key});
+  final bool goHomeAfterFinish; // ← 新增
+  const PersonaWizardScreen({super.key, this.goHomeAfterFinish = false});
 
   @override
   State<PersonaWizardScreen> createState() => _PersonaWizardScreenState();
@@ -147,7 +150,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     }
   }
 
-  void _nextOrFinish() {
+  Future<void> _nextOrFinish() async {
     if (!_canProceed) return;
 
     if (_index < _questions.length - 1) {
@@ -161,10 +164,34 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       );
       context.read<AppState>().setAllergies(Set<String>.from(_allergies));
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      if (widget.goHomeAfterFinish) {
+        // 從登入/建帳流程過來 → 存 Firestore → 去 HomeShell
+        final auth = AuthService();
+        final user = auth.currentUser;
+        if (user != null) {
+          final app = context.read<AppState>();
+          await auth.savePreferences(
+            uid: user.uid,
+            gender: app.gender,
+            age: app.age,
+            appliances: Map<String, int>.from(app.appliances),
+            allergies: app.allergies.toList(),
+          );
+        }
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 0)),
+            (_) => false,
+          );
+        }
+      } else {
+        // 從 IntroStartScreen 過來 → 去 LoginScreen（現有行為）
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
     }
   }
 
@@ -179,11 +206,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Personalization'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Close',
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: PageFrame(
         child: Column(
