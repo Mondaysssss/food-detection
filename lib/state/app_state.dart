@@ -194,6 +194,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void removeSessions(Set<int> indices) {
+    // 從大到小刪，避免 index 偏移
+    final sorted = indices.toList()..sort((a, b) => b.compareTo(a));
+    for (final i in sorted) {
+      if (i >= 0 && i < _sessions.length) _sessions.removeAt(i);
+    }
+    notifyListeners();
+  }
+
   // add single ingredient (filter out seasoning)
   void addIngredient(String name) {
     if (kSeasoningKeys.contains(name)) return;

@@ -1,7 +1,7 @@
 // [OOP] 歷史頁：列出過往 CookSession / CookHistory。
 // ✅ sessions: 顯示長方形卡片（完成幾多道 / 完成時間 / 總完成時間）
 // ✅ 點卡片：Bottom Sheet 詳情
-// ✅ Bottom Sheet 入面每道菜：長按 → 彈出食譜詳細 (showRecipeDetailSheet)
+// ✅ Bottom Sheet 入面每道菜：長按 → 彩蛋食譜詳細 (showRecipeDetailSheet)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +23,8 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   bool _newestFirst = true;
+  bool _selecting = false;
+  final Set<int> _selected = {};
 
   String _fmt2(int v) => v.toString().padLeft(2, '0');
 
@@ -41,6 +43,36 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete history'),
+        content: Text(
+          'Are you sure you want to delete ${_selected.length} session(s)?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              context.read<AppState>().removeSessions(_selected);
+              Navigator.pop(ctx);
+              setState(() {
+                _selecting = false;
+                _selected.clear();
+              });
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final rawSessions = context.watch<AppState>().sessions;
@@ -56,22 +88,51 @@ class _HistoryPageState extends State<HistoryPage> {
           // 排序按鈕列
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: ActionChip(
-                label: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(_newestFirst ? 'Recent' : 'Oldest'),
-                    const SizedBox(width: 4),
-                    Icon(
-                      _newestFirst ? Icons.arrow_downward : Icons.arrow_upward,
-                      size: 16,
-                    ),
-                  ],
+            child: Row(
+              children: [
+                // 排序按鈕（不變）
+                ActionChip(
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_newestFirst ? 'Recent' : 'Oldest'),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _newestFirst
+                            ? Icons.arrow_downward
+                            : Icons.arrow_upward,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                  onPressed: () => setState(() => _newestFirst = !_newestFirst),
                 ),
-                onPressed: () => setState(() => _newestFirst = !_newestFirst),
-              ),
+                const Spacer(),
+                // 多選/確定/取消按鈕
+                if (_selecting) ...[
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _selecting = false;
+                      _selected.clear();
+                    }),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: _selected.isEmpty
+                        ? null
+                        : () => _confirmDelete(context),
+                    icon: const Icon(Icons.delete, size: 18),
+                    label: Text('Delete (${_selected.length})'),
+                    style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                  ),
+                ] else
+                  ActionChip(
+                    avatar: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Delete'),
+                    onPressed: () => setState(() => _selecting = true),
+                  ),
+              ],
             ),
           ),
           // 列表
@@ -97,12 +158,26 @@ class _HistoryPageState extends State<HistoryPage> {
                     .join(' + ');
 
                 return InkWell(
-                  onTap: () => _openSessionSheet(context, s),
+                  onTap: _selecting
+                      ? () {
+                          setState(() {
+                            // 用原始 list 的 index（不是排序後的）
+                            final rawIndex = _newestFirst
+                                ? i
+                                : rawSessions.length - 1 - i;
+                            if (_selected.contains(rawIndex)) {
+                              _selected.remove(rawIndex);
+                            } else {
+                              _selected.add(rawIndex);
+                            }
+                          });
+                        }
+                      : () => _openSessionSheet(context, s),
                   child: glass(
                     padding: EdgeInsets.zero,
                     child: Row(
                       children: [
-                        // 左邊圖片
+                        // 左邊圖片（不變）
                         ClipRRect(
                           borderRadius: const BorderRadius.horizontal(
                             left: Radius.circular(18),
@@ -119,7 +194,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // 右邊文字
+                        // 右邊文字（不變）
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -154,9 +229,27 @@ class _HistoryPageState extends State<HistoryPage> {
                             ),
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.only(right: 8),
-                          child: Icon(Icons.chevron_right),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _selecting
+                              ? Icon(
+                                  (_selected.contains(
+                                        _newestFirst
+                                            ? i
+                                            : rawSessions.length - 1 - i,
+                                      ))
+                                      ? Icons.check_box
+                                      : Icons.check_box_outline_blank,
+                                  color:
+                                      (_selected.contains(
+                                        _newestFirst
+                                            ? i
+                                            : rawSessions.length - 1 - i,
+                                      ))
+                                      ? Colors.red
+                                      : Colors.white54,
+                                )
+                              : const Icon(Icons.chevron_right),
                         ),
                       ],
                     ),
