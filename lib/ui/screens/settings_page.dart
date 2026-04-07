@@ -8,7 +8,7 @@ import '../../state/app_state.dart';
 import '../widgets/glass.dart';
 
 import '../../domain/services/auth_service.dart';
-import 'login_screen.dart';
+import 'intro_start_screen.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -165,10 +165,13 @@ class SettingsPage extends StatelessWidget {
                   backgroundColor: Colors.orange.shade200.withValues(alpha: .2),
                 ),
                 onPressed: () async {
+                  context.read<AppState>().clearPersona(); // ← add this
                   await AuthService().signOut();
                   if (context.mounted) {
                     Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const IntroStartScreen(),
+                      ),
                       (_) => false,
                     );
                   }

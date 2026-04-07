@@ -102,6 +102,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearPersona() {
+    gender = null;
+    age = 18;
+    userName = 'User name';
+    for (final k in _appliances.keys) {
+      _appliances[k] = 0;
+    }
+    _allergies.clear();
+    notifyListeners();
+  }
+
   // =========================================================
   // Existing AppState (unchanged)
   // =========================================================

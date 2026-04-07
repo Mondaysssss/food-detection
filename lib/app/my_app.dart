@@ -3,8 +3,13 @@
 // 你之後要加 route table / i18n / deep link，都係由呢個檔開始擴展。
 
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../state/app_state.dart';
+import '../domain/services/auth_service.dart';
 import '../ui/screens/intro_start_screen.dart';
+import '../ui/screens/home_shell.dart';
+import '../ui/screens/persona_wizard_screen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -23,18 +28,83 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF0B0F14),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             foregroundColor: Colors.black,
             backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
         ),
       ),
-      home: const IntroStartScreen(),
+      home: const _AuthGate(), // was: const IntroStartScreen()
+    );
+  }
+}
+
+class _AuthGate extends StatefulWidget {
+  const _AuthGate();
+  @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  late Future<Widget> _destination;
+
+  @override
+  void initState() {
+    super.initState();
+    _destination = _resolve();
+  }
+
+  Future<Widget> _resolve() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const IntroStartScreen();
+
+    // User is auto-logged-in → load preferences
+    final auth = AuthService();
+    final data = await auth.loadPreferences(user.uid);
+    if (!mounted) return const IntroStartScreen();
+
+    final appState = context.read<AppState>();
+
+    if (data != null && data.containsKey('gender')) {
+      // Firestore has preferences → restore them
+      appState.setPersona(
+        newGender: data['gender'],
+        newAge: data['age'],
+        newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+      );
+      appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
+      final name = data['username'] ?? user.displayName ?? '';
+      if (name.isNotEmpty) appState.userName = name;
+      return const HomeShell(initialIndex: 0);
+    } else {
+      // No preferences → wizard
+      final name = data?['username'] ?? user.displayName ?? '';
+      if (name.isNotEmpty) appState.userName = name;
+      return const PersonaWizardScreen(goHomeAfterFinish: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Widget>(
+      future: _destination,
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return snap.data!;
+      },
     );
   }
 }
