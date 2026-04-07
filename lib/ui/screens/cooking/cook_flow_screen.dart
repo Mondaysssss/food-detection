@@ -80,7 +80,9 @@ class CookFlowScreen extends StatefulWidget {
   State<CookFlowScreen> createState() => _CookFlowScreenState();
 }
 
-enum _ToolKey { pot, stove, electric, electric2, oven, hands, prep }
+enum _ToolKey { pot, stove, electric, electric2, oven }
+
+// Hand timers: keyed by globalNo (unique per step)
 
 class _FlowStep {
   final String menuId;
@@ -109,7 +111,7 @@ class _FlowStep {
   /// - isConcurrent=false：用作 Step 倒數（要做完先 Next）
   final int durationMs;
 
-  final _ToolKey tool;
+  final _ToolKey? tool;
 
   const _FlowStep({
     required this.menuId,
@@ -129,6 +131,8 @@ class _FlowStep {
     required this.durationMs,
     required this.tool,
   });
+
+  bool get isHandStep => isConcurrent && tool == null;
 }
 
 /// 器具倒數狀態（Tile）
@@ -177,7 +181,7 @@ class _IpynbSched {
   final int stepIndex;
   final int startSec;
   final int endSec;
-  final _ToolKey tool; // ✅ 已分配到 6 格 Tile 的其中一格（獨立 timer slot）
+  final _ToolKey? tool; // null = hand/no-equipment concurrent step
 
   _IpynbSched({
     required this.recipeIndex,
@@ -215,7 +219,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   int _leftMs = 0;
   bool _stepTimerStarted = false; // ✅ 用戶手動按 Start Timer 後才 true
   bool _stepManuallyCompleted = false; // ✅ 用戶按 Complete 後才 true
-  _ToolKey? _peekedTool; // ✅ 正在 peek 的 tile（null = 無 peek 模式）
+  // _ToolKey? _peekedTool; // ✅ 正在 peek 的 tile（null = 無 peek 模式）
+  Object? _peekedTile; // either _ToolKey or int (hand globalNo), or null
 
   Timer? _tick;
   DateTime? _startAt;
@@ -226,9 +231,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   // ---------------------------
   final Map<_ToolKey, _ToolTimerState> _toolTimers = {};
   Timer? _toolTick;
-
+  final Map<int, _ToolTimerState> _handTimers = {}; // keyed by globalNo
   // is ok queue（避免同一刻多個 timer 完成爆 dialog）
-  final List<_ToolKey> _okQueue = [];
+  //final List<_ToolKey> _okQueue = [];
+  final List<Object> _okQueue = []; // _ToolKey or int (hand globalNo)
   bool _okShowing = false;
 
   // bottom sheet open ratio -> hide right menu threshold
@@ -293,10 +299,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     return out;
   }
 
-  _ToolKey _inferTool(String text) {
+  _ToolKey? _inferTool(String text) {
     final t = text.toLowerCase();
-
-    // 超簡單推斷（你將來會由 DB 決定）
     if (t.contains('oven') || t.contains('bake') || t.contains('roast'))
       return _ToolKey.oven;
     if (t.contains('electric') ||
@@ -310,12 +314,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       return _ToolKey.stove;
     if (t.contains('pot') || t.contains('soup') || t.contains('simmer'))
       return _ToolKey.pot;
-    if (t.contains('chop') ||
-        t.contains('slice') ||
-        t.contains('wash') ||
-        t.contains('mix'))
-      return _ToolKey.prep;
-    return _ToolKey.hands;
+    return null; // no equipment — human/hand step
   }
 
   // ---------- ipynb 對齊：從 RecipeStep 取設備/並把「第二參數」視為秒 ----------
@@ -327,19 +326,18 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     return _readDurationSec(st);
   }
 
-  _ToolKey _toolFromRecipeStep(RecipeStep st) {
+  _ToolKey? _toolFromRecipeStep(RecipeStep st) {
     final eq = _normEquipment(_readRequiredEquipment(st));
 
-    // 1) 有明確設備：直接映射
     if (eq == 'stove') return _ToolKey.stove;
     if (eq == 'oven') return _ToolKey.oven;
     if (eq == 'pot') return _ToolKey.pot;
     if (eq == 'electric') return _ToolKey.electric;
 
-    // 2) 無設備但可離手：用 electric 當「背景 timer」(不改 UI 結構)
-    if (st.isConcurrent) return _ToolKey.electric;
+    // No equipment + concurrent → hand (null = dynamic hand timer)
+    if (st.isConcurrent) return null;
 
-    // 3) 無設備且要 attention：fallback 用文字推斷（盡量不影響舊 recipe）
+    // No equipment + attention → infer from text (may still be null)
     return _inferTool(st.text);
   }
 
@@ -375,6 +373,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           return max(0, _ovenCap);
         case 'attention':
           return 1;
+        case 'hand':
+          return 9999;
         default:
           return 9999;
       }
@@ -388,7 +388,6 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       if (_electricCap >= 1) _ToolKey.electric: 0,
       if (_electricCap >= 2) _ToolKey.electric2: 0,
       if (_ovenCap >= 1) _ToolKey.oven: 0,
-      _ToolKey.prep: 0,
     };
 
     _ToolKey pickFreeSlot(List<_ToolKey> cands, int startSec) {
@@ -416,8 +415,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       if (eq == 'electric') return 'electric';
       if (eq == 'oven') return 'oven';
 
-      // ✅ 無設備但 isConcurrent=true：當 electric 背景 timer（佔用其中一格）
-      if (eqRaw.isEmpty && st.isConcurrent) return 'electric';
+      if (eqRaw.isEmpty && st.isConcurrent) return 'hand';
 
       return '';
     }
@@ -503,7 +501,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           final end = t + dur;
 
           // ✅ 分配 6 格 Tile slot（獨立）
-          _ToolKey tool;
+          _ToolKey? tool;
           if (group == 'cookware') {
             final cands = [
               if (_cookwareCap >= 1) _ToolKey.pot,
@@ -521,13 +519,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           } else if (group == 'oven') {
             tool = _ToolKey.oven;
             slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
+          } else if (group == 'hand') {
+            tool = null; // no equipment slot — hand timer created at runtime
           } else {
-            final eCands = [
-              if (_electricCap >= 1) _ToolKey.electric,
-              if (_electricCap >= 2) _ToolKey.electric2,
-            ];
-            tool = pickFreeSlot(eCands, start);
-            slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
+            tool = null; // fallback safety
           }
 
           schedule.add(
@@ -580,10 +575,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             final start = t;
             final end = t + dur;
 
-            final inferred = _toolFromRecipeStep(st);
-            final tool = (inferred == _ToolKey.hands)
-                ? _ToolKey.prep
-                : inferred;
+            final tool = _toolFromRecipeStep(st);
 
             schedule.add(
               _IpynbSched(
@@ -777,7 +769,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     if (_hasPrecedingRunningTileTimer()) return 'Waiting for previous step…';
     if (!_isToolTimerStep(cur)) return null; // human step：唔受設備限制
 
-    final group = _equipmentGroupOf(cur.tool);
+    // Hand step: no equipment contention
+    if (cur.tool == null) return null;
+
+    final group = _equipmentGroupOf(cur.tool!);
     if (group.isEmpty) return null; // 無設備：唔阻
 
     // 數算正在跑緊嘅 timer 中屬於同一分組嘅數量
@@ -798,29 +793,37 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     if (_steps.isEmpty) return false;
     final cur = _steps[_idx];
 
+    // Check equipment timers
     for (final entry in _toolTimers.entries) {
       final t = entry.value;
-      // ✅ 前置 tile timer running 或 finished（用戶尚未 Complete）都算「前置未完成」
       if (!t.running && !t.finished) continue;
-
-      // 找到 ownerGlobalNo 對應的 step
-      final ownerIdx = t.ownerGlobalNo - 1; // globalNo 係 1-based
+      final ownerIdx = t.ownerGlobalNo - 1;
       if (ownerIdx < 0 || ownerIdx >= _steps.length) continue;
-
       final ownerStep = _steps[ownerIdx];
-      // 同一食譜 + 比當前步更早
       if (ownerStep.menuId == cur.menuId && ownerStep.globalNo < cur.globalNo) {
         return true;
       }
     }
+
+    // Check hand timers (same logic)
+    for (final entry in _handTimers.entries) {
+      final t = entry.value;
+      if (!t.running && !t.finished) continue;
+      final ownerIdx = t.ownerGlobalNo - 1;
+      if (ownerIdx < 0 || ownerIdx >= _steps.length) continue;
+      final ownerStep = _steps[ownerIdx];
+      if (ownerStep.menuId == cur.menuId && ownerStep.globalNo < cur.globalNo) {
+        return true;
+      }
+    }
+
     return false;
   }
 
   bool _calcCanNext() {
     if (!_flowStarted) return false;
     if (_steps.isEmpty) return false;
-    // ✅ Peek 模式中不可 Next（必須先退出 peek）
-    if (_peekedTool != null) return false;
+    if (_peekedTile != null) return false;
 
     final cur = _steps[_idx];
 
@@ -931,6 +934,25 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     if (mounted) setState(() {});
   }
 
+  void _startOrKeepHandTimer(int globalNo, int ms) {
+    if (ms <= 0) return;
+    final existing = _handTimers[globalNo];
+    if (existing != null && existing.running) return;
+
+    _handTimers[globalNo] = _ToolTimerState(
+      ownerGlobalNo: globalNo,
+      totalMs: ms,
+      startAt: DateTime.now(),
+      leftMs: ms,
+      running: true,
+      finished: false,
+      notified: false,
+    );
+
+    _ensureToolTick();
+    if (mounted) setState(() {});
+  }
+
   void _ensureToolTick() {
     if (_toolTick != null) return;
 
@@ -964,7 +986,29 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         }
       });
 
-      final anyRunning = _toolTimers.values.any((t) => t.running);
+      _handTimers.forEach((gNo, t) {
+        if (!t.running) return;
+        final elapsed = now.difference(t.startAt).inMilliseconds;
+        final left = max(0, t.totalMs - elapsed);
+        if ((left - t.leftMs).abs() >= 180 || left == 0) {
+          t.leftMs = left;
+          needSetState = true;
+        }
+        if (left <= 0) {
+          t.leftMs = 0;
+          t.running = false;
+          t.finished = true;
+          if (!t.notified) {
+            t.notified = true;
+            _enqueueIsOk(gNo); // int, not _ToolKey
+            needSetState = true;
+          }
+        }
+      });
+
+      final anyRunning =
+          _toolTimers.values.any((t) => t.running) ||
+          _handTimers.values.any((t) => t.running);
       if (!anyRunning) {
         _toolTick?.cancel();
         _toolTick = null;
@@ -978,7 +1022,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     });
   }
 
-  void _enqueueIsOk(_ToolKey k) {
+  void _enqueueIsOk(Object k) {
     if (_okQueue.contains(k)) return;
     _okQueue.add(k);
     _drainIsOkQueue();
@@ -1038,17 +1082,26 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     // ✅ Tile step：唔自動啟動 timer；但如果呢個 tile 已經喺跑緊（或已完成等用戶 Complete），
     //    就把 _stepTimerStarted 設 true，令按鈕顯示 Complete
     if (isTool) {
-      final existing = _toolTimers[s.tool];
-      _stepTimerStarted = existing != null &&
-          existing.ownerGlobalNo == s.globalNo &&  // ← add this
-          (existing.running || existing.finished);
+      if (s.tool != null) {
+        // Equipment tile
+        final existing = _toolTimers[s.tool!];
+        _stepTimerStarted =
+            existing != null &&
+            existing.ownerGlobalNo == s.globalNo &&
+            (existing.running || existing.finished);
+      } else {
+        // Hand tile
+        final existing = _handTimers[s.globalNo];
+        _stepTimerStarted =
+            existing != null && (existing.running || existing.finished);
+      }
     } else {
       _stepTimerStarted = false;
     }
 
     // ✅ 換步重置 manually-completed 及 peek 狀態
     _stepManuallyCompleted = s.durationMs <= 0; // 零時長步驟自動完成
-    _peekedTool = null; // 換步必定退出 peek 模式
+    _peekedTile = null;
 
     // ✅ Next Step 是否可按
     _finished = _calcCanNext();
@@ -1078,11 +1131,15 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       _stepManuallyCompleted = false; // ✅ 重啟 timer 時重置 complete 狀態
       if (isTool) {
         if (s.durationMs > 0) {
-          _startOrKeepToolTimer(
-            s.tool,
-            s.durationMs,
-            ownerGlobalNo: s.globalNo,
-          );
+          if (s.tool != null) {
+            _startOrKeepToolTimer(
+              s.tool!,
+              s.durationMs,
+              ownerGlobalNo: s.globalNo,
+            );
+          } else {
+            _startOrKeepHandTimer(s.globalNo, s.durationMs);
+          }
         }
       } else {
         if (s.durationMs > 0) {
@@ -1095,22 +1152,31 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   // ---------- new: complete / peek helpers ----------
 
-  /// 內部 helper：從 tile 移除 timer、標記 step done、退出 peek
-  void _doCompleteTile(_ToolKey tool) {
+  void _doCompleteEquipmentTile(_ToolKey tool) {
     final owner = _toolTimers[tool]?.ownerGlobalNo;
     _toolTimers.remove(tool);
     if (owner != null) _doneGlobalNos.add(owner);
-    if (_peekedTool == tool) _peekedTool = null;
+    if (_peekedTile is _ToolKey && _peekedTile == tool) _peekedTile = null;
   }
 
-  /// "Complete" 按鈕的 callback（覆蓋 non-concurrent 和 concurrent）
+  void _doCompleteHandTile(int globalNo) {
+    _handTimers.remove(globalNo); // ← tile disappears entirely
+    _doneGlobalNos.add(globalNo);
+    if (_peekedTile is int && _peekedTile == globalNo) _peekedTile = null;
+  }
+
   void _completeCurrentStep() {
     if (!_flowStarted || _steps.isEmpty) return;
 
-    // ✅ Peek 模式：完成 peeked tile step
-    if (_peekedTool != null) {
+    // Peek mode
+    if (_peekedTile != null) {
       setState(() {
-        _doCompleteTile(_peekedTool!);
+        if (_peekedTile is _ToolKey) {
+          _doCompleteEquipmentTile(_peekedTile as _ToolKey);
+        } else if (_peekedTile is int) {
+          _doCompleteHandTile(_peekedTile as int);
+        }
+        _peekedTile = null;
         _finished = _calcCanNext();
       });
       return;
@@ -1121,13 +1187,15 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     setState(() {
       _stepManuallyCompleted = true;
-      _stepTimerStarted = false; // ✅ 重置，允許再次按 Start Timer 重開
+      _stepTimerStarted = false;
 
       if (isTool) {
-        // ✅ Concurrent：提前完成 tile timer
-        _doCompleteTile(s.tool);
+        if (s.tool != null) {
+          _doCompleteEquipmentTile(s.tool!);
+        } else {
+          _doCompleteHandTile(s.globalNo);
+        }
       } else {
-        // ✅ Non-concurrent：停止人手倒數
         _stopTick();
         _running = false;
       }
@@ -1135,17 +1203,27 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     });
   }
 
-  /// 切換 tile peek 模式（點擊 tile）
-  void _togglePeek(_ToolKey tool) {
+  void _togglePeekEquipment(_ToolKey tool) {
     setState(() {
-      _peekedTool = (_peekedTool == tool) ? null : tool;
+      _peekedTile = (_peekedTile == tool) ? null : tool;
       _finished = _calcCanNext();
     });
   }
 
-  /// 返回某個 tile 對應的 FlowStep（用於 peek 顯示）
-  _FlowStep? _stepForTool(_ToolKey tool) {
-    final ownerNo = _toolTimers[tool]?.ownerGlobalNo;
+  void _togglePeekHand(int globalNo) {
+    setState(() {
+      _peekedTile = (_peekedTile == globalNo) ? null : globalNo;
+      _finished = _calcCanNext();
+    });
+  }
+
+  _FlowStep? _stepForPeeked(Object key) {
+    int? ownerNo;
+    if (key is _ToolKey) {
+      ownerNo = _toolTimers[key]?.ownerGlobalNo;
+    } else if (key is int) {
+      ownerNo = _handTimers[key]?.ownerGlobalNo;
+    }
     if (ownerNo == null) return null;
     for (final s in _steps) {
       if (s.globalNo == ownerNo) return s;
@@ -1153,7 +1231,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     return null;
   }
 
-  void _goNext() {    if (!_flowStarted || _steps.isEmpty) return;
+  void _goNext() {
+    if (!_flowStarted || _steps.isEmpty) return;
 
     final cur = _steps[_idx];
     final isTool = _isToolTimerStep(cur);
@@ -1277,6 +1356,33 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   bool _toolTimerFinished(_ToolKey k) {
     return _toolTimers[k]?.finished ?? false;
+  }
+
+  bool _handTimerActive(int gNo) {
+    final t = _handTimers[gNo];
+    return _flowStarted && t != null && (t.running || t.finished);
+  }
+
+  String _handCountText(int gNo) {
+    final t = _handTimers[gNo];
+    if (t == null) return '';
+    if (t.finished) return 'Done!';
+    return _fmtLeft(t.leftMs);
+  }
+
+  int _handShakeMs(int gNo) {
+    final t = _handTimers[gNo];
+    if (t == null) return 420;
+    if (t.finished) return 500;
+    return _calcShakeMs(
+      totalMs: t.totalMs,
+      leftMs: t.leftMs,
+      finished: t.finished,
+    );
+  }
+
+  bool _handTimerFinished(int gNo) {
+    return _handTimers[gNo]?.finished ?? false;
   }
 
   Future<void> _openMenuStepsDialog(Recipe r) async {
@@ -1416,10 +1522,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   Widget build(BuildContext context) {
     final step = _steps.isEmpty ? null : _steps[_idx];
 
-    final activeToolRaw = step?.tool ?? _ToolKey.prep;
-    final activeTool = (activeToolRaw == _ToolKey.hands)
-        ? _ToolKey.prep
-        : activeToolRaw;
+    final activeTool = step?.tool;
     final title = widget.titleOverride ?? 'Cooking';
 
     // ✅ Step 卡只顯示「人手倒數」
@@ -1427,23 +1530,42 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         ? _fmtLeft(_leftMs)
         : '--';
 
-    // ✅ Peek mode：顯示 peeked tile 的步驟和倒數
-    final peekedStep = _peekedTool == null ? null : _stepForTool(_peekedTool!);
-    final displayStep = peekedStep ?? step;
-    final displayTimerStarted = _peekedTool != null ? true : _stepTimerStarted;
-    final isPeeking = _peekedTool != null;
-    // ✅ 當前展示的是一個已完成的 tile step（用或不用 peek 模式）
-    final currentTileFinished = !isPeeking &&
+    final peekedStep = _peekedTile == null
+        ? null
+        : _stepForPeeked(_peekedTile!);
+    final isPeeking = _peekedTile != null;
+
+    // Current tile finished (equipment OR hand)
+    final currentTileFinished =
+        !isPeeking &&
         step != null &&
         _isToolTimerStep(step) &&
-        (_toolTimers[step.tool]?.finished ?? false);
-    final displayTimerText = _peekedTool != null
-        ? _toolCountText(_peekedTool!)
+        (step.tool != null
+            ? (_toolTimers[step.tool]?.finished ?? false)
+            : (_handTimers[step.globalNo]?.finished ?? false));
+
+    // Display timer text for peek
+    String _peekedCountText() {
+      if (_peekedTile is _ToolKey)
+        return _toolCountText(_peekedTile as _ToolKey);
+      if (_peekedTile is int) return _handCountText(_peekedTile as int);
+      return '';
+    }
+
+    bool _peekedFinished() {
+      if (_peekedTile is _ToolKey)
+        return _toolTimerFinished(_peekedTile as _ToolKey);
+      if (_peekedTile is int) return _handTimerFinished(_peekedTile as int);
+      return false;
+    }
+
+    final displayTimerText = isPeeking
+        ? _peekedCountText()
         : currentTileFinished
-            ? 'Done!'
-            : stepTimeText;
+        ? 'Done!'
+        : stepTimeText;
     final displayCountdownDone = isPeeking
-        ? (_toolTimers[_peekedTool]?.finished ?? false)
+        ? _peekedFinished()
         : currentTileFinished || (_stepMs > 0 && _leftMs <= 0);
     // 右邊菜單最多 5 個（已改為上方橫向 Row）
     final menusForRight = _menus.take(5).toList(growable: false);
@@ -1454,9 +1576,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       if (_electricCap >= 1) (_ToolKey.electric, Symbols.electrical_services),
       if (_electricCap >= 2) (_ToolKey.electric2, Symbols.electrical_services),
       if (_ovenCap >= 1) (_ToolKey.oven, Symbols.oven_gen),
-      (_ToolKey.prep, Symbols.front_hand),
     ];
-
+    final handItems = _handTimers.keys
+        .toList(); // List<int> of active globalNos
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -1487,32 +1609,44 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                       activeTool: activeTool,
                       glowEnabled: _flowStarted,
                       items: toolItems,
+                      handItems: handItems,
                       timerActiveOf: _toolTimerActive,
                       finishedOf: _toolTimerFinished,
                       shakeMsOf: _toolShakeMs,
                       countTextOf: _toolCountText,
-                      peekedTool: _peekedTool,
-                      onTileTap: _togglePeek,
+                      handTimerActiveOf: _handTimerActive,
+                      handFinishedOf: _handTimerFinished,
+                      handShakeMsOf: _handShakeMs,
+                      handCountTextOf: _handCountText,
+                      peekedTile: _peekedTile,
+                      onEquipmentTileTap: _togglePeekEquipment,
+                      onHandTileTap: _togglePeekHand,
                     ),
 
                     const SizedBox(height: 12),
 
                     _StepCard(
-                      step: displayStep,
+                      step: isPeeking ? _stepForPeeked(_peekedTile!) : step,
                       flowStarted: _flowStarted,
                       running: _running,
                       canNext: _finished,
                       countdownDone: displayCountdownDone,
                       canPrev: _idx > 0,
-                      timerStarted: displayTimerStarted,
+                      timerStarted: isPeeking ? true : _stepTimerStarted,
                       // ✅ 如果 timer 已啟動，就展示 Complete，不要變回「Waiting for area」
-                      startTimerBlockReason: (_stepTimerStarted || isPeeking) ? null : _startTimerBlockReason(),
+                      startTimerBlockReason: (_stepTimerStarted || isPeeking)
+                          ? null
+                          : _startTimerBlockReason(),
                       leftText: displayTimerText,
                       isPeeking: isPeeking,
                       stepManuallyCompleted: _stepManuallyCompleted,
                       onNext: _goNext,
                       onPrev: _goPrev,
-                      onStartTimer: (displayStep?.durationMs ?? 0) > 0
+                      onStartTimer:
+                          ((isPeeking ? _stepForPeeked(_peekedTile!) : step)
+                                      ?.durationMs ??
+                                  0) >
+                              0
                           ? (isPeeking ? null : _startStepTimer)
                           : null,
                       onComplete: _completeCurrentStep,
@@ -1550,37 +1684,54 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 // ----------------- widgets -----------------
 
 class _ToolIconsFrame extends StatelessWidget {
-  final _ToolKey activeTool;
+  final _ToolKey? activeTool; // nullable — null means hand step
   final bool glowEnabled;
-  final List<(_ToolKey, IconData)> items; // ← 加這行
+  final List<(_ToolKey, IconData)> items; // equipment tiles
+  final List<int> handItems; // active hand tile globalNos
 
+  // Equipment callbacks
   final bool Function(_ToolKey) timerActiveOf;
-  final bool Function(_ToolKey) finishedOf; // ✅ tile 已完成但等 Complete
+  final bool Function(_ToolKey) finishedOf;
   final int Function(_ToolKey) shakeMsOf;
   final String Function(_ToolKey) countTextOf;
 
-  // ✅ Peek support
-  final _ToolKey? peekedTool;
-  final void Function(_ToolKey)? onTileTap;
+  // Hand callbacks
+  final bool Function(int) handTimerActiveOf;
+  final bool Function(int) handFinishedOf;
+  final int Function(int) handShakeMsOf;
+  final String Function(int) handCountTextOf;
+
+  // Peek: Object? (either _ToolKey or int)
+  final Object? peekedTile;
+  final void Function(_ToolKey)? onEquipmentTileTap;
+  final void Function(int)? onHandTileTap;
 
   const _ToolIconsFrame({
     required this.activeTool,
     required this.glowEnabled,
-    required this.items, // ← 加這行
+    required this.items,
+    required this.handItems,
     required this.timerActiveOf,
     required this.finishedOf,
     required this.shakeMsOf,
     required this.countTextOf,
-    this.peekedTool,
-    this.onTileTap,
+    required this.handTimerActiveOf,
+    required this.handFinishedOf,
+    required this.handShakeMsOf,
+    required this.handCountTextOf,
+    this.peekedTile,
+    this.onEquipmentTileTap,
+    this.onHandTileTap,
   });
 
   static const _accent = Color(0xFF16A34A);
-  static const _peekAccent = Color(0xFFFBBF24); // Amber for peek highlight
-  static const _finishedAccent = Color(0xFFF59E0B); // Orange-amber for finished
+  static const _peekAccent = Color(0xFFFBBF24);
+  static const _finishedAccent = Color(0xFFF59E0B);
 
   @override
   Widget build(BuildContext context) {
+    final totalCount = items.length + handItems.length;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1588,153 +1739,224 @@ class _ToolIconsFrame extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
-      child: GridView.builder(
-        itemCount: items.length,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: items.length <= 2 ? 2 : 3,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 1,
-        ),
-        itemBuilder: (_, i) {
-          final k = items[i].$1;
-          final icon = items[i].$2;
-
-          // 未開始前 glowEnabled=false -> 全部 active=false
-          final active = glowEnabled && (k == activeTool);
-          final isPeeked = peekedTool == k;
-
-          final timerActive = timerActiveOf(k);
-          final isFinished = finishedOf(k); // ✅ 完成但未 Complete
-          final shakeMs = shakeMsOf(k);
-          final countText = countTextOf(k);
-
-          // ✅ 邊框顏色優先順序：finished > peek > active > 預設
-          final borderColor = isFinished
-              ? _finishedAccent.withValues(alpha: 0.90)
-              : isPeeked
-                  ? _peekAccent.withValues(alpha: 0.85)
-                  : active
-                      ? _accent.withValues(alpha: 0.65)
-                      : Colors.white.withValues(alpha: 0.10);
-          final borderWidth = (isFinished || isPeeked || active) ? 2.5 : 1.0;
-          final shadows = isFinished
-              ? [
-                  BoxShadow(
-                    color: _finishedAccent.withValues(alpha: 0.45),
-                    blurRadius: 22,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : isPeeked
-                  ? [
-                      BoxShadow(
-                        color: _peekAccent.withValues(alpha: 0.35),
-                        blurRadius: 20,
-                        offset: const Offset(0, 6),
-                      ),
-                    ]
-                  : active
-                      ? [
-                          BoxShadow(
-                            color: _accent.withValues(alpha: 0.25),
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
-                          ),
-                        ]
-                      : null;
-
-          return GestureDetector(
-            onTap: timerActive ? () => onTileTap?.call(k) : null,
-            child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF0B1220),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: borderColor,
-                width: borderWidth,
+      child: totalCount == 0
+          ? const SizedBox.shrink()
+          : GridView.builder(
+              itemCount: totalCount,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: totalCount <= 2 ? 2 : 3,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 1,
               ),
-              boxShadow: shadows,
+              itemBuilder: (_, i) {
+                if (i < items.length) {
+                  return _buildEquipmentTile(items[i].$1, items[i].$2);
+                } else {
+                  final gNo = handItems[i - items.length];
+                  return _buildHandTile(gNo);
+                }
+              },
             ),
-            child: Stack(
-              children: [
-                // 底層：器具 icon
-                Center(
-                  child: Icon(
-                    icon,
-                    size: 30,
-                    color: Colors.white.withValues(alpha: active ? 0.95 : 0.70),
-                  ),
-                ),
+    );
+  }
 
-                // 中層：白色半透明遮罩（scrim）- 只要器具 timer active 就顯示
-                if (timerActive)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
+  Widget _buildEquipmentTile(_ToolKey k, IconData icon) {
+    final active = glowEnabled && (k == activeTool);
+    final isPeeked = peekedTile is _ToolKey && peekedTile == k;
 
-                // ✅ Peek 高亮遮罩（amber 微光）
-                if (isPeeked)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _peekAccent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
+    final timerActive = timerActiveOf(k);
+    final isFinished = finishedOf(k);
+    final shakeMs = shakeMsOf(k);
+    final countText = countTextOf(k);
 
-                // ✅ Finished 脈動光暈（橙色 edge glow）— 提醒用戶去 Complete
-                if (isFinished)
-                  Positioned.fill(
-                    child: _FinishedPulseOverlay(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-
-                // 上層：大鬧鐘（置中 + 搖擺）
-                if (timerActive)
-                  Positioned.fill(child: _AlarmOverlay(shakeMs: shakeMs)),
-
-                // 最上層：倒數 badge（右下）
-                if (timerActive && countText.isNotEmpty)
-                  Positioned(
-                    right: 8,
-                    bottom: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.86),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: Colors.black.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Text(
-                        countText,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+    final borderColor = isFinished
+        ? _finishedAccent.withValues(alpha: 0.90)
+        : isPeeked
+        ? _peekAccent.withValues(alpha: 0.85)
+        : active
+        ? _accent.withValues(alpha: 0.65)
+        : Colors.white.withValues(alpha: 0.10);
+    final borderWidth = (isFinished || isPeeked || active) ? 2.5 : 1.0;
+    final shadows = isFinished
+        ? [
+            BoxShadow(
+              color: _finishedAccent.withValues(alpha: 0.45),
+              blurRadius: 22,
+              offset: const Offset(0, 4),
             ),
-          )); // ✅ closes Stack → Container → GestureDetector
-        },
+          ]
+        : isPeeked
+        ? [
+            BoxShadow(
+              color: _peekAccent.withValues(alpha: 0.35),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ]
+        : active
+        ? [
+            BoxShadow(
+              color: _accent.withValues(alpha: 0.25),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ]
+        : null;
+
+    return GestureDetector(
+      onTap: timerActive ? () => onEquipmentTileTap?.call(k) : null,
+      child: SizedBox(
+        width: 90,
+        height: 90,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B1220),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: borderWidth),
+            boxShadow: shadows,
+          ),
+          child: _tileStack(
+            icon: icon,
+            active: active,
+            isPeeked: isPeeked,
+            timerActive: timerActive,
+            isFinished: isFinished,
+            shakeMs: shakeMs,
+            countText: countText,
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildHandTile(int gNo) {
+    final isPeeked = peekedTile is int && peekedTile == gNo;
+
+    final timerActive = handTimerActiveOf(gNo);
+    final isFinished = handFinishedOf(gNo);
+    final shakeMs = handShakeMsOf(gNo);
+    final countText = handCountTextOf(gNo);
+
+    // No green active border for hand tiles — only finished / peeked / default
+    final borderColor = isFinished
+        ? _finishedAccent.withValues(alpha: 0.90)
+        : isPeeked
+        ? _peekAccent.withValues(alpha: 0.85)
+        : Colors.white.withValues(alpha: 0.10);
+    final borderWidth = (isFinished || isPeeked) ? 2.5 : 1.0;
+    final shadows = isFinished
+        ? [
+            BoxShadow(
+              color: _finishedAccent.withValues(alpha: 0.45),
+              blurRadius: 22,
+              offset: const Offset(0, 4),
+            ),
+          ]
+        : isPeeked
+        ? [
+            BoxShadow(
+              color: _peekAccent.withValues(alpha: 0.35),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ]
+        : null;
+
+    return GestureDetector(
+      onTap: timerActive ? () => onHandTileTap?.call(gNo) : null,
+      child: SizedBox(
+        width: 90,
+        height: 90,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B1220),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: borderWidth),
+            boxShadow: shadows,
+          ),
+          child: _tileStack(
+            icon: Symbols.front_hand,
+            active: false, // never green for hand
+            isPeeked: isPeeked,
+            timerActive: timerActive,
+            isFinished: isFinished,
+            shakeMs: shakeMs,
+            countText: countText,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tileStack({
+    required IconData icon,
+    required bool active,
+    required bool isPeeked,
+    required bool timerActive,
+    required bool isFinished,
+    required int shakeMs,
+    required String countText,
+  }) {
+    return Stack(
+      children: [
+        Center(
+          child: Icon(
+            icon,
+            size: 30,
+            color: Colors.white.withValues(alpha: active ? 0.95 : 0.70),
+          ),
+        ),
+        if (timerActive)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        if (isPeeked)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: _peekAccent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        if (isFinished)
+          Positioned.fill(
+            child: _FinishedPulseOverlay(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        if (timerActive)
+          Positioned.fill(child: _AlarmOverlay(shakeMs: shakeMs)),
+        if (timerActive && countText.isNotEmpty)
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.86),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+              ),
+              child: Text(
+                countText,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1837,9 +2059,10 @@ class _FinishedPulseOverlayState extends State<_FinishedPulseOverlay>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
-    _opacity = Tween<double>(begin: 0.10, end: 0.45).animate(
-      CurvedAnimation(parent: _ctl, curve: Curves.easeInOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.10,
+      end: 0.45,
+    ).animate(CurvedAnimation(parent: _ctl, curve: Curves.easeInOut));
   }
 
   @override
@@ -1857,7 +2080,9 @@ class _FinishedPulseOverlayState extends State<_FinishedPulseOverlay>
           decoration: BoxDecoration(
             borderRadius: widget.borderRadius,
             border: Border.all(
-              color: const Color(0xFFF59E0B).withValues(alpha: _opacity.value * 2),
+              color: const Color(
+                0xFFF59E0B,
+              ).withValues(alpha: _opacity.value * 2),
               width: 2.5,
             ),
             color: const Color(0xFFF59E0B).withValues(alpha: _opacity.value),
@@ -1878,12 +2103,12 @@ class _StepCard extends StatelessWidget {
   final bool timerStarted; // ✅ 當前 step 的 timer 已啟動
   final String? startTimerBlockReason; // ✅ 非 null = 設備被佔滿，禁用 + 顯示原因
   final String leftText;
-  final bool isPeeking;              // ✅ 正在 peek 一個 background tile
+  final bool isPeeking; // ✅ 正在 peek 一個 background tile
   final bool stepManuallyCompleted; // ✅ 用戶已按 Complete
   final VoidCallback onNext;
   final VoidCallback onPrev;
   final VoidCallback? onStartTimer; // null = 此 step 無時長，隱藏按鈕
-  final VoidCallback onComplete;   // ✅ Complete 按鈕 callback
+  final VoidCallback onComplete; // ✅ Complete 按鈕 callback
 
   const _StepCard({
     required this.step,
@@ -1997,8 +2222,11 @@ class _StepCard extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.remove_red_eye_outlined,
-                      color: Color(0xFFFBBF24), size: 14),
+                  Icon(
+                    Icons.remove_red_eye_outlined,
+                    color: Color(0xFFFBBF24),
+                    size: 14,
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Background step — Tap tile again to return',
@@ -2033,11 +2261,13 @@ class _StepCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFF7C3A00).withValues(alpha: 0.30),
+                        backgroundColor: const Color(
+                          0xFF7C3A00,
+                        ).withValues(alpha: 0.30),
                         foregroundColor: const Color(0xFFFBBF24),
-                        disabledBackgroundColor:
-                            const Color(0xFF7C3A00).withValues(alpha: 0.30),
+                        disabledBackgroundColor: const Color(
+                          0xFF7C3A00,
+                        ).withValues(alpha: 0.30),
                         disabledForegroundColor: const Color(0xFFFBBF24),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -2049,51 +2279,53 @@ class _StepCard extends StatelessWidget {
                       ),
                     )
                   : timerStarted
-                      // ── 狀態 2：timer 已啟動（或 peek 中）→ "Complete" 綠色按鈕
-                      ? FilledButton.icon(
-                          onPressed: flowStarted ? onComplete : null,
-                          icon: const Icon(Icons.check_circle_outline, size: 18),
-                          label: const Text(
-                            'Complete',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 15,
-                            ),
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF16A34A),
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                const Color(0xFF16A34A).withValues(alpha: 0.40),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        )
-                      // ── 狀態 3：尚未 start → "Start Timer" 按鈕
-                      : FilledButton.icon(
-                          onPressed: flowStarted ? onStartTimer : null,
-                          icon: const Icon(Icons.timer_outlined, size: 18),
-                          label: const Text(
-                            'Start Timer',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 15,
-                            ),
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.22),
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                Colors.white.withValues(alpha: 0.08),
-                            disabledForegroundColor:
-                                Colors.white.withValues(alpha: 0.40),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
+                  // ── 狀態 2：timer 已啟動（或 peek 中）→ "Complete" 綠色按鈕
+                  ? FilledButton.icon(
+                      onPressed: flowStarted ? onComplete : null,
+                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                      label: const Text(
+                        'Complete',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
                         ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: const Color(
+                          0xFF16A34A,
+                        ).withValues(alpha: 0.40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    )
+                  // ── 狀態 3：尚未 start → "Start Timer" 按鈕
+                  : FilledButton.icon(
+                      onPressed: flowStarted ? onStartTimer : null,
+                      icon: const Icon(Icons.timer_outlined, size: 18),
+                      label: const Text(
+                        'Start Timer',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.22),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.white.withValues(
+                          alpha: 0.08,
+                        ),
+                        disabledForegroundColor: Colors.white.withValues(
+                          alpha: 0.40,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
             ),
             const SizedBox(height: 8),
           ],
@@ -2113,10 +2345,12 @@ class _StepCard extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white.withValues(alpha: 0.12),
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor:
-                          Colors.white.withValues(alpha: 0.06),
-                      disabledForegroundColor:
-                          Colors.white.withValues(alpha: 0.25),
+                      disabledBackgroundColor: Colors.white.withValues(
+                        alpha: 0.06,
+                      ),
+                      disabledForegroundColor: Colors.white.withValues(
+                        alpha: 0.25,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -2139,10 +2373,12 @@ class _StepCard extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white.withValues(alpha: 0.18),
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor:
-                          Colors.white.withValues(alpha: 0.10),
-                      disabledForegroundColor:
-                          Colors.white.withValues(alpha: 0.35),
+                      disabledBackgroundColor: Colors.white.withValues(
+                        alpha: 0.10,
+                      ),
+                      disabledForegroundColor: Colors.white.withValues(
+                        alpha: 0.35,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
