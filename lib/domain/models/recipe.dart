@@ -1,4 +1,4 @@
-// [OOP] 資料模型：一個菜式/食譜（步驟、所需食材、封面等）。
+// [OOP] 資料模型：一個菜式/食譜（步驟、所需食材、封面等）.
 
 class Recipe {
   final String menuId;
@@ -16,6 +16,10 @@ class Recipe {
   /// 真正食材資料來源（全系統只用呢個）
   final List<RecipeIngredient> recipeIngredients;
 
+  /// 需要嘅廚房器材類別，對應 AppState._appliances 嘅 key：
+  /// 'cookware' | 'stove' | 'electric' | 'bake'
+  final List<String> requiredAppliances;
+
   const Recipe({
     required this.menuId,
     required this.name,
@@ -26,6 +30,7 @@ class Recipe {
     required this.steps,
     required this.totalTimeMinutes,
     this.recipeIngredients = const [],
+    this.requiredAppliances = const [],
   });
 
   List<String> get ingredientIds =>

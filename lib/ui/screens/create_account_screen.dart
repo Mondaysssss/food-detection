@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // add
 import 'home_shell.dart';
 import '../../domain/services/auth_service.dart'; // add
-
 import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
+import 'persona_wizard_screen.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -67,20 +67,37 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       final user = _auth.currentUser;
       if (user != null && mounted) {
         final appState = context.read<AppState>();
-        await _auth.savePreferences(
-          uid: user.uid,
-          gender: appState.gender,
-          age: appState.age,
-          appliances: Map<String, int>.from(appState.appliances),
-          allergies: appState.allergies.toList(),
-        );
-      }
 
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Account created!')));
-        _goHome();
+        if (appState.gender != null) {
+          // 已做過 Wizard → 存 Firestore → 去首頁
+          await _auth.savePreferences(
+            uid: user.uid,
+            gender: appState.gender,
+            age: appState.age,
+            appliances: Map<String, int>.from(appState.appliances),
+            allergies: appState.allergies.toList(),
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Account created!')));
+            _goHome();
+          }
+        } else {
+          // 沒做過 Wizard → 去 Wizard（完成後存 Firestore + 去首頁）
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Account created!')));
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    const PersonaWizardScreen(goHomeAfterFinish: true),
+              ),
+            );
+          }
+        }
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {

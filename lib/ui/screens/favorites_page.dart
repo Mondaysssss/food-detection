@@ -16,13 +16,22 @@ class FavoritesPage extends StatelessWidget {
     final favList = kRecipes.where((r) => favIds.contains(r.menuId)).toList();
 
     if (favList.isEmpty) {
-      return glass(child: const Text('No favorite menus yet.', style: TextStyle(color: Colors.white70)));
+      return glass(
+        child: const Text(
+          'No favorite menus yet.',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
     }
 
     return LayoutBuilder(
       builder: (_, c) {
         final w = c.maxWidth;
-        final cols = w >= 1100 ? 3 : w >= 750 ? 2 : 1;
+        final cols = w >= 1100
+            ? 3
+            : w >= 750
+            ? 2
+            : 1;
 
         return GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -40,10 +49,12 @@ class FavoritesPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(18),
+                    ),
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
-                      child: Image.network(r.cover, fit: BoxFit.cover),
+                      child: Image.asset(r.cover, fit: BoxFit.cover),
                     ),
                   ),
                   Padding(
@@ -51,10 +62,18 @@ class FavoritesPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text(
+                          r.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                         const SizedBox(height: 2),
-                        Text('${r.type} ・ ${r.taste.join('/ ')}',
-                            style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                        Text(
+                          '${r.type} ・ ${r.taste.join('/ ')}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
                       ],
                     ),
                   ),

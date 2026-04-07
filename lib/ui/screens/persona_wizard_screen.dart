@@ -8,9 +8,12 @@ import '../../state/app_state.dart';
 import '../widgets/page_frame.dart';
 import '../widgets/glass.dart';
 import 'login_screen.dart';
+import '../../domain/services/auth_service.dart'; // 新增
+import 'home_shell.dart'; // 新增
 
 class PersonaWizardScreen extends StatefulWidget {
-  const PersonaWizardScreen({super.key});
+  final bool goHomeAfterFinish; // ← 新增
+  const PersonaWizardScreen({super.key, this.goHomeAfterFinish = false});
 
   @override
   State<PersonaWizardScreen> createState() => _PersonaWizardScreenState();
@@ -51,8 +54,8 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   int _age = 18;
 
   final Map<String, int> _appliances = {
-    'cookware': 0,
-    'stove': 0,
+    'cookware': 1,
+    'stove': 1,
     'electric': 0,
     'bake': 0,
   };
@@ -147,7 +150,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     }
   }
 
-  void _nextOrFinish() {
+  Future<void> _nextOrFinish() async {
     if (!_canProceed) return;
 
     if (_index < _questions.length - 1) {
@@ -161,10 +164,34 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       );
       context.read<AppState>().setAllergies(Set<String>.from(_allergies));
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      if (widget.goHomeAfterFinish) {
+        // 從登入/建帳流程過來 → 存 Firestore → 去 HomeShell
+        final auth = AuthService();
+        final user = auth.currentUser;
+        if (user != null) {
+          final app = context.read<AppState>();
+          await auth.savePreferences(
+            uid: user.uid,
+            gender: app.gender,
+            age: app.age,
+            appliances: Map<String, int>.from(app.appliances),
+            allergies: app.allergies.toList(),
+          );
+        }
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 0)),
+            (_) => false,
+          );
+        }
+      } else {
+        // 從 IntroStartScreen 過來 → 去 LoginScreen（現有行為）
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
     }
   }
 
@@ -179,11 +206,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Personalization'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Close',
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: PageFrame(
         child: Column(
@@ -336,14 +359,15 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
           Builder(
             builder: (context) {
               final key = r.$2;
+              final min = _applianceMin[key] ?? 0;
               final max = _applianceMax[key] ?? 4;
 
               final ddItems = List<DropdownMenuItem<int>>.generate(
-                max + 1,
+                max - min + 1,
                 (i) => DropdownMenuItem(
-                  value: i,
+                  value: i + min,
                   child: Text(
-                    i.toString(),
+                    (i + min).toString(),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -363,10 +387,23 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                r.$1,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 17),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    r.$1,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontSize: 17),
+                                  ),
+                                  if ((_applianceMin[key] ?? 0) > 0)
+                                    Text(
+                                      '(min: ${_applianceMin[key]})',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -404,14 +441,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       'Shellfish (shrimp, crab, lobster)',
       'Wheat (gluten)',
       'Soy (soybeans / soy products)',
-      'Mango',
-      'Kiwi',
-      'Avocado',
-      'Sesame / sesame oil',
-      'Coconut',
-      'Tomato',
       'Beef / pork',
-      'Taro',
     ];
 
     return Padding(

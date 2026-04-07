@@ -15,6 +15,7 @@ import '../../../state/app_state.dart';
 
 import '../../../data/recipes_data.dart';
 import '../../../domain/models/recipe.dart';
+import '../../../domain/services/auth_service.dart';
 
 // ✅ 供全檔使用（包括 Bottom Sheet / Menu Modal）
 String _fmtLeft(int ms) {
@@ -194,15 +195,17 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   // flow
   late final List<Recipe> _menus = _resolveMenus();
-  late final List<_FlowStep> _steps = _buildFlowSteps(_menus);
+  late List<_FlowStep> _steps = const [];
+  late int _cookwareCap;
+  late int _electricCap;
+  late int _ovenCap;
 
   int _idx = 0;
 
   // ✅ 真正完成（倒數完成 + 用戶確認/前進）先算 ✓
   final Set<int> _doneGlobalNos = <int>{};
 
-  // ✅ 每一步：同一食譜的上一個 global step（用嚟判斷「可唔可以進入下一步」）
-  late final Map<int, int> _prevSameRecipe = _buildPrevSameRecipeMap(_steps);
+  late Map<int, int> _prevSameRecipe = {};
   // ---------------------------
   // A) Step countdown（人手）
   // ---------------------------
@@ -236,8 +239,16 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   void initState() {
     super.initState();
 
+    final app = context.read<AppState>();
+    final a = app.appliances;
+    _cookwareCap = min(a['cookware'] ?? 1, a['stove'] ?? 1);
+    _electricCap = a['electric'] ?? 0;
+    _ovenCap = a['bake'] ?? 0;
+
+    _steps = _buildFlowSteps(_menus);
+    _prevSameRecipe = _buildPrevSameRecipeMap(_steps);
+
     if (_steps.isNotEmpty) {
-      // 未開始：只設定 Step 顯示（唔自動開始）
       _applyStep(_idx, startIfFlowStarted: false);
     }
   }
@@ -357,11 +368,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     int capOf(String res) {
       switch (res) {
         case 'cookware':
-          return 2; // 兩格：pot + stove
+          return max(1, _cookwareCap);
         case 'electric':
-          return 2; // 兩格：electric + electric2
+          return max(0, _electricCap);
         case 'oven':
-          return 1;
+          return max(0, _ovenCap);
         case 'attention':
           return 1;
         default:
@@ -371,13 +382,12 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     int useOf(String res) => usage[res] ?? 0;
 
-    // ✅ 6 格 Tile slot（busyUntil 用嚟確保「同一時間兩個 stove 會落兩格」）
     final slotBusyUntil = <_ToolKey, int>{
-      _ToolKey.pot: 0,
-      _ToolKey.stove: 0,
-      _ToolKey.electric: 0,
-      _ToolKey.electric2: 0,
-      _ToolKey.oven: 0,
+      if (_cookwareCap >= 1) _ToolKey.pot: 0,
+      if (_cookwareCap >= 2) _ToolKey.stove: 0,
+      if (_electricCap >= 1) _ToolKey.electric: 0,
+      if (_electricCap >= 2) _ToolKey.electric2: 0,
+      if (_ovenCap >= 1) _ToolKey.oven: 0,
       _ToolKey.prep: 0,
     };
 
@@ -495,22 +505,28 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           // ✅ 分配 6 格 Tile slot（獨立）
           _ToolKey tool;
           if (group == 'cookware') {
-            tool = pickFreeSlot(const [_ToolKey.pot, _ToolKey.stove], start);
+            final cands = [
+              if (_cookwareCap >= 1) _ToolKey.pot,
+              if (_cookwareCap >= 2) _ToolKey.stove,
+            ];
+            tool = pickFreeSlot(cands, start);
             slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
           } else if (group == 'electric') {
-            tool = pickFreeSlot(const [
-              _ToolKey.electric,
-              _ToolKey.electric2,
-            ], start);
+            final eCands = [
+              if (_electricCap >= 1) _ToolKey.electric,
+              if (_electricCap >= 2) _ToolKey.electric2,
+            ];
+            tool = pickFreeSlot(eCands, start);
             slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
           } else if (group == 'oven') {
             tool = _ToolKey.oven;
             slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
           } else {
-            tool = pickFreeSlot(const [
-              _ToolKey.electric,
-              _ToolKey.electric2,
-            ], start);
+            final eCands = [
+              if (_electricCap >= 1) _ToolKey.electric,
+              if (_electricCap >= 2) _ToolKey.electric2,
+            ];
+            tool = pickFreeSlot(eCands, start);
             slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
           }
 
@@ -793,8 +809,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
       final ownerStep = _steps[ownerIdx];
       // 同一食譜 + 比當前步更早
-      if (ownerStep.menuId == cur.menuId &&
-          ownerStep.globalNo < cur.globalNo) {
+      if (ownerStep.menuId == cur.menuId && ownerStep.globalNo < cur.globalNo) {
         return true;
       }
     }
@@ -955,10 +970,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         _toolTick = null;
       }
 
-      if (needSetState) setState(() {
-        // ✅ 設備釋放 / timer 完成時，同步更新 Next 按鈕與 Start Timer 狀態
-        _finished = _calcCanNext();
-      });
+      if (needSetState)
+        setState(() {
+          // ✅ 設備釋放 / timer 完成時，同步更新 Next 按鈕與 Start Timer 狀態
+          _finished = _calcCanNext();
+        });
     });
   }
 
@@ -1060,7 +1076,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       _stepManuallyCompleted = false; // ✅ 重啟 timer 時重置 complete 狀態
       if (isTool) {
         if (s.durationMs > 0) {
-          _startOrKeepToolTimer(s.tool, s.durationMs, ownerGlobalNo: s.globalNo);
+          _startOrKeepToolTimer(
+            s.tool,
+            s.durationMs,
+            ownerGlobalNo: s.globalNo,
+          );
         }
       } else {
         if (s.durationMs > 0) {
@@ -1151,6 +1171,19 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         widget.snapshot,
         widget.totalPlannedMinutes,
       );
+
+      // ✅ 同步存到 Firestore
+      final auth = AuthService();
+      final user = auth.currentUser;
+      if (user != null) {
+        auth.saveCookSession(
+          uid: user.uid,
+          completedAt: DateTime.now(),
+          items: Map<String, int>.from(widget.snapshot),
+          totalMinutes: widget.totalPlannedMinutes,
+        );
+      }
+
       Navigator.pop(context);
       return;
     }
@@ -1413,6 +1446,15 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     // 右邊菜單最多 5 個（已改為上方橫向 Row）
     final menusForRight = _menus.take(5).toList(growable: false);
 
+    final toolItems = <(_ToolKey, IconData)>[
+      if (_cookwareCap >= 1) (_ToolKey.pot, Symbols.local_fire_department),
+      if (_cookwareCap >= 2) (_ToolKey.stove, Symbols.local_fire_department),
+      if (_electricCap >= 1) (_ToolKey.electric, Symbols.electrical_services),
+      if (_electricCap >= 2) (_ToolKey.electric2, Symbols.electrical_services),
+      if (_ovenCap >= 1) (_ToolKey.oven, Symbols.oven_gen),
+      (_ToolKey.prep, Symbols.front_hand),
+    ];
+
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -1442,6 +1484,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                     _ToolIconsFrame(
                       activeTool: activeTool,
                       glowEnabled: _flowStarted,
+                      items: toolItems,
                       timerActiveOf: _toolTimerActive,
                       finishedOf: _toolTimerFinished,
                       shakeMsOf: _toolShakeMs,
@@ -1507,6 +1550,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 class _ToolIconsFrame extends StatelessWidget {
   final _ToolKey activeTool;
   final bool glowEnabled;
+  final List<(_ToolKey, IconData)> items; // ← 加這行
 
   final bool Function(_ToolKey) timerActiveOf;
   final bool Function(_ToolKey) finishedOf; // ✅ tile 已完成但等 Complete
@@ -1520,6 +1564,7 @@ class _ToolIconsFrame extends StatelessWidget {
   const _ToolIconsFrame({
     required this.activeTool,
     required this.glowEnabled,
+    required this.items, // ← 加這行
     required this.timerActiveOf,
     required this.finishedOf,
     required this.shakeMsOf,
@@ -1534,15 +1579,6 @@ class _ToolIconsFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
-      (_ToolKey.pot, Symbols.local_fire_department), // Cookware slot 1
-      (_ToolKey.stove, Symbols.local_fire_department), // Cookware slot 2
-      (_ToolKey.electric, Symbols.electrical_services), // Electric slot 1
-      (_ToolKey.electric2, Symbols.electrical_services), // Electric slot 2
-      (_ToolKey.oven, Symbols.oven_gen), // Baking / air frying
-      (_ToolKey.prep, Symbols.front_hand), // Hands / Prep
-    ];
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1554,8 +1590,8 @@ class _ToolIconsFrame extends StatelessWidget {
         itemCount: items.length,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: items.length <= 2 ? 2 : 3,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           childAspectRatio: 1,
@@ -1834,10 +1870,10 @@ class _StepCard extends StatelessWidget {
   final _FlowStep? step;
   final bool flowStarted;
   final bool running;
-  final bool canNext;       // ✅ Next/Finish 按鈕 enabled
+  final bool canNext; // ✅ Next/Finish 按鈕 enabled
   final bool countdownDone; // ✅ 倒數已歸零（顏色轉紅）
   final bool canPrev;
-  final bool timerStarted;  // ✅ 當前 step 的 timer 已啟動
+  final bool timerStarted; // ✅ 當前 step 的 timer 已啟動
   final String? startTimerBlockReason; // ✅ 非 null = 設備被佔滿，禁用 + 顯示原因
   final String leftText;
   final bool isPeeking;              // ✅ 正在 peek 一個 background tile
@@ -2203,7 +2239,7 @@ class _MenuIconButton extends StatelessWidget {
                   Icons.restaurant_menu,
                   color: Colors.white.withValues(alpha: 0.85),
                 )
-              : Image.network(
+              : Image.asset(
                   imgUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Icon(

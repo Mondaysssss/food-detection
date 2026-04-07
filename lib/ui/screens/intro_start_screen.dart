@@ -29,10 +29,13 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
 
   //用「香港食物」封面圖
   static const List<String> _heroUrls = [
-    'https://themeatclub.com.sg/cdn/shop/files/the-meat-club-ginger-pork.jpg?v=1705912633',
-    'https://img-global.cpcdn.com/recipes/4a2ccb2d78d78db4/680x781f0.5_0.50125_1.0q80/%E6%B0%A3%E7%82%B8%E5%AE%89%E6%A0%BC%E6%96%AF%E7%89%9B%E6%89%92-%E9%A3%9F%E8%AD%9C%E6%88%90%E5%93%81%E7%85%A7%E7%89%87.jpg',
-    'https://www.justonecookbook.com/wp-content/uploads/2025/02/Miso-Glazed-Eggplant-3348-III-800x1200.jpg',
-    'https://img-global.cpcdn.com/recipes/c78dad99dee7f8b0/300x426f0.5_0.5_1.0q80/%E8%9C%82%E8%9C%9C%E8%92%9C%E5%91%B3%E7%83%A4%E9%9B%9E%E7%BF%85%E6%B0%A3%E7%82%B8%E9%8D%8B-%E9%A3%9F%E8%AD%9C%E6%88%90%E5%93%81%E7%85%A7%E7%89%87.webp',
+    'assets/images/recipes/r2.jpg',
+    'assets/images/recipes/r7.jpg',
+    'assets/images/recipes/r9.jpg',
+    'assets/images/recipes/r11.jpg',
+    'assets/images/recipes/r13.jpg',
+    'assets/images/recipes/r15.jpg',
+    'assets/images/recipes/r16.jpg',
   ];
 
   /// Hero 圖載入失敗 / 未載入時，用一個「一定睇到」嘅食物 icon 當 fallback。
@@ -74,10 +77,16 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
   @override
   void initState() {
     super.initState();
+    final rng = Random();
+    _heroIndex = rng.nextInt(_heroUrls.length); // random start
     _heroTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
       setState(() {
-        _heroIndex = (_heroIndex + 1) % _heroUrls.length;
+        int next;
+        do {
+          next = rng.nextInt(_heroUrls.length);
+        } while (next == _heroIndex && _heroUrls.length > 1);
+        _heroIndex = next;
       });
     });
   }
@@ -121,29 +130,10 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                           FadeTransition(opacity: anim, child: child),
                       child: SizedBox.expand(
                         key: ValueKey(_heroUrl),
-                        child: Image.network(
+                        child: Image.asset(
                           _heroUrl,
                           fit: BoxFit.cover,
                           alignment: Alignment.center,
-                          loadingBuilder: (ctx, child, loading) {
-                            if (loading == null) return child;
-                            return Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                _heroFallback(),
-                                const Center(
-                                  child: SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                          errorBuilder: (ctx, _, __) => _heroFallback(),
                         ),
                       ),
                     ),
@@ -152,7 +142,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
 
                 // 下方內容（標題 + 兩個按鈕）
                 Expanded(
-                  child: Padding(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -200,7 +190,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                           ),
                         ),
 
-                        const Spacer(),
+                        const SizedBox(height: 16),
 
                         // Start using（主按鈕）—— 文字強制白色 ✅
                         SizedBox(

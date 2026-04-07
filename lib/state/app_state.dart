@@ -48,7 +48,8 @@ class AppState extends ChangeNotifier {
     final v = _appliances[key] ?? 0;
     final max = applianceMax[key] ?? 999;
     if (v < 0) return 0;
-    if (v > max) return max;
+    final mn = applianceMin[key] ?? 0;
+    if (v < mn) return mn;
     return v;
   }
 
@@ -101,6 +102,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearPersona() {
+    gender = null;
+    age = 18;
+    userName = 'User name';
+    for (final k in _appliances.keys) {
+      _appliances[k] = 0;
+    }
+    _allergies.clear();
+    notifyListeners();
+  }
+
   // =========================================================
   // Existing AppState (unchanged)
   // =========================================================
@@ -134,6 +146,21 @@ class AppState extends ChangeNotifier {
       CookSession(
         completedAt: DateTime.now(),
         items: Map<String, int>.from(snapshot),
+        totalMinutes: totalMinutes,
+      ),
+    );
+    notifyListeners();
+  }
+
+  void addSessionFromFirestore({
+    required Map<String, int> items,
+    required int totalMinutes,
+    required DateTime completedAt,
+  }) {
+    _sessions.add(
+      CookSession(
+        completedAt: completedAt,
+        items: Map<String, int>.from(items),
         totalMinutes: totalMinutes,
       ),
     );

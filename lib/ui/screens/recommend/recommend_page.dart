@@ -22,6 +22,7 @@ class _RecommendPageState extends State<RecommendPage> {
   String tasteFilter = 'All';
   String search = '';
   bool onlyFav = false;
+  bool showAllergyRecipes = false;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +57,18 @@ class _RecommendPageState extends State<RecommendPage> {
         if (!e.recipe.name.toLowerCase().contains(s) &&
             !e.recipe.ingredientIds.any((i) => i.toLowerCase().contains(s)))
           return false;
+      }
+
+      if (!showAllergyRecipes) {
+        final userAllergies = app.allergies;
+        for (final allergy in userAllergies) {
+          final blockedIngredients = allergyIngredientMap[allergy] ?? [];
+          if (e.recipe.ingredientIds.any(
+            (id) => blockedIngredients.contains(id),
+          )) {
+            return false;
+          }
+        }
       }
 
       if (onlyFav && !favSet.contains(e.recipe.menuId)) return false;
@@ -107,6 +120,16 @@ class _RecommendPageState extends State<RecommendPage> {
                     onSelected: (v) => setState(() => onlyFav = v),
                     selectedColor: Colors.amber.withValues(alpha: .2),
                     checkmarkColor: Colors.amber,
+                    side: const BorderSide(color: Colors.white24),
+                    labelStyle: const TextStyle(color: Colors.white),
+                  ),
+                  FilterChip(
+                    // ← 加這個
+                    label: const Text('Show allergy recipes'),
+                    selected: showAllergyRecipes,
+                    onSelected: (v) => setState(() => showAllergyRecipes = v),
+                    selectedColor: Colors.red.withValues(alpha: .2),
+                    checkmarkColor: Colors.redAccent,
                     side: const BorderSide(color: Colors.white24),
                     labelStyle: const TextStyle(color: Colors.white),
                   ),
