@@ -152,6 +152,21 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addSessionFromFirestore({
+    required Map<String, int> items,
+    required int totalMinutes,
+    required DateTime completedAt,
+  }) {
+    _sessions.add(
+      CookSession(
+        completedAt: completedAt,
+        items: Map<String, int>.from(items),
+        totalMinutes: totalMinutes,
+      ),
+    );
+    notifyListeners();
+  }
+
   int cartCountOf(String menuId) => _cart[menuId] ?? 0;
   int get cartTotalCount => _cart.values.fold(0, (s, v) => s + v);
 
