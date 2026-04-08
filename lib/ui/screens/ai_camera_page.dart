@@ -215,12 +215,14 @@ class _AiCameraPageState extends State<AiCameraPage> {
             ),
 
             Visibility(
-              visible: false,
+              visible: _imageFile != null,
               child: OutlinedButton.icon(
-                onPressed: () => setState(() {
-                  _imageFile = null;
-                  _statusText = 'No image captured';
-                }),
+                onPressed: _isLoading
+                    ? null
+                    : () => setState(() {
+                          _imageFile = null;
+                          _statusText = 'Ready — take or pick a photo';
+                        }),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retake'),
               ),

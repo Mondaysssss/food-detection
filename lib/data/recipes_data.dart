@@ -2681,17 +2681,47 @@ const List<Recipe> kRecipes = [
 final Map<String, Recipe> kRecipeById = {for (final r in kRecipes) r.menuId: r};
 
 final List<String> kAllIngredients = [
-  ...{
-    for (final r in kRecipes) ...r.ingredientIds,
-
-    // Keep some common basics in case some screens rely on them
-    'egg',
-    'tomato',
-    'garlic',
-    'oil',
-    'salt',
-  },
-].toList()..sort();
+  'Asparagus',
+  'apple',
+  'beef_steak',
+  'bell_pepper',
+  'bitter_gourd',
+  'broccoli',
+  'carrot',
+  'celery',
+  'chicken_breast',
+  'chicken_leg',
+  'chicken_wing',
+  'clam',
+  'corn',
+  'crab',
+  'cucumber',
+  'egg',
+  'eggplant',
+  'garlic',
+  'ginger',
+  'golden_threadfin_bream',
+  'green_pea',
+  'iceberg_lettuce',
+  'lamb_rack',
+  'lemon',
+  'lotus_root',
+  'onion',
+  'pear',
+  'pork',
+  'potato',
+  'pumpkin',
+  'ridge_gourd',
+  'romaine_lettuce',
+  'salmon_steak',
+  'shiitake_mushroom',
+  'shrimp',
+  'thai_chili',
+  'tomato',
+  'white_radish',
+  'winter_melon',
+  'zuccini',
+];
 
 const Map<String, List<String>> allergyIngredientMap = {
   'Eggs': ['egg'],

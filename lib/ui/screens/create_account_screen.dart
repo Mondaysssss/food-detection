@@ -67,6 +67,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       final user = _auth.currentUser;
       if (user != null && mounted) {
         final appState = context.read<AppState>();
+        appState.userName = _name.text.trim();
 
         if (appState.gender != null) {
           // 已做過 Wizard → 存 Firestore → 去首頁

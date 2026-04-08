@@ -165,7 +165,7 @@ class SettingsPage extends StatelessWidget {
                   backgroundColor: Colors.orange.shade200.withValues(alpha: .2),
                 ),
                 onPressed: () async {
-                  context.read<AppState>().clearPersona(); // ← add this
+                  context.read<AppState>().resetAll();
                   await AuthService().signOut();
                   if (context.mounted) {
                     Navigator.of(context).pushAndRemoveUntil(

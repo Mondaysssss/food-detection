@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // add
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'home_shell.dart';
 import 'create_account_screen.dart';
@@ -81,6 +82,20 @@ class _LoginScreenState extends State<LoginScreen> {
         final name = data?['username'] ?? user.displayName ?? '';
         if (name.isNotEmpty) appState.userName = name;
 
+        // load cook sessions from Firestore
+        try {
+          final sessions = await _auth.loadCookSessions(user.uid);
+          for (final s in sessions) {
+            final ts = s['completedAt'];
+            final dt = ts is Timestamp ? ts.toDate() : DateTime.now();
+            appState.addSessionFromFirestore(
+              items: Map<String, int>.from(s['items'] ?? {}),
+              totalMinutes: s['totalMinutes'] ?? 0,
+              completedAt: dt,
+            );
+          }
+        } catch (_) {}
+
         // ── 三路判斷 ──
         if (!mounted) return;
         if (appState.gender != null) {
@@ -139,6 +154,20 @@ class _LoginScreenState extends State<LoginScreen> {
         // set username
         final name = data?['username'] ?? user.displayName ?? '';
         if (name.isNotEmpty) appState.userName = name;
+
+        // load cook sessions from Firestore
+        try {
+          final sessions = await _auth.loadCookSessions(user.uid);
+          for (final s in sessions) {
+            final ts = s['completedAt'];
+            final dt = ts is Timestamp ? ts.toDate() : DateTime.now();
+            appState.addSessionFromFirestore(
+              items: Map<String, int>.from(s['items'] ?? {}),
+              totalMinutes: s['totalMinutes'] ?? 0,
+              completedAt: dt,
+            );
+          }
+        } catch (_) {}
 
         // ── 三路判斷 ──
         if (!mounted) return;
