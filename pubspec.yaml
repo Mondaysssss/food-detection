@@ -65,6 +65,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/model_new/
+    - assets/model_new/yolo11s/
+    - assets/model_new/yolo26s/
     - assets/images/recipes/
   # To add assets to your application, add an assets section, like this:
   # assets:

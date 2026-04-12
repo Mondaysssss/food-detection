@@ -15,7 +15,7 @@ class FoodDetector {
   /// Load metadata.yaml to get class names
   Future<void> loadMetadata() async {
     final yamlStr = await rootBundle.loadString(
-      'assets/model_new/metadata.yaml',
+      'assets/model_new/yolo11s/metadata.yaml',
     );
     final yamlMap = loadYaml(yamlStr);
     final namesMap = yamlMap['names'];
@@ -25,7 +25,7 @@ class FoodDetector {
   /// Load the TFLite model
   Future<void> loadModel() async {
     _interpreter = await Interpreter.fromAsset(
-      'assets/model_new/best_int8.tflite',
+      'assets/model_new/yolo11s/best_float32.tflite',
     );
     _inputShape = _interpreter!.getInputTensor(0).shape;
     _outputShape = _interpreter!.getOutputTensor(0).shape;

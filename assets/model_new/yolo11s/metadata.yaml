@@ -1,0 +1,61 @@
+description: Ultralytics YOLO11s model trained on /kaggle/input/datasets/aggrocat/yolo12n/data.yaml
+author: Ultralytics
+date: '2026-04-11T15:30:01.189365'
+version: 8.4.37
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: Asparagus
+  1: apple
+  2: beef_steak
+  3: bell_pepper
+  4: bitter_gourd
+  5: broccoli
+  6: carrot
+  7: celery
+  8: chicken_breast
+  9: chicken_leg
+  10: chicken_wing
+  11: clam
+  12: corn
+  13: crab
+  14: cucumber
+  15: egg
+  16: eggplant
+  17: garlic
+  18: ginger
+  19: golden_threadfin_bream
+  20: green_pea
+  21: iceberg_lettuce
+  22: lamb_rack
+  23: lemon
+  24: lotus_root
+  25: onion
+  26: pear
+  27: pork
+  28: potato
+  29: pumpkin
+  30: ridge_gourd
+  31: romaine_lettuce
+  32: salmon_steak
+  33: shiitake_mushroom
+  34: shrimp
+  35: thai_chili
+  36: tomato
+  37: white_radish
+  38: winter_melon
+  39: zuccini
+args:
+  batch: 1
+  fraction: 1.0
+  half: false
+  int8: false
+  nms: false
+channels: 3
+end2end: false
