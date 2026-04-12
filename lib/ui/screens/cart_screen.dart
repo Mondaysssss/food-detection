@@ -24,12 +24,21 @@ class CartScreen extends StatelessWidget {
     final cart = app.cart;
     final detected = app.ingredients;
 
+    final userAllergies = app.allergies;
+
     final entries = [
       for (final e in cart.entries)
         (
           recipe: kRecipeById[e.key]!,
           qty: e.value,
           mr: computeMatch(kRecipeById[e.key]!, detected),
+          allergyHits: [
+            for (final allergy in userAllergies)
+              if (kRecipeById[e.key]!.ingredientIds.any(
+                (id) => (allergyIngredientMap[allergy] ?? []).contains(id),
+              ))
+                allergy,
+          ],
         ),
     ];
 
@@ -188,18 +197,43 @@ class CartScreen extends StatelessWidget {
                   showDialog(
                     context: context,
                     builder: (warnCtx) {
-                      final warningLines = allergyWarnings.entries
-                          .map(
-                            (e) =>
-                                '${e.key}: ${e.value.join(', ')}',
-                          )
-                          .join('\n');
-
+                      final warningEntries = allergyWarnings.entries.toList();
                       return AlertDialog(
-                        title: const Text('Allergy warning'),
+                        title: const Text(
+                          'Allergy warning',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                         content: SingleChildScrollView(
-                          child: Text(
-                            'These recipes may contain your food allergies:\n\n$warningLines\n\nAre you sure you want to continue?',
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
+                                  text:
+                                      'These recipes may contain your food allergies:\n\n',
+                                ),
+                                for (int i = 0; i < warningEntries.length; i++) ...[
+                                  TextSpan(
+                                    text: warningEntries[i].key,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFFB4B4),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text:
+                                        ': ${warningEntries[i].value.join(', ')}',
+                                  ),
+                                  const TextSpan(text: '\n'),
+                                ],
+                                const TextSpan(
+                                  text:
+                                      '\nAre you sure you want to continue?',
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         actions: [
@@ -267,6 +301,7 @@ class CartScreen extends StatelessWidget {
                     itemBuilder: (_, i) => RecipeCard(
                       recipe: entries[i].recipe,
                       mr: entries[i].mr,
+                      allergyHits: entries[i].allergyHits,
                       readOnly: true,
                       qtyForCart: entries[i].qty,
                     ),
