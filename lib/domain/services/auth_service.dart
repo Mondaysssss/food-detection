@@ -97,17 +97,18 @@ class AuthService {
 
   // ── Cook Session persistence ──
 
-  Future<void> saveCookSession({
+  Future<String> saveCookSession({
     required String uid,
     required DateTime completedAt,
     required Map<String, int> items,
     required int totalMinutes,
   }) async {
-    await _db.collection('users').doc(uid).collection('sessions').add({
+    final doc = await _db.collection('users').doc(uid).collection('sessions').add({
       'completedAt': Timestamp.fromDate(completedAt),
       'items': items,
       'totalMinutes': totalMinutes,
     });
+    return doc.id;
   }
 
   Future<List<Map<String, dynamic>>> loadCookSessions(String uid) async {
@@ -117,6 +118,27 @@ class AuthService {
         .collection('sessions')
         .orderBy('completedAt', descending: true)
         .get();
-    return snap.docs.map((d) => d.data()).toList();
+
+    return snap.docs
+        .map((d) => {
+              'id': d.id,
+              ...d.data(),
+            })
+        .toList();
   }
+
+  Future<void> deleteCookSessionsByIds({
+    required String uid,
+    required Iterable<String> ids,
+  }) async {
+    final batch = _db.batch();
+    final col = _db.collection('users').doc(uid).collection('sessions');
+
+    for (final id in ids.toSet()) {
+      batch.delete(col.doc(id));
+    }
+
+    await batch.commit();
+  }
+
 }

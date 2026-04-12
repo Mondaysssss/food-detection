@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../domain/services/auth_service.dart';
 import '../../../data/recipes_data.dart';
 import '../../../domain/models/cook_session.dart';
 import '../../../domain/models/match_result.dart';
@@ -23,10 +24,12 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   bool _newestFirst = true;
+  bool _isSelectionMode = false;
+  final Set<String> _selectedSessionIds = <String>{};
 
   String _fmt2(int v) => v.toString().padLeft(2, '0');
 
-  // yyyy.MM.dd, HH：mm
+  // yyyy.MM.dd, HH:mm
   String _fmtDone(DateTime dt) {
     return '${dt.year}.${_fmt2(dt.month)}.${_fmt2(dt.day)}, ${_fmt2(dt.hour)}:${_fmt2(dt.minute)}';
   }
@@ -39,6 +42,86 @@ class _HistoryPageState extends State<HistoryPage> {
       backgroundColor: const Color(0xFF1E1E1E),
       builder: (_) => _SessionDetailSheet(session: s, fmtDone: _fmtDone),
     );
+  }
+
+  void _enterSelectionMode([String? sessionId]) {
+    setState(() {
+      _isSelectionMode = true;
+      if (sessionId != null) {
+        _selectedSessionIds.add(sessionId);
+      }
+    });
+  }
+
+  void _toggleSelection(String sessionId) {
+    setState(() {
+      if (_selectedSessionIds.contains(sessionId)) {
+        _selectedSessionIds.remove(sessionId);
+      } else {
+        _selectedSessionIds.add(sessionId);
+      }
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedSessionIds.clear();
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedSessions(BuildContext context) async {
+    if (_selectedSessionIds.isEmpty) return;
+
+    final count = _selectedSessionIds.length;
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete history'),
+        content: Text(
+          'Are you sure you want to delete these $count history record(s)?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) return;
+
+    final auth = AuthService();
+    final user = auth.currentUser;
+
+    try {
+      if (user != null) {
+        await auth.deleteCookSessionsByIds(
+          uid: user.uid,
+          ids: _selectedSessionIds,
+        );
+      }
+
+      if (!mounted) return;
+      context.read<AppState>().deleteSessionsByIds(_selectedSessionIds);
+      _exitSelectionMode();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$count history record(s) deleted')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete history. Please try again.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -58,19 +141,44 @@ class _HistoryPageState extends State<HistoryPage> {
             padding: const EdgeInsets.only(bottom: 10),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: ActionChip(
-                label: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(_newestFirst ? 'Recent' : 'Oldest'),
-                    const SizedBox(width: 4),
-                    Icon(
-                      _newestFirst ? Icons.arrow_downward : Icons.arrow_upward,
-                      size: 16,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_newestFirst ? 'Recent' : 'Oldest'),
+                        const SizedBox(width: 4),
+                        Icon(
+                          _newestFirst ? Icons.arrow_downward : Icons.arrow_upward,
+                          size: 16,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                onPressed: () => setState(() => _newestFirst = !_newestFirst),
+                    onPressed: () => setState(() => _newestFirst = !_newestFirst),
+                  ),
+                  if (!_isSelectionMode)
+                    ActionChip(
+                      avatar: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Delete'),
+                      onPressed: _enterSelectionMode,
+                    ),
+                  if (_isSelectionMode)
+                    ActionChip(
+                      label: const Text('Cancel'),
+                      onPressed: _exitSelectionMode,
+                    ),
+                  if (_isSelectionMode)
+                    ActionChip(
+                      avatar: const Icon(Icons.check, size: 18),
+                      label: Text('Confirm (${_selectedSessionIds.length})'),
+                      onPressed: _selectedSessionIds.isEmpty
+                          ? null
+                          : () => _confirmDeleteSelectedSessions(context),
+                    ),
+                ],
               ),
             ),
           ),
@@ -81,6 +189,7 @@ class _HistoryPageState extends State<HistoryPage> {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (_, i) {
                 final s = sessions[i];
+                final isSelected = _selectedSessionIds.contains(s.id);
                 final totalDishes = s.items.values.fold<int>(
                   0,
                   (sum, v) => sum + v,
@@ -97,68 +206,115 @@ class _HistoryPageState extends State<HistoryPage> {
                     .join(' + ');
 
                 return InkWell(
-                  onTap: () => _openSessionSheet(context, s),
-                  child: glass(
-                    padding: EdgeInsets.zero,
-                    child: Row(
-                      children: [
-                        // 左邊圖片
-                        ClipRRect(
-                          borderRadius: const BorderRadius.horizontal(
-                            left: Radius.circular(18),
-                          ),
-                          child: SizedBox(
-                            width: 80,
-                            height: 80,
-                            child: cover != null
-                                ? Image.asset(cover, fit: BoxFit.cover)
-                                : Container(
-                                    color: Colors.white12,
-                                    child: const Icon(Icons.restaurant),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // 右邊文字
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // 食譜名字（一行，超長顯示 ...）
-                                Text(
-                                  names,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '✅ Completed $totalDishes dishes',
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                                Text(
-                                  '⏱️ ${s.totalMinutes} minutes',
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                                Text(
-                                  '📅 ${_fmtDone(s.completedAt)}',
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                              ],
+                  onTap: () {
+                    if (_isSelectionMode) {
+                      _toggleSelection(s.id);
+                    } else {
+                      _openSessionSheet(context, s);
+                    }
+                  },
+                  onLongPress: () {
+                    if (_isSelectionMode) {
+                      _toggleSelection(s.id);
+                    } else {
+                      _enterSelectionMode(s.id);
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: _isSelectionMode && isSelected
+                            ? Colors.redAccent
+                            : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: glass(
+                      padding: EdgeInsets.zero,
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.horizontal(
+                              left: Radius.circular(18),
+                            ),
+                            child: SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: cover != null
+                                  ? Image.asset(cover, fit: BoxFit.cover)
+                                  : Container(
+                                      color: Colors.white12,
+                                      child: const Icon(Icons.restaurant),
+                                    ),
                             ),
                           ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.only(right: 8),
-                          child: Icon(Icons.chevron_right),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    names,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Completed $totalDishes dishes',
+                                    style: const TextStyle(color: Colors.white70),
+                                  ),
+                                  Text(
+                                    '${s.totalMinutes} minutes',
+                                    style: const TextStyle(color: Colors.white70),
+                                  ),
+                                  Text(
+                                    _fmtDone(s.completedAt),
+                                    style: const TextStyle(color: Colors.white70),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: _isSelectionMode
+                                ? AnimatedContainer(
+                                    duration: const Duration(milliseconds: 160),
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? Colors.redAccent
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Colors.redAccent
+                                            : Colors.white54,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? const Icon(
+                                            Icons.check,
+                                            size: 14,
+                                            color: Colors.white,
+                                          )
+                                        : null,
+                                  )
+                                : const Icon(Icons.chevron_right),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

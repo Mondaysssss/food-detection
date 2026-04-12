@@ -140,11 +140,17 @@ class AppState extends ChangeNotifier {
   UnmodifiableListView<CookSession> get sessions =>
       UnmodifiableListView(_sessions);
 
-  void addSessionFromCartSnapshot(Map<String, int> snapshot, int totalMinutes) {
+  void addSessionFromCartSnapshot({
+    required String id,
+    required Map<String, int> snapshot,
+    required int totalMinutes,
+    DateTime? completedAt,
+  }) {
     _sessions.insert(
       0,
       CookSession(
-        completedAt: DateTime.now(),
+        id: id,
+        completedAt: completedAt ?? DateTime.now(),
         items: Map<String, int>.from(snapshot),
         totalMinutes: totalMinutes,
       ),
@@ -153,12 +159,14 @@ class AppState extends ChangeNotifier {
   }
 
   void addSessionFromFirestore({
+    required String id,
     required Map<String, int> items,
     required int totalMinutes,
     required DateTime completedAt,
   }) {
     _sessions.add(
       CookSession(
+        id: id,
         completedAt: completedAt,
         items: Map<String, int>.from(items),
         totalMinutes: totalMinutes,
@@ -166,6 +174,13 @@ class AppState extends ChangeNotifier {
     );
     notifyListeners();
   }
+
+  void deleteSessionsByIds(Iterable<String> ids) {
+    final idSet = ids.toSet();
+    _sessions.removeWhere((s) => idSet.contains(s.id));
+    notifyListeners();
+  }
+
 
   static const int maxMenuSuggestionCount = 5;
 
