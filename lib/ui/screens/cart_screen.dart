@@ -67,19 +67,20 @@ class CartScreen extends StatelessWidget {
           }
         }
 
-        final hits = <String>[];
+        final blockedIngredientNames = <String>{};
+
         for (final allergy in userAllergies) {
           final blockedIngredients = allergyIngredientMap[allergy] ?? [];
-          final hasBlockedIngredient = r.ingredientIds.any(
-            (id) => blockedIngredients.contains(id),
-          );
-          if (hasBlockedIngredient) {
-            hits.add(allergy);
+          for (final id in r.ingredientIds) {
+            if (blockedIngredients.contains(id)) {
+              blockedIngredientNames.add(prettyName(id));
+            }
           }
         }
 
-        if (hits.isNotEmpty) {
-          allergyWarnings[r.name] = hits;
+        if (blockedIngredientNames.isNotEmpty) {
+          final sorted = blockedIngredientNames.toList()..sort();
+          allergyWarnings[r.name] = sorted;
         }
       });
 
@@ -198,21 +199,33 @@ class CartScreen extends StatelessWidget {
                     context: context,
                     builder: (warnCtx) {
                       final warningEntries = allergyWarnings.entries.toList();
+
                       return AlertDialog(
-                        title: const Text(
-                          'Allergy warning',
-                          style: TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        title: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.redAccent,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Allergy warning',
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ),
                         content: SingleChildScrollView(
                           child: Text.rich(
                             TextSpan(
+                              style: const TextStyle(color: Colors.white),
                               children: [
                                 const TextSpan(
                                   text:
-                                      'These recipes may contain your food allergies:\n\n',
+                                      'These recipes contain ingredients related to your food allergies:\n\n',
                                 ),
                                 for (int i = 0; i < warningEntries.length; i++) ...[
                                   TextSpan(
@@ -222,10 +235,18 @@ class CartScreen extends StatelessWidget {
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
-                                  TextSpan(
-                                    text:
-                                        ': ${warningEntries[i].value.join(', ')}',
-                                  ),
+                                  const TextSpan(text: ': '),
+                                  for (int j = 0; j < warningEntries[i].value.length; j++) ...[
+                                    TextSpan(
+                                      text: warningEntries[i].value[j],
+                                      style: const TextStyle(
+                                        color: Color(0xFFFFB4B4),
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    if (j < warningEntries[i].value.length - 1)
+                                      const TextSpan(text: ', '),
+                                  ],
                                   const TextSpan(text: '\n'),
                                 ],
                                 const TextSpan(
