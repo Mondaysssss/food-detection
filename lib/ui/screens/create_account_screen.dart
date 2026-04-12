@@ -74,7 +74,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           await _auth.savePreferences(
             uid: user.uid,
             gender: appState.gender,
-            age: appState.age,
+            birthYear: appState.birthYear!,
+            birthMonth: appState.birthMonth!,
+            birthDay: appState.birthDay!,
             appliances: Map<String, int>.from(appState.appliances),
             allergies: appState.allergies.toList(),
           );

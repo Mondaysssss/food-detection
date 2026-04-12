@@ -19,7 +19,12 @@ class PersonaWizardScreen extends StatefulWidget {
   State<PersonaWizardScreen> createState() => _PersonaWizardScreenState();
 }
 
-enum QType { genderButtons, ageWheel, applianceDropdowns, allergyCheckboxes }
+enum QType {
+  genderButtons,
+  birthDatePicker,
+  applianceDropdowns,
+  allergyCheckboxes,
+}
 
 class QuestionDef {
   final String id;
@@ -35,7 +40,11 @@ class QuestionDef {
 class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   final List<QuestionDef> _questions = const [
     QuestionDef(id: 'gender', title: 'Gender', type: QType.genderButtons),
-    QuestionDef(id: 'age', title: 'Age', type: QType.ageWheel),
+    QuestionDef(
+      id: 'birthDate',
+      title: 'Date of Birth',
+      type: QType.birthDatePicker,
+    ),
     QuestionDef(
       id: 'appliance',
       title: 'Which kitchen appliances do you own?',
@@ -51,7 +60,10 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   int _index = 0;
 
   String? _gender;
-  int _age = 18;
+  int _birthYear = 2000;
+  int _birthMonth = 1;
+  int _birthDay = 1;
+  bool _inited = false;
 
   final Map<String, int> _appliances = {
     'cookware': 1,
@@ -91,23 +103,40 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
 
   final Set<String> _allergies = {};
 
-  late FixedExtentScrollController _ageCtl;
+  late FixedExtentScrollController _yearCtl;
+  late FixedExtentScrollController _monthCtl;
+  late FixedExtentScrollController _dayCtl;
 
   @override
   void initState() {
     super.initState();
-    _ageCtl = FixedExtentScrollController(
-      initialItem: (_age - 13).clamp(0, 86),
+    final now = DateTime.now();
+    final minYear = now.year - 100; // 1926
+    final maxYear = now.year - 12; // 2014
+    _yearCtl = FixedExtentScrollController(
+      initialItem: (_birthYear - minYear).clamp(0, maxYear - minYear),
+    );
+    _monthCtl = FixedExtentScrollController(
+      initialItem: (_birthMonth - 1).clamp(0, 11),
+    );
+    _dayCtl = FixedExtentScrollController(
+      initialItem: (_birthDay - 1).clamp(0, 30),
     );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_inited) return;
+    _inited = true;
 
     final app = context.read<AppState>();
 
-    _age = app.age;
+    final now = DateTime.now();
+    _birthYear = (app.birthYear ?? 2000).clamp(now.year - 100, now.year - 12);
+    _birthMonth = app.birthMonth ?? 1;
+    _birthDay = app.birthDay ?? 1;
+
     _gender = app.gender;
 
     for (final k in _appliances.keys) {
@@ -118,15 +147,28 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       ..clear()
       ..addAll(app.allergies);
 
-    _ageCtl.dispose();
-    _ageCtl = FixedExtentScrollController(
-      initialItem: (_age - 13).clamp(0, 86),
+    // Rebuild controllers to match loaded values
+    final minYear = now.year - 100;
+    final maxYear = now.year - 12;
+    _yearCtl.dispose();
+    _yearCtl = FixedExtentScrollController(
+      initialItem: (_birthYear - minYear).clamp(0, maxYear - minYear),
+    );
+    _monthCtl.dispose();
+    _monthCtl = FixedExtentScrollController(
+      initialItem: (_birthMonth - 1).clamp(0, 11),
+    );
+    _dayCtl.dispose();
+    _dayCtl = FixedExtentScrollController(
+      initialItem: (_birthDay - 1).clamp(0, 30),
     );
   }
 
   @override
   void dispose() {
-    _ageCtl.dispose();
+    _yearCtl.dispose();
+    _monthCtl.dispose();
+    _dayCtl.dispose();
     super.dispose();
   }
 
@@ -138,7 +180,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     switch (q.type) {
       case QType.genderButtons:
         return _gender != null;
-      case QType.ageWheel:
+      case QType.birthDatePicker:
         return true;
       case QType.applianceDropdowns:
         return _applianceOk('cookware') &&
@@ -159,7 +201,9 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       // ✅ 存入 AppState
       context.read<AppState>().setPersona(
         newGender: _gender,
-        newAge: _age,
+        newBirthYear: _birthYear,
+        newBirthMonth: _birthMonth,
+        newBirthDay: _birthDay,
         newAppliances: Map<String, int>.from(_appliances),
       );
       context.read<AppState>().setAllergies(Set<String>.from(_allergies));
@@ -173,7 +217,10 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
           await auth.savePreferences(
             uid: user.uid,
             gender: app.gender,
-            age: app.age,
+            username: app.userName != 'User name' ? app.userName : null,
+            birthYear: app.birthYear!,
+            birthMonth: app.birthMonth!,
+            birthDay: app.birthDay!,
             appliances: Map<String, int>.from(app.appliances),
             allergies: app.allergies.toList(),
           );
@@ -259,8 +306,8 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     switch (q.type) {
       case QType.genderButtons:
         return _qGender();
-      case QType.ageWheel:
-        return _qAge();
+      case QType.birthDatePicker:
+        return _qBirthDate();
       case QType.applianceDropdowns:
         return _qAppliance();
       case QType.allergyCheckboxes:
@@ -307,30 +354,131 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     );
   }
 
-  Widget _qAge() {
-    final items = List<int>.generate(87, (i) => i + 13);
+  Widget _qBirthDate() {
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    final now = DateTime.now();
+    final minYear = now.year - 100;
+    final maxYear = now.year - 12;
+    final years = List<int>.generate(maxYear - minYear + 1, (i) => i + minYear);
+    final daysInMonth = DateUtils.getDaysInMonth(_birthYear, _birthMonth);
+    final days = List<int>.generate(daysInMonth, (i) => i + 1);
+
+    // clamp day if month changed to one with fewer days
+    if (_birthDay > daysInMonth) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _birthDay = daysInMonth;
+            _dayCtl.dispose();
+            _dayCtl = FixedExtentScrollController(initialItem: _birthDay - 1);
+          });
+        }
+      });
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: SizedBox(
         height: 300,
-        child: CupertinoPicker(
-          scrollController: _ageCtl,
-          itemExtent: 52,
-          magnification: 1.25,
-          useMagnifier: true,
-          onSelectedItemChanged: (i) => setState(() => _age = items[i]),
+        child: Row(
           children: [
-            for (final v in items)
-              Center(
-                child: Text(
-                  '$v',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+            // ── Month ──
+            Expanded(
+              flex: 3,
+              child: CupertinoPicker(
+                scrollController: _monthCtl,
+                itemExtent: 52,
+                magnification: 1.20,
+                useMagnifier: true,
+                squeeze: 1.0,
+                onSelectedItemChanged: (i) {
+                  setState(() {
+                    _birthMonth = i + 1;
+                    final maxDay = DateUtils.getDaysInMonth(
+                      _birthYear,
+                      _birthMonth,
+                    );
+                    if (_birthDay > maxDay) {
+                      _birthDay = maxDay;
+                      _dayCtl.dispose();
+                      _dayCtl = FixedExtentScrollController(
+                        initialItem: _birthDay - 1,
+                      );
+                    }
+                  });
+                },
+                children: [
+                  for (final name in monthNames)
+                    Center(
+                      child: Text(name, style: const TextStyle(fontSize: 20)),
+                    ),
+                ],
               ),
+            ),
+            // ── Day ──
+            Expanded(
+              flex: 1,
+              child: CupertinoPicker(
+                scrollController: _dayCtl,
+                itemExtent: 52,
+                magnification: 1.20,
+                useMagnifier: true,
+                squeeze: 1.0,
+                onSelectedItemChanged: (i) => setState(() => _birthDay = i + 1),
+                children: [
+                  for (final d in days)
+                    Center(
+                      child: Text('$d', style: const TextStyle(fontSize: 20)),
+                    ),
+                ],
+              ),
+            ),
+            // ── Year ──
+            Expanded(
+              flex: 2,
+              child: CupertinoPicker(
+                scrollController: _yearCtl,
+                itemExtent: 52,
+                magnification: 1.20,
+                useMagnifier: true,
+                squeeze: 1.0,
+                onSelectedItemChanged: (i) {
+                  setState(() {
+                    _birthYear = years[i];
+                    final maxDay = DateUtils.getDaysInMonth(
+                      _birthYear,
+                      _birthMonth,
+                    );
+                    if (_birthDay > maxDay) {
+                      _birthDay = maxDay;
+                      _dayCtl.dispose();
+                      _dayCtl = FixedExtentScrollController(
+                        initialItem: _birthDay - 1,
+                      );
+                    }
+                  });
+                },
+                children: [
+                  for (final y in years)
+                    Center(
+                      child: Text('$y', style: const TextStyle(fontSize: 20)),
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

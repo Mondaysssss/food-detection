@@ -297,7 +297,9 @@ class _PreferencePageState extends State<_PreferencePage> {
         await auth.savePreferences(
           uid: user.uid,
           gender: app.gender,
-          age: app.age,
+          birthYear: app.birthYear!,
+          birthMonth: app.birthMonth!,
+          birthDay: app.birthDay!,
           appliances: Map<String, int>.from(app.appliances),
           allergies: app.allergies.toList(),
         );

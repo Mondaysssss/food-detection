@@ -18,7 +18,21 @@ class AppState extends ChangeNotifier {
   String userName = 'User name';
 
   String? gender; // from PersonaWizard
-  int age = 18; // from PersonaWizard
+  // int age = 18; // from PersonaWizard
+  int? birthYear;
+  int? birthMonth;
+  int? birthDay;
+
+  int get age {
+    if (birthYear == null || birthMonth == null) return 18;
+    final now = DateTime.now();
+    int a = now.year - birthYear!;
+    if (now.month < birthMonth! ||
+        (now.month == birthMonth! && now.day < (birthDay ?? 1))) {
+      a--;
+    }
+    return a.clamp(0, 150);
+  }
 
   // appliances counts (from PersonaWizard)
   final Map<String, int> _appliances = {
@@ -87,11 +101,15 @@ class AppState extends ChangeNotifier {
 
   void setPersona({
     String? newGender,
-    int? newAge,
+    int? newBirthYear,
+    int? newBirthMonth,
+    int? newBirthDay,
     Map<String, int>? newAppliances,
   }) {
     if (newGender != null) gender = newGender;
-    if (newAge != null) age = newAge;
+    if (newBirthYear != null) birthYear = newBirthYear;
+    if (newBirthMonth != null) birthMonth = newBirthMonth;
+    if (newBirthDay != null) birthDay = newBirthDay;
     if (newAppliances != null) {
       for (final k in _appliances.keys) {
         final v = newAppliances[k] ?? _appliances[k] ?? 0;
@@ -104,7 +122,9 @@ class AppState extends ChangeNotifier {
 
   void clearPersona() {
     gender = null;
-    age = 18;
+    birthYear = null;
+    birthMonth = null;
+    birthDay = null;
     userName = 'User name';
     for (final k in _appliances.keys) {
       _appliances[k] = 0;
@@ -268,7 +288,9 @@ class AppState extends ChangeNotifier {
     // reset persona/profile
     userName = 'User name';
     gender = null;
-    age = 18;
+    birthYear = null;
+    birthMonth = null;
+    birthDay = null;
     _appliances['cookware'] = 0;
     _appliances['stove'] = 0;
     _appliances['electric'] = 0;

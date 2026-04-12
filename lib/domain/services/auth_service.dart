@@ -69,16 +69,23 @@ class AuthService {
   Future<void> savePreferences({
     required String uid,
     String? gender,
-    required int age,
+    String? username,
+    required int birthYear,
+    required int birthMonth,
+    required int birthDay,
     required Map<String, int> appliances,
     required List<String> allergies,
   }) async {
-    await _db.collection('users').doc(uid).set({
+    final data = <String, dynamic>{
       'gender': gender,
-      'age': age,
+      'birthYear': birthYear,
+      'birthMonth': birthMonth,
+      'birthDay': birthDay,
       'appliances': appliances,
       'allergies': allergies,
-    }, SetOptions(merge: true)); // merge: don't overwrite email/username/etc.
+    };
+    if (username != null) data['username'] = username;
+    await _db.collection('users').doc(uid).set(data, SetOptions(merge: true));
   }
 
   Future<Map<String, dynamic>?> loadPreferences(String uid) async {

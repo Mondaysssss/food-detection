@@ -60,19 +60,37 @@ class _LoginScreenState extends State<LoginScreen> {
         final data = await _auth.loadPreferences(user.uid);
 
         if (data != null && data.containsKey('gender')) {
-          // Firestore has preferences → cloud wins
-          appState.setPersona(
-            newGender: data['gender'],
-            newAge: data['age'],
-            newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
-          );
+          // Existing user → discard any local wizard data, use Firebase only
+          appState.clearPersona();
+          if (data.containsKey('birthYear')) {
+            appState.setPersona(
+              newGender: data['gender'],
+              newBirthYear: data['birthYear'],
+              newBirthMonth: data['birthMonth'],
+              newBirthDay: data['birthDay'],
+              newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+            );
+          } else {
+            // Legacy: convert old 'age' → approximate birthYear
+            final oldAge = data['age'] ?? 18;
+            final approxBirthYear = DateTime.now().year - (oldAge as int);
+            appState.setPersona(
+              newGender: data['gender'],
+              newBirthYear: approxBirthYear,
+              newBirthMonth: 1,
+              newBirthDay: 1,
+              newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+            );
+          }
           appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
         } else if (appState.gender != null) {
           // 本機有 Wizard 資料，但 Firestore 沒有 → 上傳
           await _auth.savePreferences(
             uid: user.uid,
             gender: appState.gender,
-            age: appState.age,
+            birthYear: appState.birthYear!,
+            birthMonth: appState.birthMonth!,
+            birthDay: appState.birthDay!,
             appliances: Map<String, int>.from(appState.appliances),
             allergies: appState.allergies.toList(),
           );
@@ -133,19 +151,37 @@ class _LoginScreenState extends State<LoginScreen> {
         final data = await _auth.loadPreferences(user.uid);
 
         if (data != null && data.containsKey('gender')) {
-          // Firestore has preferences → cloud wins
-          appState.setPersona(
-            newGender: data['gender'],
-            newAge: data['age'],
-            newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
-          );
+          // Existing user → discard any local wizard data, use Firebase only
+          appState.clearPersona();
+          if (data.containsKey('birthYear')) {
+            appState.setPersona(
+              newGender: data['gender'],
+              newBirthYear: data['birthYear'],
+              newBirthMonth: data['birthMonth'],
+              newBirthDay: data['birthDay'],
+              newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+            );
+          } else {
+            // Legacy: convert old 'age' → approximate birthYear
+            final oldAge = data['age'] ?? 18;
+            final approxBirthYear = DateTime.now().year - (oldAge as int);
+            appState.setPersona(
+              newGender: data['gender'],
+              newBirthYear: approxBirthYear,
+              newBirthMonth: 1,
+              newBirthDay: 1,
+              newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+            );
+          }
           appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
         } else if (appState.gender != null) {
           // 本機有 Wizard 資料，但 Firestore 沒有 → 上傳
           await _auth.savePreferences(
             uid: user.uid,
             gender: appState.gender,
-            age: appState.age,
+            birthYear: appState.birthYear!,
+            birthMonth: appState.birthMonth!,
+            birthDay: appState.birthDay!,
             appliances: Map<String, int>.from(appState.appliances),
             allergies: appState.allergies.toList(),
           );
@@ -203,7 +239,9 @@ class _LoginScreenState extends State<LoginScreen> {
       await _auth.savePreferences(
         uid: user.uid,
         gender: appState.gender,
-        age: appState.age,
+        birthYear: appState.birthYear!,
+        birthMonth: appState.birthMonth!,
+        birthDay: appState.birthDay!,
         appliances: Map<String, int>.from(appState.appliances),
         allergies: appState.allergies.toList(),
       );

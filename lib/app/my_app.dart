@@ -77,11 +77,26 @@ class _AuthGateState extends State<_AuthGate> {
 
     if (data != null && data.containsKey('gender')) {
       // Firestore has preferences → restore them
-      appState.setPersona(
-        newGender: data['gender'],
-        newAge: data['age'],
-        newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
-      );
+      if (data.containsKey('birthYear')) {
+        appState.setPersona(
+          newGender: data['gender'],
+          newBirthYear: data['birthYear'],
+          newBirthMonth: data['birthMonth'],
+          newBirthDay: data['birthDay'],
+          newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+        );
+      } else {
+        // Legacy: convert old 'age' → approximate birthYear
+        final oldAge = data['age'] ?? 18;
+        final approxBirthYear = DateTime.now().year - (oldAge as int);
+        appState.setPersona(
+          newGender: data['gender'],
+          newBirthYear: approxBirthYear,
+          newBirthMonth: 1,
+          newBirthDay: 1,
+          newAppliances: Map<String, int>.from(data['appliances'] ?? {}),
+        );
+      }
       appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
       final name = data['username'] ?? user.displayName ?? '';
       if (name.isNotEmpty) appState.userName = name;
