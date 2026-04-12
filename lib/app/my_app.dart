@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'FoodLens',
+      title: 'DishMind (Aiding daily cooking with AI)',
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: seed,
