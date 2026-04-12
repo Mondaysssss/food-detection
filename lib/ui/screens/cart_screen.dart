@@ -41,6 +41,9 @@ class CartScreen extends StatelessWidget {
       final Set<String> mainAll = {};
       final Map<String, double> seasonTsp = {};
 
+      final userAllergies = app.allergies;
+      final allergyWarnings = <String, List<String>>{};
+
       snapshot.forEach((menuId, qty) {
         final r = kRecipeById[menuId]!;
         totalMinutes +=
@@ -53,6 +56,21 @@ class CartScreen extends StatelessWidget {
           } else {
             mainAll.add(ing);
           }
+        }
+
+        final hits = <String>[];
+        for (final allergy in userAllergies) {
+          final blockedIngredients = allergyIngredientMap[allergy] ?? [];
+          final hasBlockedIngredient = r.ingredientIds.any(
+            (id) => blockedIngredients.contains(id),
+          );
+          if (hasBlockedIngredient) {
+            hits.add(allergy);
+          }
+        }
+
+        if (hits.isNotEmpty) {
+          allergyWarnings[r.name] = hits;
         }
       });
 
@@ -68,6 +86,31 @@ class CartScreen extends StatelessWidget {
 
       final seasonKeys = seasonTsp.keys.toList()..sort();
       final totalSeasonTsp = seasonTsp.values.fold<double>(0, (s, v) => s + v);
+
+      void proceedToCooking() {
+        final snapshot = Map<String, int>.from(app.cart);
+        final int totalMinutesPlanned = snapshot.entries.fold(0, (sum, e) {
+          final r = kRecipeById[e.key]!;
+          final per = r.steps.fold<int>(
+            0,
+            (s, st) => s + st.durationMin,
+          );
+          return sum + per * e.value;
+        });
+
+        context.read<AppState>().clearCart();
+        context.read<AppState>().clearIngredients();
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MultiCookScreen(
+              snapshot: snapshot,
+              totalPlannedMinutes: totalMinutesPlanned,
+            ),
+          ),
+        );
+      }
 
       showDialog(
         context: context,
@@ -137,30 +180,43 @@ class CartScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(ctx);
 
-                  final snapshot = Map<String, int>.from(app.cart);
-                  final int totalMinutesPlanned = snapshot.entries.fold(0, (
-                    sum,
-                    e,
-                  ) {
-                    final r = kRecipeById[e.key]!;
-                    final per = r.steps.fold<int>(
-                      0,
-                      (s, st) => s + st.durationMin,
-                    );
-                    return sum + per * e.value;
-                  });
+                  if (allergyWarnings.isEmpty) {
+                    proceedToCooking();
+                    return;
+                  }
 
-                  context.read<AppState>().clearCart();
-                  context.read<AppState>().clearIngredients();
+                  showDialog(
+                    context: context,
+                    builder: (warnCtx) {
+                      final warningLines = allergyWarnings.entries
+                          .map(
+                            (e) =>
+                                '${e.key}: ${e.value.join(', ')}',
+                          )
+                          .join('\n');
 
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MultiCookScreen(
-                        snapshot: snapshot,
-                        totalPlannedMinutes: totalMinutesPlanned,
-                      ),
-                    ),
+                      return AlertDialog(
+                        title: const Text('Allergy warning'),
+                        content: SingleChildScrollView(
+                          child: Text(
+                            'These recipes may contain your food allergies:\n\n$warningLines\n\nAre you sure you want to continue?',
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(warnCtx),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(warnCtx);
+                              proceedToCooking();
+                            },
+                            child: const Text('Continue'),
+                          ),
+                        ],
+                      );
+                    },
                   );
                 },
                 child: const Text('Confirm'),
