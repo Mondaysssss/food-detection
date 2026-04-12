@@ -35,12 +35,34 @@ class RecipeCard extends StatelessWidget {
     this.compact = false,
   });
 
+    void _showMenuLimitDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Menu limit reached'),
+        content: const Text(
+          'You can add at most 5 recipes in Menu suggestions. Remove one first before adding another.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
     final mainCount = mr.match.length + mr.missing.length;
     final count = context.select<AppState, int>(
       (s) => s.cartCountOf(recipe.menuId),
+    );
+    final limitReached = context.select<AppState, bool>(
+      (s) => s.isMenuSuggestionLimitReached,
     );
 
     return InkWell(
@@ -227,12 +249,26 @@ class RecipeCard extends StatelessWidget {
                           ),
                         ),
                         IconButton.filled(
-                          onPressed: () => app.addToCart(recipe.menuId, 1),
+                          onPressed: () {
+                            if (limitReached) {
+                              _showMenuLimitDialog(context);
+                              return;
+                            }
+                            app.addToCart(recipe.menuId, 1);
+                          },
                           icon: const Icon(Icons.add),
-                          tooltip: 'Increase 1',
+                          tooltip: limitReached
+                              ? 'Maximum 5 recipes'
+                              : 'Increase 1',
                           style: IconButton.styleFrom(
                             fixedSize: const Size(40, 40),
                             padding: EdgeInsets.zero,
+                            backgroundColor: limitReached
+                                ? Colors.grey.withValues(alpha: 0.35)
+                                : null,
+                            foregroundColor: limitReached
+                                ? Colors.white38
+                                : null,
                           ),
                         ),
                       ],

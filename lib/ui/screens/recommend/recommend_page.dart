@@ -28,6 +28,8 @@ class _RecommendPageState extends State<RecommendPage> {
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final detected = app.ingredients;
+    final userAppliances = app.appliances;
+
 
     final list =
         kRecipes.map((r) => (recipe: r, mr: computeMatch(r, detected))).toList()
@@ -71,9 +73,15 @@ class _RecommendPageState extends State<RecommendPage> {
         }
       }
 
+      final hasRequiredAppliances = e.recipe.requiredAppliances.every(
+        (key) => (userAppliances[key] ?? 0) > 0,
+      );
+      if (!hasRequiredAppliances) return false;
+
       if (onlyFav && !favSet.contains(e.recipe.menuId)) return false;
 
       return true;
+
     }).toList();
 
     return LayoutBuilder(

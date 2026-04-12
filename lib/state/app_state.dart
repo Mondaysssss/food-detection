@@ -167,10 +167,20 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const int maxMenuSuggestionCount = 5;
+
   int cartCountOf(String menuId) => _cart[menuId] ?? 0;
   int get cartTotalCount => _cart.values.fold(0, (s, v) => s + v);
 
+  bool canAddMoreRecipes([int delta = 1]) =>
+      cartTotalCount + delta <= maxMenuSuggestionCount;
+
+  bool get isMenuSuggestionLimitReached =>
+      cartTotalCount >= maxMenuSuggestionCount;
+
   void addToCart(String menuId, [int delta = 1]) {
+    if (delta > 0 && !canAddMoreRecipes(delta)) return;
+
     final n = (_cart[menuId] ?? 0) + delta;
     if (n <= 0) {
       _cart.remove(menuId);
@@ -179,6 +189,7 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
 
   void setCartCount(String menuId, int count) {
     if (count <= 0)
