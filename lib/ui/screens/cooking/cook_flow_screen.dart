@@ -1231,7 +1231,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     return null;
   }
 
-  void _goNext() {
+  Future<void> _goNext() async {
     if (!_flowStarted || _steps.isEmpty) return;
 
     final cur = _steps[_idx];
@@ -1246,26 +1246,38 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     }
 
     if (_idx >= _steps.length - 1) {
-      // ✅ 完成流程：存 session history
       final app = context.read<AppState>();
-      app.addSessionFromCartSnapshot(
-        widget.snapshot,
-        widget.totalPlannedMinutes,
-      );
-
-      // ✅ 同步存到 Firestore
       final auth = AuthService();
       final user = auth.currentUser;
-      if (user != null) {
-        auth.saveCookSession(
-          uid: user.uid,
-          completedAt: DateTime.now(),
-          items: Map<String, int>.from(widget.snapshot),
+      final completedAt = DateTime.now();
+
+      try {
+        String sessionId = completedAt.microsecondsSinceEpoch.toString();
+
+        if (user != null) {
+          sessionId = await auth.saveCookSession(
+            uid: user.uid,
+            completedAt: completedAt,
+            items: Map<String, int>.from(widget.snapshot),
+            totalMinutes: widget.totalPlannedMinutes,
+          );
+        }
+
+        app.addSessionFromCartSnapshot(
+          id: sessionId,
+          snapshot: widget.snapshot,
           totalMinutes: widget.totalPlannedMinutes,
+          completedAt: completedAt,
+        );
+
+        if (!mounted) return;
+        Navigator.pop(context);
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save history. Please try again.')),
         );
       }
-
-      Navigator.pop(context);
       return;
     }
 

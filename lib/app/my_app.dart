@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'FoodLens',
+      title: 'DishMind (Aiding daily cooking with AI)',
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: seed,
@@ -108,6 +108,7 @@ class _AuthGateState extends State<_AuthGate> {
           final ts = s['completedAt'];
           final dt = ts is Timestamp ? ts.toDate() : DateTime.now();
           appState.addSessionFromFirestore(
+            id: s['id'] as String,
             items: Map<String, int>.from(s['items'] ?? {}),
             totalMinutes: s['totalMinutes'] ?? 0,
             completedAt: dt,

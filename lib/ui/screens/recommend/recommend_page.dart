@@ -28,14 +28,34 @@ class _RecommendPageState extends State<RecommendPage> {
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final detected = app.ingredients;
+    final userAppliances = app.appliances;
+    final userAllergies = app.allergies;
 
-    final list =
-        kRecipes.map((r) => (recipe: r, mr: computeMatch(r, detected))).toList()
-          ..sort((a, b) {
-            final cmp = b.mr.match.length.compareTo(a.mr.match.length);
-            if (cmp != 0) return cmp;
-            return a.mr.missing.length.compareTo(b.mr.missing.length);
-          });
+    final list = kRecipes.map((r) {
+      final allergyHits = <String>[];
+
+      for (final allergy in userAllergies) {
+        final blockedIngredients = allergyIngredientMap[allergy] ?? [];
+        final hasBlockedIngredient = r.ingredientIds.any(
+          (id) => blockedIngredients.contains(id),
+        );
+        if (hasBlockedIngredient) {
+          allergyHits.add(allergy);
+        }
+      }
+
+      return (
+        recipe: r,
+        mr: computeMatch(r, detected),
+        allergyHits: allergyHits,
+      );
+    }).toList()
+      ..sort((a, b) {
+        final cmp = b.mr.match.length.compareTo(a.mr.match.length);
+        if (cmp != 0) return cmp;
+        return a.mr.missing.length.compareTo(b.mr.missing.length);
+      });
+
     final types = [
       'All',
       ...{for (final r in kRecipes) r.type},
@@ -58,22 +78,19 @@ class _RecommendPageState extends State<RecommendPage> {
             !e.recipe.ingredientIds.any((i) => i.toLowerCase().contains(s)))
           return false;
       }
-
-      if (!showAllergyRecipes) {
-        final userAllergies = app.allergies;
-        for (final allergy in userAllergies) {
-          final blockedIngredients = allergyIngredientMap[allergy] ?? [];
-          if (e.recipe.ingredientIds.any(
-            (id) => blockedIngredients.contains(id),
-          )) {
-            return false;
-          }
-        }
+      if (!showAllergyRecipes && e.allergyHits.isNotEmpty) {
+        return false;
       }
+
+      final hasRequiredAppliances = e.recipe.requiredAppliances.every(
+        (key) => (userAppliances[key] ?? 0) > 0,
+      );
+      if (!hasRequiredAppliances) return false;
 
       if (onlyFav && !favSet.contains(e.recipe.menuId)) return false;
 
       return true;
+
     }).toList();
 
     return LayoutBuilder(
@@ -163,8 +180,11 @@ class _RecommendPageState extends State<RecommendPage> {
             mainAxisExtent: tileH,
           ),
           itemCount: filtered.length,
-          itemBuilder: (_, i) =>
-              RecipeCard(recipe: filtered[i].recipe, mr: filtered[i].mr),
+          itemBuilder: (_, i) => RecipeCard(
+            recipe: filtered[i].recipe,
+            mr: filtered[i].mr,
+            allergyHits: filtered[i].allergyHits,
+          ),
         );
 
         return SingleChildScrollView(

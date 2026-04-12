@@ -24,12 +24,21 @@ class CartScreen extends StatelessWidget {
     final cart = app.cart;
     final detected = app.ingredients;
 
+    final userAllergies = app.allergies;
+
     final entries = [
       for (final e in cart.entries)
         (
           recipe: kRecipeById[e.key]!,
           qty: e.value,
           mr: computeMatch(kRecipeById[e.key]!, detected),
+          allergyHits: [
+            for (final allergy in userAllergies)
+              if (kRecipeById[e.key]!.ingredientIds.any(
+                (id) => (allergyIngredientMap[allergy] ?? []).contains(id),
+              ))
+                allergy,
+          ],
         ),
     ];
 
@@ -40,6 +49,9 @@ class CartScreen extends StatelessWidget {
 
       final Set<String> mainAll = {};
       final Map<String, double> seasonTsp = {};
+
+      final userAllergies = app.allergies;
+      final allergyWarnings = <String, List<String>>{};
 
       snapshot.forEach((menuId, qty) {
         final r = kRecipeById[menuId]!;
@@ -53,6 +65,22 @@ class CartScreen extends StatelessWidget {
           } else {
             mainAll.add(ing);
           }
+        }
+
+        final blockedIngredientNames = <String>{};
+
+        for (final allergy in userAllergies) {
+          final blockedIngredients = allergyIngredientMap[allergy] ?? [];
+          for (final id in r.ingredientIds) {
+            if (blockedIngredients.contains(id)) {
+              blockedIngredientNames.add(prettyName(id));
+            }
+          }
+        }
+
+        if (blockedIngredientNames.isNotEmpty) {
+          final sorted = blockedIngredientNames.toList()..sort();
+          allergyWarnings[r.name] = sorted;
         }
       });
 
@@ -68,6 +96,31 @@ class CartScreen extends StatelessWidget {
 
       final seasonKeys = seasonTsp.keys.toList()..sort();
       final totalSeasonTsp = seasonTsp.values.fold<double>(0, (s, v) => s + v);
+
+      void proceedToCooking() {
+        final snapshot = Map<String, int>.from(app.cart);
+        final int totalMinutesPlanned = snapshot.entries.fold(0, (sum, e) {
+          final r = kRecipeById[e.key]!;
+          final per = r.steps.fold<int>(
+            0,
+            (s, st) => s + st.durationMin,
+          );
+          return sum + per * e.value;
+        });
+
+        context.read<AppState>().clearCart();
+        context.read<AppState>().clearIngredients();
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MultiCookScreen(
+              snapshot: snapshot,
+              totalPlannedMinutes: totalMinutesPlanned,
+            ),
+          ),
+        );
+      }
 
       showDialog(
         context: context,
@@ -137,30 +190,88 @@ class CartScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(ctx);
 
-                  final snapshot = Map<String, int>.from(app.cart);
-                  final int totalMinutesPlanned = snapshot.entries.fold(0, (
-                    sum,
-                    e,
-                  ) {
-                    final r = kRecipeById[e.key]!;
-                    final per = r.steps.fold<int>(
-                      0,
-                      (s, st) => s + st.durationMin,
-                    );
-                    return sum + per * e.value;
-                  });
+                  if (allergyWarnings.isEmpty) {
+                    proceedToCooking();
+                    return;
+                  }
 
-                  context.read<AppState>().clearCart();
-                  context.read<AppState>().clearIngredients();
+                  showDialog(
+                    context: context,
+                    builder: (warnCtx) {
+                      final warningEntries = allergyWarnings.entries.toList();
 
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MultiCookScreen(
-                        snapshot: snapshot,
-                        totalPlannedMinutes: totalMinutesPlanned,
-                      ),
-                    ),
+                      return AlertDialog(
+                        title: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.redAccent,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Allergy warning',
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        content: SingleChildScrollView(
+                          child: Text.rich(
+                            TextSpan(
+                              style: const TextStyle(color: Colors.white),
+                              children: [
+                                const TextSpan(
+                                  text:
+                                      'These recipes contain ingredients related to your food allergies:\n\n',
+                                ),
+                                for (int i = 0; i < warningEntries.length; i++) ...[
+                                  TextSpan(
+                                    text: warningEntries[i].key,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFFB4B4),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ': '),
+                                  for (int j = 0; j < warningEntries[i].value.length; j++) ...[
+                                    TextSpan(
+                                      text: warningEntries[i].value[j],
+                                      style: const TextStyle(
+                                        color: Color(0xFFFFB4B4),
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    if (j < warningEntries[i].value.length - 1)
+                                      const TextSpan(text: ', '),
+                                  ],
+                                  const TextSpan(text: '\n'),
+                                ],
+                                const TextSpan(
+                                  text:
+                                      '\nAre you sure you want to continue?',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(warnCtx),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(warnCtx);
+                              proceedToCooking();
+                            },
+                            child: const Text('Continue'),
+                          ),
+                        ],
+                      );
+                    },
                   );
                 },
                 child: const Text('Confirm'),
@@ -211,6 +322,7 @@ class CartScreen extends StatelessWidget {
                     itemBuilder: (_, i) => RecipeCard(
                       recipe: entries[i].recipe,
                       mr: entries[i].mr,
+                      allergyHits: entries[i].allergyHits,
                       readOnly: true,
                       qtyForCart: entries[i].qty,
                     ),

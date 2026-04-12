@@ -13,6 +13,7 @@ import 'recipe_detail_sheet.dart';
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final MatchResult mr;
+  final List<String> allergyHits;
 
   final bool readOnly;
   final int? qtyForCart;
@@ -27,6 +28,7 @@ class RecipeCard extends StatelessWidget {
     super.key,
     required this.recipe,
     required this.mr,
+    this.allergyHits = const [],
     this.readOnly = false,
     this.qtyForCart,
     this.showMatchLines = true,
@@ -35,12 +37,34 @@ class RecipeCard extends StatelessWidget {
     this.compact = false,
   });
 
+    void _showMenuLimitDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Menu limit reached'),
+        content: const Text(
+          'You can add at most 5 recipes in Menu suggestions. Remove one first before adding another.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
     final mainCount = mr.match.length + mr.missing.length;
     final count = context.select<AppState, int>(
       (s) => s.cartCountOf(recipe.menuId),
+    );
+    final limitReached = context.select<AppState, bool>(
+      (s) => s.isMenuSuggestionLimitReached,
     );
 
     return InkWell(
@@ -138,6 +162,32 @@ class RecipeCard extends StatelessWidget {
                                 color: Colors.white70,
                               ),
                             ),
+                            if (allergyHits.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: Colors.redAccent.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Allergy alert: ${allergyHits.join(', ')}',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFFFFB4B4),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -227,12 +277,26 @@ class RecipeCard extends StatelessWidget {
                           ),
                         ),
                         IconButton.filled(
-                          onPressed: () => app.addToCart(recipe.menuId, 1),
+                          onPressed: () {
+                            if (limitReached) {
+                              _showMenuLimitDialog(context);
+                              return;
+                            }
+                            app.addToCart(recipe.menuId, 1);
+                          },
                           icon: const Icon(Icons.add),
-                          tooltip: 'Increase 1',
+                          tooltip: limitReached
+                              ? 'Maximum 5 recipes'
+                              : 'Increase 1',
                           style: IconButton.styleFrom(
                             fixedSize: const Size(40, 40),
                             padding: EdgeInsets.zero,
+                            backgroundColor: limitReached
+                                ? Colors.grey.withValues(alpha: 0.35)
+                                : null,
+                            foregroundColor: limitReached
+                                ? Colors.white38
+                                : null,
                           ),
                         ),
                       ],

@@ -107,6 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
             final ts = s['completedAt'];
             final dt = ts is Timestamp ? ts.toDate() : DateTime.now();
             appState.addSessionFromFirestore(
+              id: s['id'] as String,
               items: Map<String, int>.from(s['items'] ?? {}),
               totalMinutes: s['totalMinutes'] ?? 0,
               completedAt: dt,
@@ -198,6 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
             final ts = s['completedAt'];
             final dt = ts is Timestamp ? ts.toDate() : DateTime.now();
             appState.addSessionFromFirestore(
+              id: s['id'] as String,
               items: Map<String, int>.from(s['items'] ?? {}),
               totalMinutes: s['totalMinutes'] ?? 0,
               completedAt: dt,
