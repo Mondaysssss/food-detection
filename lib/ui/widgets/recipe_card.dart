@@ -13,6 +13,7 @@ import 'recipe_detail_sheet.dart';
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final MatchResult mr;
+  final List<String> allergyHits;
 
   final bool readOnly;
   final int? qtyForCart;
@@ -27,6 +28,7 @@ class RecipeCard extends StatelessWidget {
     super.key,
     required this.recipe,
     required this.mr,
+    this.allergyHits = const [],
     this.readOnly = false,
     this.qtyForCart,
     this.showMatchLines = true,
@@ -160,6 +162,32 @@ class RecipeCard extends StatelessWidget {
                                 color: Colors.white70,
                               ),
                             ),
+                            if (allergyHits.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: Colors.redAccent.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Allergy alert: ${allergyHits.join(', ')}',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFFFFB4B4),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
