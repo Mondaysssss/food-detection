@@ -35,6 +35,17 @@ class Recipe {
 
   List<String> get ingredientIds =>
       recipeIngredients.map((e) => e.ingredientId).toList(growable: false);
+
+  /// 準備步驟總秒數（isPrep == true）
+  int get prepTimeSec =>
+      steps.where((s) => s.isPrep).fold(0, (sum, s) => sum + s.durationSec);
+
+  /// 烹飪步驟總秒數（isPrep == false）
+  int get cookTimeSec =>
+      steps.where((s) => !s.isPrep).fold(0, (sum, s) => sum + s.durationSec);
+
+  /// 總時間（準備 + 烹飪）
+  int get combinedTimeSec => prepTimeSec + cookTimeSec;
 }
 
 // 每個食譜的「食材 + 份量 + 單位」

@@ -10,6 +10,18 @@ import 'favorite_star.dart';
 import 'glass.dart';
 import 'recipe_detail_sheet.dart';
 
+/// 格式化秒數：≥1h → "1h 30min"；<1h → "5min 30sec"；0 → "0min"
+String _fmtTime(int totalSec) {
+  if (totalSec <= 0) return '0min';
+  final h = totalSec ~/ 3600;
+  final m = (totalSec % 3600) ~/ 60;
+  final s = totalSec % 60;
+  if (h > 0) {
+    return m > 0 ? '${h}h ${m}min' : '${h}h';
+  }
+  return s > 0 ? '${m}min ${s}sec' : '${m}min';
+}
+
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final MatchResult mr;
@@ -162,6 +174,18 @@ class RecipeCard extends StatelessWidget {
                                 color: Colors.white70,
                               ),
                             ),
+                            if (!compact) ...[
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: [
+                                  _timeBadge(Icons.content_cut, 'Prep', _fmtTime(recipe.prepTimeSec), const Color(0xFF90CAF9)),
+                                  _timeBadge(Icons.local_fire_department, 'Cook', _fmtTime(recipe.cookTimeSec), const Color(0xFFFFAB91)),
+                                  _timeBadge(Icons.schedule, 'Total', _fmtTime(recipe.combinedTimeSec), const Color(0xFFA5D6A7)),
+                                ],
+                              ),
+                            ],
                             if (allergyHits.isNotEmpty) ...[
                               const SizedBox(height: 6),
                               Container(
@@ -309,4 +333,18 @@ class RecipeCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _timeBadge(IconData icon, String label, String value, Color color) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 13, color: color),
+      const SizedBox(width: 3),
+      Text(
+        '$label: $value',
+        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+      ),
+    ],
+  );
 }
