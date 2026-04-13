@@ -71,6 +71,9 @@ class RecipeStep {
   /// 是否可與其他步驟同時進行（例如燜/焗/浸）
   final bool isConcurrent;
 
+  /// 是否屬於「準備步驟」（切菜、醃製、洗菜、打蛋等），排程時優先執行
+  final bool isPrep;
+
   const RecipeStep(
     this.text,
     this.durationSec, {
@@ -78,6 +81,7 @@ class RecipeStep {
     this.requiredEquipment,
     this.isContinuous = true,
     this.isConcurrent = false,
+    this.isPrep = false,
   });
 
   /// （可選）UI 想顯示分鐘就用

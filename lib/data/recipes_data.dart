@@ -29,6 +29,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Crack eggs into a bowl, add a pinch of salt, beat until yolks and whites are fully combined',
@@ -37,6 +38,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Mince garlic cloves',
@@ -45,6 +47,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat wok over high heat, add 1 tbsp oil, swirl to coat',
@@ -127,6 +130,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Season shrimp with salt and pepper, toss to coat evenly',
@@ -135,6 +139,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Mince garlic cloves finely, cut lemon into wedges',
@@ -143,6 +148,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat frying pan over medium-high heat, add oil and swirl to coat',
@@ -222,6 +228,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Marinate chicken with 1 tbsp soy sauce and cornstarch, mix well and set aside for 10 minutes',
@@ -230,6 +237,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Cut broccoli into small florets, peel and slice carrot into thin rounds, cut celery into diagonal slices',
@@ -238,6 +246,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Mince garlic and slice ginger',
@@ -246,6 +255,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Bring a pot of water to boil, blanch broccoli, carrot and celery for 2 minutes until bright, drain and set aside',
@@ -337,6 +347,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Rinse clams thoroughly under running water, scrub shells clean, drain',
@@ -345,6 +356,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Mince garlic, slice ginger into thin strips, halve Thai chilies lengthwise and remove seeds if less heat desired',
@@ -353,6 +365,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat wok over high heat, add oil, sauté garlic, ginger and Thai chili until fragrant about 30 seconds',
@@ -432,6 +445,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Let seasoned salmon sit at room temperature for 10 minutes',
@@ -440,6 +454,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Trim woody ends of asparagus, peel lower third if thick, mince garlic, cut lemon into wedges',
@@ -448,6 +463,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat frying pan over medium-high heat, add 1 tbsp olive oil',
@@ -548,6 +564,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Blanch ribs in boiling water for 1 minute, rinse clean',
@@ -572,6 +589,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Skim fat, add winter melon and salt, simmer 15 minutes',
@@ -640,6 +658,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Preheat oven to 200°C (400°F)',
@@ -648,6 +667,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: 'oven',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Score fat cap of lamb in a crisscross pattern with a sharp knife, being careful not to cut into the meat',
@@ -656,6 +676,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Rub lamb racks generously with 1 tbsp olive oil, salt, pepper, rosemary and thyme on all sides',
@@ -664,6 +685,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Peel and quarter potatoes, dice onion, lightly crush garlic cloves with the flat of a knife',
@@ -672,6 +694,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Toss potatoes, onion and garlic with remaining olive oil, salt and pepper on a parchment-lined baking tray',
@@ -680,6 +703,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Place potatoes in oven and roast for 15 minutes to get a head start',
@@ -696,6 +720,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Place lamb racks fat-side up on top of potatoes, return to oven',
@@ -778,6 +803,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Deseed and cut bell peppers into strips, dice onion, mince garlic',
@@ -786,6 +812,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'If using frozen green peas, blanch in boiling water for 1 minute, drain; if fresh, set aside',
@@ -876,6 +903,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Pat steaks very dry with paper towels, season both sides generously with salt and pepper',
@@ -884,6 +912,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Slice zucchini lengthwise into 1cm thick planks, brush with olive oil, season with salt and pepper',
@@ -892,6 +921,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Lightly crush garlic cloves with the flat of a knife, leave whole',
@@ -900,6 +930,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat a heavy frying pan over high heat until very hot, add 1 tbsp olive oil',
@@ -999,6 +1030,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Blanch chicken pieces in boiling water for 2 minutes to remove impurities, drain and rinse clean',
@@ -1015,6 +1047,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat wok over medium-high heat, add oil, fry chicken pieces skin-side down until golden brown about 3 minutes',
@@ -1107,6 +1140,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Mince garlic and grate ginger, combine with soy sauce, honey and sesame oil in a bowl to make marinade',
@@ -1115,6 +1149,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Reserve 3 tbsp marinade for glazing, pour rest over wings, toss to coat, cover and refrigerate for at least 1 hour',
@@ -1123,6 +1158,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Preheat oven to 200°C (400°F), line a baking tray with foil and place a wire rack on top, brush rack with oil',
@@ -1131,6 +1167,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: 'oven',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Arrange marinated wings in a single layer on the rack, leaving space between each',
@@ -1139,6 +1176,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Bake for 25 minutes on middle rack of oven',
@@ -1209,6 +1247,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Slice bitter gourd into thin half-moons about 3mm thick',
@@ -1217,6 +1256,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Sprinkle 0.5 tsp salt over slices, toss and let sit 10 minutes to draw out bitterness, then rinse and squeeze dry',
@@ -1225,6 +1265,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Beat eggs with a pinch of salt in a bowl, mince garlic',
@@ -1233,6 +1274,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat wok over high heat, add 1 tbsp oil, pour in beaten eggs, scramble into large soft curds, remove and set aside',
@@ -1311,6 +1353,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Cut tomatoes into small wedges, beat eggs lightly in a bowl',
@@ -1319,6 +1362,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Mix cornstarch with 2 tbsp cold water to make a slurry, set aside',
@@ -1327,6 +1371,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Bring 4 cups of water to a boil in a pot over high heat',
@@ -1417,6 +1462,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Mince pork into small pieces or use ground pork',
@@ -1425,6 +1471,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Mince garlic and ginger, slice Thai chili into rings, mix cornstarch with 2 tbsp water for slurry',
@@ -1433,6 +1480,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat wok over high heat, add 2 tbsp oil, fry eggplant pieces 3–4 minutes until softened and lightly golden, remove and drain',
@@ -1522,6 +1570,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Tear or cut smashed cucumbers into rough bite-sized pieces',
@@ -1530,6 +1579,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Sprinkle salt over cucumber pieces, toss and let sit 10 minutes to draw out excess water, then drain',
@@ -1538,6 +1588,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Mince garlic finely, slice Thai chili into thin rings',
@@ -1546,6 +1597,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'In a small bowl, whisk together soy sauce, vinegar, sesame oil, sugar and chili oil to make dressing',
@@ -1554,6 +1606,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Tear iceberg lettuce leaves into pieces and lay on serving plate as a bed',
@@ -1562,6 +1615,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Toss drained cucumber with garlic, chili and dressing, pile on top of lettuce and serve',
@@ -1620,6 +1674,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Slice chicken breast thinly against the grain, marinate with Shaoxing wine and a pinch of salt for 10 minutes',
@@ -1628,6 +1683,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Remove stems from soaked shiitake, halve or quarter depending on size',
@@ -1636,6 +1692,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Bring 5 cups of water (or mix soaking liquid with water) to a boil with ginger slices in a pot',
@@ -1718,6 +1775,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Blanch ribs in a pot of boiling water for 2 minutes, skim scum, drain ribs and rinse clean',
@@ -1734,6 +1792,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'In a large pot, add blanched ribs, lotus root, ginger slices and 8 cups of water, bring to a boil over high heat',
@@ -1837,6 +1896,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Blanch beef cubes in boiling water for 2 minutes with a splash of Shaoxing wine, skim scum, drain and rinse clean',
@@ -1853,6 +1913,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat wok over medium-high heat, add oil, sear beef cubes on all sides until browned about 3 minutes',
@@ -1956,6 +2017,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Score fish with 3 diagonal cuts on each side about 1cm deep to help heat penetrate evenly',
@@ -1964,6 +2026,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Rub fish inside and out with salt, stuff cavity with 2 slices of ginger, let sit 10 minutes',
@@ -1972,6 +2035,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Slice remaining ginger into thin strips, mince garlic',
@@ -1980,6 +2044,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Pat fish dry again, heat a flat-bottomed frying pan over medium heat, add oil and swirl to coat evenly',
@@ -2068,6 +2133,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Peel and devein shrimp, rinse and pat dry, mince garlic and slice ginger',
@@ -2076,6 +2142,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Beat eggs with a pinch of salt in a bowl',
@@ -2084,6 +2151,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat wok over high heat, add 1 tbsp oil, pour in eggs and scramble into soft curds, remove and set aside',
@@ -2186,6 +2254,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Cut each crab body into 4 pieces, dust cut surfaces lightly with cornstarch to seal in juices',
@@ -2194,6 +2263,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Julienne ginger into thin strips, mince garlic, mix light soy sauce, oyster sauce, sugar, white pepper and 2 tbsp water in a bowl',
@@ -2202,6 +2272,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Heat wok over high heat until smoking, add oil, carefully place crab pieces cut-side down, sear 2 minutes until shell turns red',
@@ -2289,6 +2360,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Start rice cooker, cook rice until done about 20 minutes',
@@ -2297,6 +2369,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: 'electric',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Dice carrot into small cubes, dice onion finely, mince garlic',
@@ -2305,6 +2378,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Beat eggs with a pinch of salt in a bowl',
@@ -2313,6 +2387,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'When rice is done, spread on a plate and let cool slightly for 5 minutes to reduce moisture',
@@ -2430,6 +2505,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Start rice cooker, cook rice until done about 20 minutes',
@@ -2438,6 +2514,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: 'electric',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Peel and devein shrimp, rinse under cold water, pat dry with paper towels, season with a pinch of salt',
@@ -2446,6 +2523,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Dice carrot into small cubes, cut corn kernels off the cob, dice onion finely, mince garlic',
@@ -2454,6 +2532,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Beat eggs with a pinch of salt in a bowl',
@@ -2462,6 +2541,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'When rice is done, spread on a plate and let cool slightly for 5 minutes',
@@ -2576,6 +2656,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Start rice cooker, cook rice until done about 20 minutes',
@@ -2584,6 +2665,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: 'electric',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Dice chicken breast into 1cm cubes, marinate with 1 tbsp soy sauce for 10 minutes',
@@ -2592,6 +2674,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: false,
         isConcurrent: true,
+        isPrep: true,
       ),
       RecipeStep(
         'Cut broccoli into very small florets, dice onion finely, mince garlic, slice ginger',
@@ -2600,6 +2683,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'Beat eggs with a pinch of salt in a bowl',
@@ -2608,6 +2692,7 @@ const List<Recipe> kRecipes = [
         requiredEquipment: ' ',
         isContinuous: true,
         isConcurrent: false,
+        isPrep: true,
       ),
       RecipeStep(
         'When rice is done, spread on a plate and let cool slightly for 5 minutes',

@@ -557,7 +557,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         }
 
         // (2) 再做需要 attention 的 step（一次只會開到 1 個，因為 attention=1）
+        //     ✅ 優先選擇 isPrep=true 的步驟（準備步驟排前面）
         if (useOf('attention') < capOf('attention')) {
+          // 收集所有可執行的 attention candidates
+          int bestR = -1;
+          bool bestIsPrep = false;
           for (int r = 0; r < n; r++) {
             if (idx[r] >= stepsByRecipe[r].length) continue;
             if (readyAt[r] > t) continue;
@@ -566,10 +570,21 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             if (st.isConcurrent) continue;
 
             final group = _groupOf(st);
-            final needsAttention = true;
+            if (!_canStart(group: group, needsAttention: true)) continue;
 
-            if (!_canStart(group: group, needsAttention: needsAttention))
-              continue;
+            // 優先 isPrep=true；同優先級按 recipe index 順序
+            if (bestR == -1 ||
+                (st.isPrep && !bestIsPrep)) {
+              bestR = r;
+              bestIsPrep = st.isPrep;
+            }
+          }
+
+          if (bestR >= 0) {
+            final r = bestR;
+            final st = stepsByRecipe[r][idx[r]];
+            final group = _groupOf(st);
+            final needsAttention = true;
 
             final dur = _stepDurationSec(st);
             final start = t;
@@ -607,7 +622,6 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             readyAt[r] = end;
             scheduledAny = true;
             loopAgain = true;
-            break; // attention=1
           }
         }
       }
