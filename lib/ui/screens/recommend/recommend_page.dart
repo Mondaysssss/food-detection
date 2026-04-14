@@ -157,10 +157,6 @@ class _RecommendPageState extends State<RecommendPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Sort: best match first, then by missing count (few → many).',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
-              ),
             ],
           ),
         );

@@ -21,10 +21,6 @@ class FoodListPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           titleText('Food log'),
-          const Text(
-            'Names only (no quantity). Duplicates removed automatically.',
-            style: TextStyle(color: Colors.white60, fontSize: 12),
-          ),
           const SizedBox(height: 10),
 
           if (app.ingredients.isEmpty)

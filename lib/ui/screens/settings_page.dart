@@ -140,23 +140,6 @@ class SettingsPage extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Reset all data (last)
-          glass(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FilledButton.tonalIcon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.shade200.withValues(alpha: .2),
-                ),
-                onPressed: () => context.read<AppState>().resetAll(),
-                icon: const Icon(Icons.delete),
-                label: const Text('Reset all data'),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
           glass(
             child: Align(
               alignment: Alignment.centerLeft,
