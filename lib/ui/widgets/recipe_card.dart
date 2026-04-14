@@ -269,9 +269,9 @@ class RecipeCard extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: LinearProgressIndicator(
-                        value: recipe.ingredientIds.isEmpty
+                        value: mainCount == 0
                             ? 1
-                            : (mr.match.length / recipe.ingredientIds.length),
+                            : (mr.match.length / mainCount).clamp(0.0, 1.0),
                         minHeight: 8,
                       ),
                     ),
