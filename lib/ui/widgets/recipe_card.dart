@@ -35,6 +35,7 @@ class RecipeCard extends StatelessWidget {
 
   final double coverAspect;
   final bool compact;
+  final bool showQtyControls;
 
   const RecipeCard({
     super.key,
@@ -47,6 +48,7 @@ class RecipeCard extends StatelessWidget {
     this.showProgress = true,
     this.coverAspect = 16 / 9,
     this.compact = false,
+    this.showQtyControls = false,
   });
 
     void _showMenuLimitDialog(BuildContext context) {
@@ -278,7 +280,7 @@ class RecipeCard extends StatelessWidget {
                     const SizedBox(height: 10),
                   ],
 
-                  if (!readOnly)
+                  if (!readOnly || showQtyControls)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [

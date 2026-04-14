@@ -221,7 +221,7 @@ class CartScreen extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 12),
-                  
+
                   sectionTitle('Seasoning (tsp)'),
                   const SizedBox(height: 6),
                   if (seasonKeys.isNotEmpty)
@@ -396,6 +396,7 @@ class CartScreen extends StatelessWidget {
                             allergyHits: entries[i].allergyHits,
                             readOnly: true,
                             qtyForCart: entries[i].qty,
+                            showQtyControls: true,
                           ),
                         );
 
