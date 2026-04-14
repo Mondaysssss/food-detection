@@ -46,8 +46,8 @@ class CartScreen extends StatelessWidget {
       final snapshot = Map<String, int>.from(app.cart);
       final totalDishes = snapshot.values.fold<int>(0, (s, v) => s + v);
       int totalMinutes = 0;
-
       final Set<String> mainAll = {};
+      final Map<String, String> mainQty = {};
       final Map<String, double> seasonTsp = {};
 
       final userAllergies = app.allergies;
@@ -58,12 +58,17 @@ class CartScreen extends StatelessWidget {
         totalMinutes +=
             qty * r.steps.fold<int>(0, (s, st) => s + st.durationMin);
 
-        for (final ing in r.ingredientIds) {
+        for (final ri in r.recipeIngredients) {
+          final ing = ri.ingredientId;
+
           if (kSeasoningKeys.contains(ing)) {
             final add = (kSeasoningTeaspoons[ing] ?? 1.0) * qty;
             seasonTsp[ing] = (seasonTsp[ing] ?? 0) + add;
           } else {
             mainAll.add(ing);
+
+            final display = ri.display.trim().isEmpty ? 'to taste' : ri.display.trim();
+            mainQty.putIfAbsent(ing, () => display);
           }
         }
 
@@ -105,7 +110,7 @@ class CartScreen extends StatelessWidget {
             0,
             (s, st) => s + st.durationMin,
           );
-          return sum + per * e.value;
+          return sum + per;
         });
 
         context.read<AppState>().clearCart();
@@ -147,14 +152,20 @@ class CartScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   if (mainGreen.isNotEmpty)
                     Text(
-                      'Have: ${mainGreen.map(prettyName).join(', ')}',
+                      'Have: ' +
+                          mainGreen
+                              .map((k) => '${prettyName(k)} ${mainQty[k] ?? ''}'.trim())
+                              .join(', '),
                       style: const TextStyle(color: Colors.greenAccent),
                     ),
                   if (mainRed.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Missing: ${mainRed.map(prettyName).join(', ')}',
+                        'Missing: ' +
+                            mainRed
+                                .map((k) => '${prettyName(k)} ${mainQty[k] ?? ''}'.trim())
+                                .join(', '),
                         style: const TextStyle(color: Colors.redAccent),
                       ),
                     ),

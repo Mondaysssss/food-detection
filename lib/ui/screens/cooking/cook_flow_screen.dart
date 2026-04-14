@@ -1605,14 +1605,15 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     ];
     final handItems = _handTimers.keys
         .toList(); // List<int> of active globalNos
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
+      return Scaffold(
         backgroundColor: _bg,
-        foregroundColor: _ink,
-        title: Text(title),
-      ),
-      body: SafeArea(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: _bg,
+          foregroundColor: _ink,
+          title: Text(title),
+        ),
+        body: SafeArea(
         child: Stack(
           children: [
             Padding(
