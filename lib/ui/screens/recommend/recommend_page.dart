@@ -103,10 +103,6 @@ class _RecommendPageState extends State<RecommendPage> {
             : 1;
 
         const spacing = 12.0;
-        final tileW = (w - (cols - 1) * spacing) / cols;
-        final coverH = tileW * 9 / 16;
-        final baseInfoH = cols == 1 ? 230.0 : (cols == 2 ? 220.0 : 210.0);
-        final tileH = coverH + baseInfoH;
 
         final filterPanel = glass(
           child: Column(
@@ -169,28 +165,41 @@ class _RecommendPageState extends State<RecommendPage> {
           ),
         );
 
-        final grid = GridView.builder(
-          shrinkWrap: true,
-          primary: false,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cols,
-            crossAxisSpacing: spacing,
-            mainAxisSpacing: spacing,
-            mainAxisExtent: tileH,
-          ),
-          itemCount: filtered.length,
-          itemBuilder: (_, i) => RecipeCard(
-            recipe: filtered[i].recipe,
-            mr: filtered[i].mr,
-            allergyHits: filtered[i].allergyHits,
-          ),
-        );
+        final recipesSection = cols == 1
+            ? Column(
+                children: [
+                  for (int i = 0; i < filtered.length; i++) ...[
+                    RecipeCard(
+                      recipe: filtered[i].recipe,
+                      mr: filtered[i].mr,
+                      allergyHits: filtered[i].allergyHits,
+                    ),
+                    if (i < filtered.length - 1) const SizedBox(height: spacing),
+                  ],
+                ],
+              )
+            : GridView.builder(
+                shrinkWrap: true,
+                primary: false,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
+                  crossAxisSpacing: spacing,
+                  mainAxisSpacing: spacing,
+                  mainAxisExtent: w >= 800 && w < 1200 ? 430.0 : 400.0,
+                ),
+                itemCount: filtered.length,
+                itemBuilder: (_, i) => RecipeCard(
+                  recipe: filtered[i].recipe,
+                  mr: filtered[i].mr,
+                  allergyHits: filtered[i].allergyHits,
+                ),
+              );
 
         return SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
-            children: [filterPanel, const SizedBox(height: 12), grid],
+            children: [filterPanel, const SizedBox(height: 12), recipesSection],
           ),
         );
       },

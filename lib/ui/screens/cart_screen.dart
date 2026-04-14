@@ -301,36 +301,45 @@ class CartScreen extends StatelessWidget {
                       ? 2
                       : 1;
                   const spacing = 12.0;
-                  final tileW = (w - (cols - 1) * spacing) / cols;
-                  final coverH = tileW * 9 / 16;
-                  final baseInfoH = cols == 1
-                      ? 230.0
-                      : (cols == 2 ? 220.0 : 210.0);
-                  final tileH = coverH + baseInfoH;
-
-                  final grid = GridView.builder(
-                    shrinkWrap: true,
-                    primary: false,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: cols,
-                      crossAxisSpacing: spacing,
-                      mainAxisSpacing: spacing,
-                      mainAxisExtent: tileH,
-                    ),
-                    itemCount: entries.length,
-                    itemBuilder: (_, i) => RecipeCard(
-                      recipe: entries[i].recipe,
-                      mr: entries[i].mr,
-                      allergyHits: entries[i].allergyHits,
-                      readOnly: true,
-                      qtyForCart: entries[i].qty,
-                    ),
-                  );
+                  final recipesSection = cols == 1
+                      ? Column(
+                          children: [
+                            for (int i = 0; i < entries.length; i++) ...[
+                              RecipeCard(
+                                recipe: entries[i].recipe,
+                                mr: entries[i].mr,
+                                allergyHits: entries[i].allergyHits,
+                                readOnly: true,
+                                qtyForCart: entries[i].qty,
+                              ),
+                              if (i < entries.length - 1)
+                                const SizedBox(height: spacing),
+                            ],
+                          ],
+                        )
+                      : GridView.builder(
+                          shrinkWrap: true,
+                          primary: false,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: cols,
+                            crossAxisSpacing: spacing,
+                            mainAxisSpacing: spacing,
+                            mainAxisExtent: w >= 800 && w < 1200 ? 430.0 : 400.0,
+                          ),
+                          itemCount: entries.length,
+                          itemBuilder: (_, i) => RecipeCard(
+                            recipe: entries[i].recipe,
+                            mr: entries[i].mr,
+                            allergyHits: entries[i].allergyHits,
+                            readOnly: true,
+                            qtyForCart: entries[i].qty,
+                          ),
+                        );
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(children: [grid]),
+                    child: Column(children: [recipesSection]),
                   );
                 },
               ),
