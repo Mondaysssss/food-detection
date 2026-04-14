@@ -53,7 +53,7 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add items (selected ${selected.length})'),
+        title: Text('Add items'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
