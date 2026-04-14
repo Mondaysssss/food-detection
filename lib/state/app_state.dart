@@ -142,6 +142,16 @@ class AppState extends ChangeNotifier {
   UnmodifiableListView<String> get ingredients =>
       UnmodifiableListView(_ingredients);
 
+  // unlock manual add only after at least one successful detection result
+  bool _manualAddUnlocked = false;
+  bool get manualAddUnlocked => _manualAddUnlocked;
+
+  void unlockManualAdd() {
+    if (_manualAddUnlocked) return;
+    _manualAddUnlocked = true;
+    notifyListeners();
+  }
+
   // favorites (menuId)
   final Set<String> _favorites = {};
   Set<String> get favorites => _favorites;
@@ -304,6 +314,7 @@ class AppState extends ChangeNotifier {
 
   void resetAll() {
     _ingredients.clear();
+    _manualAddUnlocked = false;
     _favorites.clear();
     _history.clear();
     _cart.clear();

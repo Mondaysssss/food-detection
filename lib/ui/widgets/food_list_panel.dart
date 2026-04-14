@@ -16,6 +16,8 @@ class FoodListPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canManualAdd = app.manualAddUnlocked;
+
     return glass(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,29 +69,45 @@ class FoodListPanel extends StatelessWidget {
                 runSpacing: 8,
                 alignment: WrapAlignment.spaceBetween,
                 children: [
+                SizedBox(
+                  width: btnW,
+                  child: ElevatedButton.icon(
+                    style: styleFor(false),
+                    onPressed: !canManualAdd
+                        ? null
+                        : () async {
+                            final picked = await Navigator.push<List<String>>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => IngredientPickerPage(
+                                  all: kAllIngredients,
+                                  existing: app.ingredients.toSet(),
+                                ),
+                              ),
+                            );
+                            if (picked != null && picked.isNotEmpty) {
+                              app.addIngredients(picked);
+                            }
+                          },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add'),
+                  ),
+                ),
+
+                if (!canManualAdd)
                   SizedBox(
                     width: btnW,
-                    child: ElevatedButton.icon(
-                      style: styleFor(false),
-                      onPressed: () async {
-                        final picked = await Navigator.push<List<String>>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => IngredientPickerPage(
-                              all: kAllIngredients,
-                              existing: app.ingredients.toSet(),
-                            ),
-                          ),
-                        );
-                        if (picked != null && picked.isNotEmpty) {
-                          app.addIngredients(picked);
-                        }
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add'),
+                    child: const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Detect ingredients first to unlock manual add.',
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
-
                   SizedBox(
                     width: btnW,
                     child: FilledButton.icon(

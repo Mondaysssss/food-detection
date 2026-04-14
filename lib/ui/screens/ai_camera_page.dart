@@ -77,6 +77,8 @@ class _AiCameraPageState extends State<AiCameraPage> {
 
       if (filtered.isNotEmpty && mounted) {
         final app = context.read<AppState>();
+        app.unlockManualAdd();
+
         showDialog(
           context: context,
           builder: (_) => DetectionDialog(
