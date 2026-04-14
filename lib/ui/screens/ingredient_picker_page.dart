@@ -58,12 +58,6 @@ class _IngredientPickerPageState extends State<IngredientPickerPage> {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          TextButton(
-            onPressed: _clearSelection,
-            child: const Text('Clear selection'),
-          ),
-        ],
       ),
       body: Column(
         children: [
