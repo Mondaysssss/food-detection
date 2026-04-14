@@ -47,16 +47,55 @@ class CartScreen extends StatelessWidget {
       final totalDishes = snapshot.values.fold<int>(0, (s, v) => s + v);
       int totalMinutes = 0;
       final Set<String> mainAll = {};
-      final Map<String, String> mainQty = {};
+      final Map<String, double> mainQtyValue = {};
+      final Map<String, String> mainQtyUnit = {};
+      final Map<String, String> mainQtyFallback = {};
       final Map<String, double> seasonTsp = {};
 
       final userAllergies = app.allergies;
       final allergyWarnings = <String, List<String>>{};
 
+      double? _parseQty(String raw) {
+        final s = raw.trim();
+        if (s.isEmpty) return null;
+
+        if (s.contains('/')) {
+          final parts = s.split('/');
+          if (parts.length == 2) {
+            final a = double.tryParse(parts[0].trim());
+            final b = double.tryParse(parts[1].trim());
+            if (a != null && b != null && b != 0) {
+              return a / b;
+            }
+          }
+        }
+
+        return double.tryParse(s);
+      }
+
+      String _formatQty(double value) {
+        if (value % 1 == 0) return value.toInt().toString();
+        return value
+            .toStringAsFixed(2)
+            .replaceFirst(RegExp(r'0+$'), '')
+            .replaceFirst(RegExp(r'\.$'), '');
+      }
+
+      String _mainQtyText(String ingredientId) {
+        final value = mainQtyValue[ingredientId];
+        if (value != null) {
+          final unit = mainQtyUnit[ingredientId] ?? '';
+          final qtyText = _formatQty(value);
+          return unit.isEmpty ? qtyText : '$qtyText $unit';
+        }
+        return mainQtyFallback[ingredientId] ?? '';
+      }
+
       snapshot.forEach((menuId, qty) {
         final r = kRecipeById[menuId]!;
-        totalMinutes +=
-            qty * r.steps.fold<int>(0, (s, st) => s + st.durationMin);
+
+        // Same recipe counts once only for total time.
+        totalMinutes += r.steps.fold<int>(0, (s, st) => s + st.durationMin);
 
         for (final ri in r.recipeIngredients) {
           final ing = ri.ingredientId;
@@ -67,8 +106,14 @@ class CartScreen extends StatelessWidget {
           } else {
             mainAll.add(ing);
 
-            final display = ri.display.trim().isEmpty ? 'to taste' : ri.display.trim();
-            mainQty.putIfAbsent(ing, () => display);
+            final parsed = _parseQty(ri.quantity);
+            if (parsed != null) {
+              mainQtyValue[ing] = (mainQtyValue[ing] ?? 0) + (parsed * qty);
+              mainQtyUnit.putIfAbsent(ing, () => ri.unit);
+            } else {
+              final display = ri.display.trim().isEmpty ? 'to taste' : ri.display.trim();
+              mainQtyFallback.putIfAbsent(ing, () => display);
+            }
           }
         }
 
@@ -154,7 +199,10 @@ class CartScreen extends StatelessWidget {
                     Text(
                       'Have: ' +
                           mainGreen
-                              .map((k) => '${prettyName(k)} ${mainQty[k] ?? ''}'.trim())
+                              .map((k) {
+                                final qtyText = _mainQtyText(k);
+                                return qtyText.isEmpty ? prettyName(k) : '${prettyName(k)} $qtyText';
+                              })
                               .join(', '),
                       style: const TextStyle(color: Colors.greenAccent),
                     ),
@@ -164,13 +212,16 @@ class CartScreen extends StatelessWidget {
                       child: Text(
                         'Missing: ' +
                             mainRed
-                                .map((k) => '${prettyName(k)} ${mainQty[k] ?? ''}'.trim())
+                                .map((k) {
+                                  final qtyText = _mainQtyText(k);
+                                  return qtyText.isEmpty ? prettyName(k) : '${prettyName(k)} $qtyText';
+                                })
                                 .join(', '),
                         style: const TextStyle(color: Colors.redAccent),
                       ),
                     ),
                   const SizedBox(height: 12),
-
+                  
                   sectionTitle('Seasoning (tsp)'),
                   const SizedBox(height: 6),
                   if (seasonKeys.isNotEmpty)
