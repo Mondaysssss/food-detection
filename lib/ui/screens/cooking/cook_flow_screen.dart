@@ -16,6 +16,7 @@ import '../../../state/app_state.dart';
 import '../../../data/recipes_data.dart';
 import '../../../domain/models/recipe.dart';
 import '../../../domain/services/auth_service.dart';
+import '../../widgets/cooking_gantt_chart.dart';
 
 // ✅ 供全檔使用（包括 Bottom Sheet / Menu Modal）
 String _fmtLeft(int ms) {
@@ -103,6 +104,7 @@ class _FlowStep {
   final String requiredEquipment; // 來自 RecipeStep.requiredEquipment（trim 後）
   final bool isContinuous; // 來自 RecipeStep.isContinuous
   final bool isConcurrent; // 來自 RecipeStep.isConcurrent（= 不需要 attention）
+  final bool isPrep;
 
   final String text;
 
@@ -130,6 +132,8 @@ class _FlowStep {
     required this.text,
     required this.durationMs,
     required this.tool,
+
+    required this.isPrep,
   });
 
   bool get isHandStep => isConcurrent && tool == null;
@@ -266,6 +270,39 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     super.dispose();
   }
 
+  List<GanttStep> _toGanttSteps() => _steps
+      .map(
+        (s) => GanttStep(
+          menuId: s.menuId,
+          menuName: s.menuName,
+          stepNumber: s.stepNumber,
+          startSec: s.startSec,
+          endSec: s.endSec,
+          isConcurrent: s.isConcurrent,
+          isPrep: s.isPrep,
+          text: s.text,
+        ),
+      )
+      .toList();
+
+  void _showGanttChart() {
+    final ganttSteps = _toGanttSteps();
+    debugPrint(ganttStepsToString(ganttSteps));
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (ctx, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          child: CookingGanttCharts(steps: ganttSteps),
+        ),
+      ),
+    );
+  }
   // ---------- data: menus & steps ----------
 
   List<Recipe> _resolveMenus() {
@@ -359,6 +396,20 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     // ✅ 每道菜：下一步最早可開始時間（上一 step 結束後）
     final readyAt = List<int>.filled(n, 0);
+
+    // ✅ LRPT：預先計算每道菜的剩餘 prep / cook 時間（秒）
+    final remainingPrepSec = List<int>.filled(n, 0);
+    final remainingCookSec = List<int>.filled(n, 0);
+    for (int r = 0; r < n; r++) {
+      for (final st in stepsByRecipe[r]) {
+        final dur = _stepDurationSec(st);
+        if (st.isPrep) {
+          remainingPrepSec[r] += dur;
+        } else {
+          remainingCookSec[r] += dur;
+        }
+      }
+    }
 
     // ✅ 資源用量（cookware/electric/oven + attention）
     final usage = <String, int>{};
@@ -500,7 +551,6 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           final start = t;
           final end = t + dur;
 
-          // ✅ 分配 6 格 Tile slot（獨立）
           _ToolKey? tool;
           if (group == 'cookware') {
             final cands = [
@@ -520,9 +570,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             tool = _ToolKey.oven;
             slotBusyUntil[tool] = max(slotBusyUntil[tool] ?? 0, end);
           } else if (group == 'hand') {
-            tool = null; // no equipment slot — hand timer created at runtime
+            tool = null;
           } else {
-            tool = null; // fallback safety
+            tool = null;
           }
 
           schedule.add(
@@ -550,18 +600,26 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             usage[group] = useOf(group) + 1;
           }
 
+          // ✅ LRPT: 扣減剩餘時間
+          if (st.isPrep) {
+            remainingPrepSec[r] -= dur;
+          } else {
+            remainingCookSec[r] -= dur;
+          }
+
           idx[r] += 1;
-          readyAt[r] = end; // ✅ 同一食譜下一步要等完成
+          readyAt[r] = end;
           scheduledAny = true;
           loopAgain = true;
         }
 
         // (2) 再做需要 attention 的 step（一次只會開到 1 個，因為 attention=1）
         //     ✅ 優先選擇 isPrep=true 的步驟（準備步驟排前面）
+        //     ✅ LRPT：同類型（都是 prep 或都是 cook）時，選剩餘時間最長的食譜
         if (useOf('attention') < capOf('attention')) {
-          // 收集所有可執行的 attention candidates
           int bestR = -1;
           bool bestIsPrep = false;
+          int bestRemaining = -1;
           for (int r = 0; r < n; r++) {
             if (idx[r] >= stepsByRecipe[r].length) continue;
             if (readyAt[r] > t) continue;
@@ -572,11 +630,16 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             final group = _groupOf(st);
             if (!_canStart(group: group, needsAttention: true)) continue;
 
-            // 優先 isPrep=true；同優先級按 recipe index 順序
+            // LRPT: prep 用 remainingPrepSec, cook 用 remainingCookSec
+            final rem = st.isPrep ? remainingPrepSec[r] : remainingCookSec[r];
+
+            // 優先 isPrep=true；同優先級按 LRPT（剩餘時間最長優先）
             if (bestR == -1 ||
-                (st.isPrep && !bestIsPrep)) {
+                (st.isPrep && !bestIsPrep) ||
+                (st.isPrep == bestIsPrep && rem > bestRemaining)) {
               bestR = r;
               bestIsPrep = st.isPrep;
+              bestRemaining = rem;
             }
           }
 
@@ -617,6 +680,13 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
               usage[group] = useOf(group) + 1;
             }
             usage['attention'] = useOf('attention') + 1;
+
+            // ✅ LRPT: 扣減剩餘時間
+            if (st.isPrep) {
+              remainingPrepSec[r] -= dur;
+            } else {
+              remainingCookSec[r] -= dur;
+            }
 
             idx[r] += 1;
             readyAt[r] = end;
@@ -676,6 +746,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           requiredEquipment: eq,
           isContinuous: st.isContinuous,
           isConcurrent: st.isConcurrent,
+          isPrep: st.isPrep,
           text: st.text,
           durationMs: durMs,
           tool: s.tool,
@@ -1289,7 +1360,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save history. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to save history. Please try again.'),
+          ),
         );
       }
       return;
@@ -1605,15 +1678,23 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     ];
     final handItems = _handTimers.keys
         .toList(); // List<int> of active globalNos
-      return Scaffold(
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: _bg,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: _bg,
-          foregroundColor: _ink,
-          title: Text(title),
-        ),
-        body: SafeArea(
+        foregroundColor: _ink,
+        title: Text(title),
+        actions: [
+          // ← add this
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Schedule',
+            onPressed: _showGanttChart,
+          ),
+        ],
+      ),
+      body: SafeArea(
         child: Stack(
           children: [
             Padding(
@@ -2748,7 +2829,6 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                             ),
                           ],
                         ),
-
                         onTap: null,
                       );
                     },
