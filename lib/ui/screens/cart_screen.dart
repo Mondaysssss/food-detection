@@ -373,6 +373,7 @@ class CartScreen extends StatelessWidget {
                                 allergyHits: entries[i].allergyHits,
                                 readOnly: true,
                                 qtyForCart: entries[i].qty,
+                                showQtyControls: true,
                               ),
                               if (i < entries.length - 1)
                                 const SizedBox(height: spacing),
