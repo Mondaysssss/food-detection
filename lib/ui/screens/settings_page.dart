@@ -184,15 +184,9 @@ class _PreferencePage extends StatefulWidget {
 
 class _PreferencePageState extends State<_PreferencePage> {
   static const applianceRows = [
-    (
-      'Cookware (wok, pot, frying pan)',
-      'cookware',
-    ),
+    ('Cookware (wok, pot, frying pan)', 'cookware'),
     ('Stove / cooktop (induction, gas stove)', 'stove'),
-    (
-      'Electric cooking (rice cooker)',
-      'electric',
-    ),
+    ('Electric cooking (rice cooker)', 'electric'),
     ('Baking (oven)', 'bake'),
   ];
 
