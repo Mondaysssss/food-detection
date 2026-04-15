@@ -61,9 +61,12 @@ class _AiCameraPageState extends State<AiCameraPage> {
       // Add timeout to prevent hanging
       final results = await _detector
           .detect(file)
-          .timeout(Duration(seconds: 30), onTimeout: () {
-        throw TimeoutException('Detection took too long');
-      });
+          .timeout(
+            Duration(seconds: 30),
+            onTimeout: () {
+              throw TimeoutException('Detection took too long');
+            },
+          );
 
       // filter out seasonings (same logic as your existing mock)
       final filtered = results
@@ -75,10 +78,13 @@ class _AiCameraPageState extends State<AiCameraPage> {
         _statusText = 'Done — ${filtered.length} items found';
       });
 
-      if (filtered.isNotEmpty && mounted) {
+      if (mounted) {
         final app = context.read<AppState>();
         app.unlockManualAdd();
+      }
 
+      if (filtered.isNotEmpty && mounted) {
+        final app = context.read<AppState>();
         showDialog(
           context: context,
           builder: (_) => DetectionDialog(
@@ -222,9 +228,9 @@ class _AiCameraPageState extends State<AiCameraPage> {
                 onPressed: _isLoading
                     ? null
                     : () => setState(() {
-                          _imageFile = null;
-                          _statusText = 'Ready — take or pick a photo';
-                        }),
+                        _imageFile = null;
+                        _statusText = 'Ready — take or pick a photo';
+                      }),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retake'),
               ),

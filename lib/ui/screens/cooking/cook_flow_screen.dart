@@ -9,7 +9,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:vibration/vibration.dart';
 import 'package:provider/provider.dart';
 import '../../../state/app_state.dart';
 
@@ -17,6 +19,7 @@ import '../../../data/recipes_data.dart';
 import '../../../domain/models/recipe.dart';
 import '../../../domain/services/auth_service.dart';
 import '../../widgets/cooking_gantt_chart.dart';
+import '../home_shell.dart';
 
 // ✅ 供全檔使用（包括 Bottom Sheet / Menu Modal）
 String _fmtLeft(int ms) {
@@ -238,8 +241,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   final Map<int, _ToolTimerState> _handTimers = {}; // keyed by globalNo
   // is ok queue（避免同一刻多個 timer 完成爆 dialog）
   //final List<_ToolKey> _okQueue = [];
-  final List<Object> _okQueue = []; // _ToolKey or int (hand globalNo)
+  final List<Object> _okQueue = []; // _ToolKey, int (hand globalNo), or 'human'
   bool _okShowing = false;
+  static const String _humanTimerKey = 'human';
 
   // bottom sheet open ratio -> hide right menu threshold
   double _sheetOpenRatio = 0.0;
@@ -267,6 +271,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   void dispose() {
     _tick?.cancel();
     _toolTick?.cancel();
+    _stopVibrationLoop();
     super.dispose();
   }
 
@@ -985,6 +990,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           _running = false;
           _finished = _calcCanNext();
         });
+        _enqueueIsOk(_humanTimerKey);
       }
     });
   }
@@ -1107,6 +1113,72 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     });
   }
 
+  // ---------- vibration helpers ----------
+  Timer? _vibrationTimer;
+  bool _vibrating = false;
+
+  void _startVibrationLoop() {
+    if (_vibrating) return;
+    _vibrating = true;
+    Vibration.vibrate(duration: 500);
+    _vibrationTimer = Timer.periodic(const Duration(milliseconds: 1000), (_) {
+      if (!_vibrating) return;
+      Vibration.vibrate(duration: 500);
+    });
+  }
+
+  void _stopVibrationLoop() {
+    _vibrating = false;
+    _vibrationTimer?.cancel();
+    _vibrationTimer = null;
+    Vibration.cancel();
+  }
+
+  // ---------- timer-finished message builder (Approach C) ----------
+
+  String _buildTimerMsg(Object k) {
+    if (k == _humanTimerKey) {
+      final s = _steps[_idx];
+      return 'Step timer done! (${s.menuName})';
+    }
+    if (k is _ToolKey) {
+      final t = _toolTimers[k];
+      final gNo = t?.ownerGlobalNo ?? 0;
+      final s = _steps.cast<_FlowStep?>().firstWhere(
+        (s) => s!.globalNo == gNo,
+        orElse: () => null,
+      );
+      final recipeName = s?.menuName ?? '';
+      final label = _equipmentLabel(k);
+      return '$label timer done! ($recipeName)';
+    }
+    if (k is int) {
+      // hand timer — keyed by globalNo
+      final s = _steps.cast<_FlowStep?>().firstWhere(
+        (s) => s!.globalNo == k,
+        orElse: () => null,
+      );
+      final recipeName = s?.menuName ?? '';
+      return 'Background task done! ($recipeName)';
+    }
+    return 'Timer done!';
+  }
+
+  String _equipmentLabel(_ToolKey k) {
+    switch (k) {
+      case _ToolKey.pot:
+      case _ToolKey.stove:
+        return 'Stove';
+      case _ToolKey.oven:
+        return 'Oven';
+      case _ToolKey.electric:
+      case _ToolKey.electric2:
+        return 'Electric cooker';
+    }
+  }
+
+  // ---------- ok-queue ----------
+
   void _enqueueIsOk(Object k) {
     if (_okQueue.contains(k)) return;
     _okQueue.add(k);
@@ -1120,13 +1192,21 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     _okShowing = true;
     final k = _okQueue.removeAt(0);
 
+    HapticFeedback.heavyImpact();
+    _startVibrationLoop();
+
+    final msg = _buildTimerMsg(k);
+    final isHuman = k == _humanTimerKey;
+    final hint = isHuman
+        ? 'Press Complete to move on.'
+        : 'Tap the tile above then press Complete to dismiss it.';
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        content: const Text(
-          'Timer has finished!\nTap the tile above then press Complete to dismiss it.',
-        ),
+        title: Text(msg),
+        content: Text(hint),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1136,8 +1216,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       ),
     );
 
-    // ✅ 自然倒數完：tile 保留（不移除），等用戶手動 peek → Complete 才消失
-    // （_toolTimers[k].finished 已= true，alarm 靜止，badge 顯示 "Done!"）
+    // stop vibration only when no more queued alerts
+    if (_okQueue.isEmpty) {
+      _stopVibrationLoop();
+    }
 
     if (mounted) {
       setState(() {
@@ -1214,6 +1296,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     setState(() {
       _stepTimerStarted = true;
       _stepManuallyCompleted = false; // ✅ 重啟 timer 時重置 complete 狀態
+      _doneGlobalNos.remove(s.globalNo); // ✅ undo accidental complete
       if (isTool) {
         if (s.durationMs > 0) {
           if (s.tool != null) {
@@ -1283,12 +1366,16 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       } else {
         _stopTick();
         _running = false;
+        _doneGlobalNos.add(s.globalNo);
       }
       _finished = _calcCanNext();
     });
   }
 
   void _togglePeekEquipment(_ToolKey tool) {
+    // Don't peek the tile if it belongs to the current step
+    final currentGNo = _steps.isEmpty ? -1 : _steps[_idx].globalNo;
+    if (_toolTimers[tool]?.ownerGlobalNo == currentGNo) return;
     setState(() {
       _peekedTile = (_peekedTile == tool) ? null : tool;
       _finished = _calcCanNext();
@@ -1296,6 +1383,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   }
 
   void _togglePeekHand(int globalNo) {
+    // Don't peek the tile if it belongs to the current step
+    final currentGNo = _steps.isEmpty ? -1 : _steps[_idx].globalNo;
+    if (_handTimers[globalNo]?.ownerGlobalNo == currentGNo) return;
     setState(() {
       _peekedTile = (_peekedTile == globalNo) ? null : globalNo;
       _finished = _calcCanNext();
@@ -1356,7 +1446,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         );
 
         if (!mounted) return;
-        Navigator.pop(context);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 1)),
+          (_) => false,
+        );
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1378,8 +1472,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     if (!_flowStarted || _idx <= 0) return;
 
     setState(() {
+      // ✅ 離開當前步：取消「已完成」標記
+      _doneGlobalNos.remove(_steps[_idx].globalNo);
       _idx--;
-      // ✅ 回到上一步：取消該步的「已完成」標記（讓 ✓ 消失，允許重做）
+      // ✅ 回到上一步：也取消該步的「已完成」標記（讓 ✓ 消失，允許重做）
       _doneGlobalNos.remove(_steps[_idx].globalNo);
       _applyStep(_idx, startIfFlowStarted: true);
     });
@@ -1551,7 +1647,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
                         final curNo = _steps[_idx].globalNo;
                         final isCurrent = s.globalNo == curNo;
-                        final done = (s.globalNo < curNo);
+                        final done = _doneGlobalNos.contains(s.globalNo);
 
                         return ListTile(
                           dense: true,
@@ -1621,13 +1717,41 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   Widget build(BuildContext context) {
     final step = _steps.isEmpty ? null : _steps[_idx];
 
-    final activeTool = step?.tool;
+    // Green border: equipment group of current non-concurrent step while timer is running
+    final activeToolGroup =
+        (_stepTimerStarted && !_stepManuallyCompleted && step?.tool != null)
+        ? _equipmentGroupOf(step!.tool!)
+        : '';
     final title = widget.titleOverride ?? 'Cooking';
 
-    // ✅ Step 卡只顯示「人手倒數」
-    final stepTimeText = (_flowStarted && _stepMs > 0)
-        ? _fmtLeft(_leftMs)
-        : '--';
+    // ✅ Step 卡倒數文字
+    final bool isCurrTool = step != null && _isToolTimerStep(step);
+    String stepTimeText;
+    if (_stepManuallyCompleted) {
+      stepTimeText = '0s';
+    } else if (isCurrTool) {
+      // Concurrent step: read from tile timer, or show full duration before start
+      if (_stepTimerStarted) {
+        if (step!.tool != null) {
+          final t = _toolTimers[step.tool];
+          stepTimeText = (t != null)
+              ? (t.finished ? '0s' : _fmtLeft(t.leftMs))
+              : '0s';
+        } else {
+          final t = _handTimers[step!.globalNo];
+          stepTimeText = (t != null)
+              ? (t.finished ? '0s' : _fmtLeft(t.leftMs))
+              : '0s';
+        }
+      } else {
+        // Before pressing Start: show the full duration
+        stepTimeText = step!.durationMs > 0 ? _fmtLeft(step.durationMs) : '--';
+      }
+    } else if (_flowStarted && _stepMs > 0) {
+      stepTimeText = _fmtLeft(_leftMs);
+    } else {
+      stepTimeText = '--';
+    }
 
     final peekedStep = _peekedTile == null
         ? null
@@ -1714,7 +1838,22 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                     const SizedBox(height: 12),
 
                     _ToolIconsFrame(
-                      activeTool: activeTool,
+                      activeToolGroup: activeToolGroup,
+                      permanentHandActive:
+                          _flowStarted &&
+                          _stepTimerStarted &&
+                          !_stepManuallyCompleted &&
+                          step != null &&
+                          !step.isConcurrent &&
+                          step.tool == null,
+                      permanentHandFinished:
+                          _flowStarted &&
+                          _stepTimerStarted &&
+                          !_running &&
+                          !_stepManuallyCompleted &&
+                          step != null &&
+                          !step.isConcurrent &&
+                          step.tool == null,
                       glowEnabled: _flowStarted,
                       items: toolItems,
                       handItems: handItems,
@@ -1792,7 +1931,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 // ----------------- widgets -----------------
 
 class _ToolIconsFrame extends StatelessWidget {
-  final _ToolKey? activeTool; // nullable — null means hand step
+  final String
+  activeToolGroup; // equipment group of current step, or '' if none
   final bool glowEnabled;
   final List<(_ToolKey, IconData)> items; // equipment tiles
   final List<int> handItems; // active hand tile globalNos
@@ -1809,13 +1949,20 @@ class _ToolIconsFrame extends StatelessWidget {
   final int Function(int) handShakeMsOf;
   final String Function(int) handCountTextOf;
 
+  // Permanent hand tile: green when non-concurrent step timer is running
+  final bool permanentHandActive;
+  // Golden pulse when non-concurrent step timer finished
+  final bool permanentHandFinished;
+
   // Peek: Object? (either _ToolKey or int)
   final Object? peekedTile;
   final void Function(_ToolKey)? onEquipmentTileTap;
   final void Function(int)? onHandTileTap;
 
   const _ToolIconsFrame({
-    required this.activeTool,
+    required this.activeToolGroup,
+    required this.permanentHandActive,
+    required this.permanentHandFinished,
     required this.glowEnabled,
     required this.items,
     required this.handItems,
@@ -1838,7 +1985,8 @@ class _ToolIconsFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalCount = items.length + handItems.length;
+    // +1 for the permanent hand tile (always visible)
+    final totalCount = items.length + 1 + handItems.length;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1847,38 +1995,57 @@ class _ToolIconsFrame extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
-      child: totalCount == 0
-          ? const SizedBox.shrink()
-          : GridView.builder(
-              itemCount: totalCount,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: totalCount <= 2 ? 2 : 3,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 1,
-              ),
-              itemBuilder: (_, i) {
-                if (i < items.length) {
-                  return _buildEquipmentTile(items[i].$1, items[i].$2);
-                } else {
-                  final gNo = handItems[i - items.length];
-                  return _buildHandTile(gNo);
-                }
-              },
-            ),
+      child: GridView.builder(
+        itemCount: totalCount,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: totalCount <= 2 ? 2 : 3,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1,
+        ),
+        itemBuilder: (_, i) {
+          if (i < items.length) {
+            return _buildEquipmentTile(items[i].$1, items[i].$2);
+          } else if (i == items.length) {
+            return _buildPermanentHandTile();
+          } else {
+            final gNo = handItems[i - items.length - 1];
+            return _buildHandTile(gNo);
+          }
+        },
+      ),
     );
   }
 
+  static String _groupOf(_ToolKey k) {
+    switch (k) {
+      case _ToolKey.pot:
+      case _ToolKey.stove:
+        return 'cookware';
+      case _ToolKey.electric:
+      case _ToolKey.electric2:
+        return 'electric';
+      case _ToolKey.oven:
+        return 'oven';
+    }
+  }
+
   Widget _buildEquipmentTile(_ToolKey k, IconData icon) {
-    final active = glowEnabled && (k == activeTool);
     final isPeeked = peekedTile is _ToolKey && peekedTile == k;
 
     final timerActive = timerActiveOf(k);
     final isFinished = finishedOf(k);
     final shakeMs = shakeMsOf(k);
     final countText = countTextOf(k);
+
+    // Green when: running bg timer, OR current non-concurrent step uses this equipment group
+    final active =
+        glowEnabled &&
+        !isFinished &&
+        (timerActive ||
+            (activeToolGroup.isNotEmpty && _groupOf(k) == activeToolGroup));
 
     final borderColor = isFinished
         ? _finishedAccent.withValues(alpha: 0.90)
@@ -1940,6 +2107,67 @@ class _ToolIconsFrame extends StatelessWidget {
     );
   }
 
+  Widget _buildPermanentHandTile() {
+    final finished = permanentHandFinished;
+    final active = permanentHandActive && !finished;
+
+    final borderColor = finished
+        ? _finishedAccent.withValues(alpha: 0.90)
+        : active
+        ? _accent.withValues(alpha: 0.65)
+        : Colors.white.withValues(alpha: 0.10);
+    final borderWidth = (finished || active) ? 2.5 : 1.0;
+    final shadows = finished
+        ? [
+            BoxShadow(
+              color: _finishedAccent.withValues(alpha: 0.45),
+              blurRadius: 22,
+              offset: const Offset(0, 4),
+            ),
+          ]
+        : active
+        ? [
+            BoxShadow(
+              color: _accent.withValues(alpha: 0.25),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ]
+        : null;
+
+    return SizedBox(
+      width: 90,
+      height: 90,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0B1220),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: borderWidth),
+          boxShadow: shadows,
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Icon(
+                Symbols.front_hand,
+                size: 30,
+                color: Colors.white.withValues(
+                  alpha: (finished || active) ? 0.95 : 0.70,
+                ),
+              ),
+            ),
+            if (finished)
+              Positioned.fill(
+                child: _FinishedPulseOverlay(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildHandTile(int gNo) {
     final isPeeked = peekedTile is int && peekedTile == gNo;
 
@@ -1948,13 +2176,17 @@ class _ToolIconsFrame extends StatelessWidget {
     final shakeMs = handShakeMsOf(gNo);
     final countText = handCountTextOf(gNo);
 
-    // No green active border for hand tiles — only finished / peeked / default
+    // Green when running (not finished)
+    final active = glowEnabled && timerActive && !isFinished;
+
     final borderColor = isFinished
         ? _finishedAccent.withValues(alpha: 0.90)
         : isPeeked
         ? _peekAccent.withValues(alpha: 0.85)
+        : active
+        ? _accent.withValues(alpha: 0.65)
         : Colors.white.withValues(alpha: 0.10);
-    final borderWidth = (isFinished || isPeeked) ? 2.5 : 1.0;
+    final borderWidth = (isFinished || isPeeked || active) ? 2.5 : 1.0;
     final shadows = isFinished
         ? [
             BoxShadow(
@@ -1987,7 +2219,7 @@ class _ToolIconsFrame extends StatelessWidget {
           ),
           child: _tileStack(
             icon: Symbols.front_hand,
-            active: false, // never green for hand
+            active: active,
             isPeeked: isPeeked,
             timerActive: timerActive,
             isFinished: isFinished,

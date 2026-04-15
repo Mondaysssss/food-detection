@@ -26,7 +26,10 @@ class FoodListPanel extends StatelessWidget {
           if (app.ingredients.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text('No records yet', style: TextStyle(color: Colors.white70)),
+              child: Text(
+                'No records yet',
+                style: TextStyle(color: Colors.white70),
+              ),
             )
           else
             Wrap(
@@ -59,55 +62,56 @@ class FoodListPanel extends StatelessWidget {
                 btnW = (w - 16) / 3;
               }
 
-              ButtonStyle styleFor(bool filled) => (filled ? FilledButton.styleFrom : ElevatedButton.styleFrom)(
-                minimumSize: Size(btnW, 44),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              );
+              ButtonStyle styleFor(bool filled) =>
+                  (filled ? FilledButton.styleFrom : ElevatedButton.styleFrom)(
+                    minimumSize: Size(btnW, 44),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  );
 
               return Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 alignment: WrapAlignment.spaceBetween,
                 children: [
-                SizedBox(
-                  width: btnW,
-                  child: ElevatedButton.icon(
-                    style: styleFor(false),
-                    onPressed: !canManualAdd
-                        ? null
-                        : () async {
-                            final picked = await Navigator.push<List<String>>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => IngredientPickerPage(
-                                  all: kAllIngredients,
-                                  existing: app.ingredients.toSet(),
-                                ),
-                              ),
-                            );
-                            if (picked != null && picked.isNotEmpty) {
-                              app.addIngredients(picked);
-                            }
-                          },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add'),
-                  ),
-                ),
-
-                if (!canManualAdd)
                   SizedBox(
                     width: btnW,
-                    child: const Padding(
-                      padding: EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Detect ingredients first to unlock manual add.',
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 12,
+                    child: ElevatedButton.icon(
+                      style: styleFor(false),
+                      onPressed: !canManualAdd
+                          ? null
+                          : () async {
+                              final picked = await Navigator.push<List<String>>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => IngredientPickerPage(
+                                    all: kAllIngredients,
+                                    existing: app.ingredients.toSet(),
+                                  ),
+                                ),
+                              );
+                              if (picked != null && picked.isNotEmpty) {
+                                app.addIngredients(picked);
+                              }
+                            },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add'),
+                    ),
+                  ),
+
+                  if (!canManualAdd)
+                    SizedBox(
+                      width: btnW,
+                      child: const Padding(
+                        padding: EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Run detection once to unlock manual add.',
+                          style: TextStyle(color: Colors.white60, fontSize: 12),
                         ),
                       ),
                     ),
-                  ),
                   SizedBox(
                     width: btnW,
                     child: FilledButton.icon(
@@ -117,7 +121,9 @@ class FoodListPanel extends StatelessWidget {
                           : () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const RecommendScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const RecommendScreen(),
+                                ),
                               );
                             },
                       icon: const Icon(Icons.check),
@@ -130,10 +136,17 @@ class FoodListPanel extends StatelessWidget {
                     child: FilledButton.tonalIcon(
                       style: FilledButton.styleFrom(
                         minimumSize: Size(btnW, 44),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        backgroundColor: Colors.red.shade200.withValues(alpha: 0.2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        backgroundColor: Colors.red.shade200.withValues(
+                          alpha: 0.2,
+                        ),
                       ),
-                      onPressed: app.ingredients.isEmpty ? null : app.clearIngredients,
+                      onPressed: app.ingredients.isEmpty
+                          ? null
+                          : app.clearIngredients,
                       icon: const Icon(Icons.delete),
                       label: const Text('Clear'),
                     ),

@@ -488,15 +488,15 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
   Widget _qAppliance() {
     final rows = const [
       (
-        'Cookware (wok, soup pot, frying pan, steamer, sauté, stew, pressure cooker)',
+        'Cookware (wok, pot, frying pan)',
         'cookware',
       ),
       ('Stove / cooktop (induction, gas stove)', 'stove'),
       (
-        'Electric cooking (rice cooker, slow cooker, electric skillet)',
+        'Electric cooking (rice cooker)',
         'electric',
       ),
-      ('Baking / air frying (oven, air fryer)', 'bake'),
+      ('Baking (oven)', 'bake'),
     ];
 
     return Column(

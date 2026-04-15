@@ -51,7 +51,7 @@ class RecipeCard extends StatelessWidget {
     this.showQtyControls = false,
   });
 
-    void _showMenuLimitDialog(BuildContext context) {
+  void _showMenuLimitDialog(BuildContext context) {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -68,7 +68,6 @@ class RecipeCard extends StatelessWidget {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -182,9 +181,24 @@ class RecipeCard extends StatelessWidget {
                                 spacing: 8,
                                 runSpacing: 4,
                                 children: [
-                                  _timeBadge(Icons.content_cut, 'Prep', _fmtTime(recipe.prepTimeSec), const Color(0xFF90CAF9)),
-                                  _timeBadge(Icons.local_fire_department, 'Cook', _fmtTime(recipe.cookTimeSec), const Color(0xFFFFAB91)),
-                                  _timeBadge(Icons.schedule, 'Total', _fmtTime(recipe.combinedTimeSec), const Color(0xFFA5D6A7)),
+                                  _timeBadge(
+                                    Icons.content_cut,
+                                    'Prep',
+                                    _fmtTime(recipe.prepTimeSec),
+                                    const Color(0xFF90CAF9),
+                                  ),
+                                  _timeBadge(
+                                    Icons.local_fire_department,
+                                    'Cook',
+                                    _fmtTime(recipe.cookTimeSec),
+                                    const Color(0xFFFFAB91),
+                                  ),
+                                  _timeBadge(
+                                    Icons.schedule,
+                                    'Total',
+                                    _fmtTime(recipe.combinedTimeSec),
+                                    const Color(0xFFA5D6A7),
+                                  ),
                                 ],
                               ),
                             ],
@@ -199,7 +213,9 @@ class RecipeCard extends StatelessWidget {
                                   color: Colors.red.withValues(alpha: 0.18),
                                   borderRadius: BorderRadius.circular(999),
                                   border: Border.all(
-                                    color: Colors.redAccent.withValues(alpha: 0.7),
+                                    color: Colors.redAccent.withValues(
+                                      alpha: 0.7,
+                                    ),
                                   ),
                                 ),
                                 child: Text(
@@ -305,6 +321,7 @@ class RecipeCard extends StatelessWidget {
                         IconButton.filled(
                           onPressed: () {
                             if (limitReached) {
+                              FocusScope.of(context).unfocus();
                               _showMenuLimitDialog(context);
                               return;
                             }
@@ -345,7 +362,11 @@ Widget _timeBadge(IconData icon, String label, String value, Color color) {
       const SizedBox(width: 3),
       Text(
         '$label: $value',
-        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 11,
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ],
   );
