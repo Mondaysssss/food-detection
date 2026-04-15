@@ -249,6 +249,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   double _sheetOpenRatio = 0.0;
   bool _hideRightMenus = false;
 
+  // Gantt chart color map (built once on first open, reused afterwards)
+  Map<String, Color>? _ganttColorMap;
+
   @override
   void initState() {
     super.initState();
@@ -292,6 +295,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   void _showGanttChart() {
     final ganttSteps = _toGanttSteps();
+    _ganttColorMap ??= buildGanttColorMap(ganttSteps);
+    final colorMap = _ganttColorMap!;
     debugPrint(ganttStepsToString(ganttSteps));
     showModalBottomSheet(
       context: context,
@@ -303,7 +308,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         expand: false,
         builder: (ctx, scrollController) => SingleChildScrollView(
           controller: scrollController,
-          child: CookingGanttCharts(steps: ganttSteps),
+          child: CookingGanttCharts(steps: ganttSteps, colorMap: colorMap),
         ),
       ),
     );

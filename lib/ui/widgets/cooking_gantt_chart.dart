@@ -34,20 +34,41 @@ class GanttStep {
 
 // ─── color helpers ───
 
-Color _recipeColor(int index, int totalRecipes) {
-  final hue = (index * 360.0 / max(1, totalRecipes)) % 360.0;
-  return HSLColor.fromAHSL(1.0, hue, 0.65, 0.52).toColor();
-}
+/// Tableau-inspired palette (shuffled for adjacent-recipe contrast).
+const chartPalette = [
+  Color(0xFF4E79A7), // steel blue
+  Color(0xFFB07AA1), // mauve
+  Color(0xFF4E9A94), // teal
+  Color(0xFF9C755F), // brown
+  Color(0xFF7B72C0), // soft purple
+];
 
 const _prepColor = Color(0xFF66BB6A);
 const _cookColor = Color(0xFFFF7043);
 
 // ─── widget ───
 
+/// Build a random color map for recipe IDs. Call once and cache the result.
+Map<String, Color> buildGanttColorMap(List<GanttStep> steps) {
+  final ids = <String>[];
+  for (final s in steps) {
+    if (!ids.contains(s.menuId)) ids.add(s.menuId);
+  }
+  final shuffled = List<Color>.from(chartPalette)..shuffle();
+  return {
+    for (int i = 0; i < ids.length; i++) ids[i]: shuffled[i % shuffled.length],
+  };
+}
+
 class CookingGanttCharts extends StatelessWidget {
   final List<GanttStep> steps;
+  final Map<String, Color> colorMap;
 
-  const CookingGanttCharts({super.key, required this.steps});
+  const CookingGanttCharts({
+    super.key,
+    required this.steps,
+    required this.colorMap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +123,7 @@ class CookingGanttCharts extends StatelessWidget {
       ctx,
     ).showSnackBar(const SnackBar(content: Text('Exporting chart…')));
     try {
-      final bytes = await _exportChart(steps, mode);
+      final bytes = await _exportChart(steps, mode, colorMap);
       if (bytes == null) {
         if (ctx.mounted) {
           ScaffoldMessenger.of(
@@ -147,8 +168,9 @@ class CookingGanttCharts extends StatelessWidget {
     }
     final chips = <Widget>[];
     for (int i = 0; i < recipeIds.length; i++) {
-      final name = steps.firstWhere((s) => s.menuId == recipeIds[i]).menuName;
-      chips.add(_chip(_recipeColor(i, recipeIds.length), name));
+      final id = recipeIds[i];
+      final name = steps.firstWhere((s) => s.menuId == id).menuName;
+      chips.add(_chip(colorMap[id]!, name));
       chips.add(const SizedBox(width: 10));
     }
     return Padding(
@@ -194,6 +216,7 @@ class CookingGanttCharts extends StatelessWidget {
             mode: mode,
             bgLanes: bgLanes,
             bgLaneMap: bgLaneMap,
+            colorMap: colorMap,
           ),
         ),
       ),
@@ -253,6 +276,7 @@ class _GanttPainter extends CustomPainter {
   final _ColorMode mode;
   final int bgLanes;
   final Map<int, int> bgLaneMap;
+  final Map<String, Color> colorMap;
 
   _GanttPainter({
     required this.steps,
@@ -260,6 +284,7 @@ class _GanttPainter extends CustomPainter {
     required this.mode,
     required this.bgLanes,
     required this.bgLaneMap,
+    required this.colorMap,
   });
 
   @override
@@ -339,7 +364,7 @@ class _GanttPainter extends CustomPainter {
           color = s.isPrep ? _prepColor : _cookColor;
           break;
         case _ColorMode.recipe:
-          color = _recipeColor(recipeIds.indexOf(s.menuId), recipeIds.length);
+          color = colorMap[s.menuId] ?? chartPalette[0];
           break;
       }
 
@@ -434,7 +459,10 @@ class _GanttPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GanttPainter old) =>
-      old.steps != steps || old.mode != mode || old.bgLanes != bgLanes;
+      old.steps != steps ||
+      old.mode != mode ||
+      old.bgLanes != bgLanes ||
+      old.colorMap != colorMap;
 }
 
 // ─── PictureRecorder export ───
@@ -476,7 +504,11 @@ String ganttStepsToString(List<GanttStep> steps) {
   return buf.toString();
 }
 
-Future<Uint8List?> _exportChart(List<GanttStep> steps, _ColorMode mode) async {
+Future<Uint8List?> _exportChart(
+  List<GanttStep> steps,
+  _ColorMode mode,
+  Map<String, Color> colorMap,
+) async {
   final totalSec = steps.map((s) => s.endSec).reduce(max);
   final fullWidth = min(8000.0, max(600.0, totalSec * 1.0));
   final (bgLanes, bgLaneMap) = _assignBgLanes(steps);
@@ -494,6 +526,7 @@ Future<Uint8List?> _exportChart(List<GanttStep> steps, _ColorMode mode) async {
     mode: mode,
     bgLanes: bgLanes,
     bgLaneMap: bgLaneMap,
+    colorMap: colorMap,
   ).paint(canvas, Size(fullWidth, height));
 
   final picture = recorder.endRecording();
