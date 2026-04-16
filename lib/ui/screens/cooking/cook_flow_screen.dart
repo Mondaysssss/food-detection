@@ -1722,11 +1722,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   Widget build(BuildContext context) {
     final step = _steps.isEmpty ? null : _steps[_idx];
 
-    // Green border: equipment group of current non-concurrent step while timer is running
-    final activeToolGroup =
+    // Green border: only the exact current tool tile should glow.
+    final _ToolKey? activeTool =
         (_stepTimerStarted && !_stepManuallyCompleted && step?.tool != null)
-        ? _equipmentGroupOf(step!.tool!)
-        : '';
+        ? step!.tool
+        : null;
     final title = widget.titleOverride ?? 'Cooking';
 
     // ✅ Step 卡倒數文字
@@ -1843,7 +1843,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                     const SizedBox(height: 12),
 
                     _ToolIconsFrame(
-                      activeToolGroup: activeToolGroup,
+                      activeTool: activeTool,
                       permanentHandActive:
                           _flowStarted &&
                           _stepTimerStarted &&
@@ -1936,8 +1936,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 // ----------------- widgets -----------------
 
 class _ToolIconsFrame extends StatelessWidget {
-  final String
-  activeToolGroup; // equipment group of current step, or '' if none
+  final _ToolKey? activeTool; // exact current tool tile, if any
   final bool glowEnabled;
   final List<(_ToolKey, IconData)> items; // equipment tiles
   final List<int> handItems; // active hand tile globalNos
@@ -1965,7 +1964,7 @@ class _ToolIconsFrame extends StatelessWidget {
   final void Function(int)? onHandTileTap;
 
   const _ToolIconsFrame({
-    required this.activeToolGroup,
+    required this.activeTool,
     required this.permanentHandActive,
     required this.permanentHandFinished,
     required this.glowEnabled,
@@ -2024,19 +2023,6 @@ class _ToolIconsFrame extends StatelessWidget {
     );
   }
 
-  static String _groupOf(_ToolKey k) {
-    switch (k) {
-      case _ToolKey.pot:
-      case _ToolKey.stove:
-        return 'cookware';
-      case _ToolKey.electric:
-      case _ToolKey.electric2:
-        return 'electric';
-      case _ToolKey.oven:
-        return 'oven';
-    }
-  }
-
   Widget _buildEquipmentTile(_ToolKey k, IconData icon) {
     final isPeeked = peekedTile is _ToolKey && peekedTile == k;
 
@@ -2045,12 +2031,11 @@ class _ToolIconsFrame extends StatelessWidget {
     final shakeMs = shakeMsOf(k);
     final countText = countTextOf(k);
 
-    // Green when: running bg timer, OR current non-concurrent step uses this equipment group
+    // Green when: running bg timer, OR this exact tool is the current step tool.
     final active =
         glowEnabled &&
         !isFinished &&
-        (timerActive ||
-            (activeToolGroup.isNotEmpty && _groupOf(k) == activeToolGroup));
+        (timerActive || activeTool == k);
 
     final borderColor = isFinished
         ? _finishedAccent.withValues(alpha: 0.90)
