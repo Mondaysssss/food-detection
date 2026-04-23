@@ -1,8 +1,8 @@
 // lib/main.dart
-// App 入口點：建立 Provider(AppState) 並啟動 MyApp（MaterialApp + Theme + 初始頁）
+// App entry point: creates Provider(AppState) and launches MyApp (MaterialApp + Theme + initial page)
 //
-// 你之後加任何全域狀態（例如：登入資料、使用者偏好）都可以擺入 AppState，
-// 然後 UI 用 Provider/Selector 去讀取。
+// Any global state added later (e.g. login data, user preferences) can be placed in AppState,
+// and the UI reads it via Provider/Selector.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

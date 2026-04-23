@@ -1,4 +1,4 @@
-// [OOP] 收藏頁：列出已收藏食譜。
+// [OOP] Favorites page: lists saved/favorited recipes.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

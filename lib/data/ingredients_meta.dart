@@ -1,6 +1,6 @@
 import '../domain/models/recipe.dart';
 
-// [OOP] 靜態資料：食材/調味料的顯示名稱、分類、預設份量等（包含調味料 key / 茶匙換算）。
+// [OOP] Static data: display names, categories, and default quantities for ingredients/seasonings (includes seasoning keys / teaspoon conversions).
 
 /// seasoning keys
 const Set<String> kSeasoningKeys = {
@@ -73,7 +73,7 @@ const Set<String> kSeasoningKeys = {
   'cornstarch',
 };
 
-/// 預設份量（UI 顯示用 fallback）
+/// Default quantities (fallback for UI display)
 const Map<String, String> kQtyDefaults = {
   // common
   'salt': 'to taste',
@@ -87,7 +87,7 @@ const Map<String, String> kQtyDefaults = {
   'garlic': '2 cloves',
 };
 
-/// 調味料換算為 teaspoons（購物車彙總用）
+/// Seasoning conversion to teaspoons (for cart summary)
 const Map<String, double> kSeasoningTeaspoons = {
   // 1 tbsp = 3 tsp
   'soy_sauce': 3.0,
@@ -105,7 +105,7 @@ const Map<String, double> kSeasoningTeaspoons = {
 };
 
 /// =========================================================
-/// 方案 B：由 Recipe.recipeIngredients 分類（主食材 / 調味料）
+/// Option B: classify by Recipe.recipeIngredients (main ingredients / seasonings)
 /// =========================================================
 bool isSeasoningKey(String key) => kSeasoningKeys.contains(key);
 

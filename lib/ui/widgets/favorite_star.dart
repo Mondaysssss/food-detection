@@ -1,4 +1,4 @@
-// [OOP] 共用元件：收藏星星按鈕（切換收藏狀態）。
+// [OOP] Shared widget: favorite star button (toggles favorite state).
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

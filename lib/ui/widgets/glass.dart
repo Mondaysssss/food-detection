@@ -1,4 +1,4 @@
-// [OOP] 共用元件：玻璃磨砂卡片樣式（半透明背景）。
+// [OOP] Shared widget: frosted glass card style (semi-transparent background).
 
 import 'package:flutter/material.dart';
 

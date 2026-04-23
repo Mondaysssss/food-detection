@@ -1,4 +1,4 @@
-// [OOP] 資料模型：食譜與偵測食材的匹配結果（命中/缺少/多餘等）。
+// [OOP] Data model: matching result between a recipe and detected ingredients (hit/missing/extra, etc.).
 
 class MatchResult {
   final List<String> match;

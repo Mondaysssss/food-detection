@@ -1,4 +1,4 @@
-// [OOP] BottomSheet：顯示食譜詳細（步驟、所需食材、匹配資訊）。
+// [OOP] BottomSheet: displays recipe details (steps, required ingredients, match info).
 
 import 'package:flutter/material.dart';
 
@@ -27,7 +27,7 @@ void showRecipeDetailSheet(
   final mainIngr = <MapEntry<String, String>>[];
   final seasonings = <MapEntry<String, String>>[];
 
-  // 優先用 recipeIngredients（含 qty/unit），否則 fallback 舊 ingredientIds + kQtyDefaults
+  // Prefer recipeIngredients (with qty/unit); otherwise fall back to the old ingredientIds + kQtyDefaults
   final ids = recipe.ingredientIds;
   if (recipe.recipeIngredients.isNotEmpty) {
     for (final ri in recipe.recipeIngredients) {
@@ -168,7 +168,7 @@ void showRecipeDetailSheet(
                               kvPill(
                                 'Taste',
                                 recipe.taste.join('  / '),
-                              ), //可以轉recipe_meta.dart的kSellingPoints
+                              ), // could migrate to kSellingPoints in recipe_meta.dart
                               kvPill('Method', method),
                               kvPill('Servings', '$servings '),
                               kvPill('Total time', '$totalMin min'),

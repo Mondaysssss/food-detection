@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import 'persona_wizard_screen.dart';
 
-/// 這個檔案：
-/// App 的「開始 / 歡迎」畫面（對應你提供的 welcome_login_手機_ui.jsx 風格）
-/// - 上方：隨機香港食物封面圖
-/// - 下方：標題 + 簡介 + 兩個按鈕（Start using / Login）
-/// - 按鈕行為：Start using -> PersonaWizardScreen；Login -> LoginScreen
+/// This file:
+/// App's Start / Welcome screen (based on the welcome_login_mobile_ui.jsx style provided)
+/// - Top: random Hong Kong food cover image
+/// - Bottom: title + intro + two buttons (Start using / Login)
+/// - Button behaviour: Start using -> PersonaWizardScreen; Login -> LoginScreen
 class IntroStartScreen extends StatefulWidget {
   const IntroStartScreen({super.key});
 
@@ -27,7 +27,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
 
   String get _heroUrl => _heroUrls[_heroIndex % _heroUrls.length];
 
-  //用「香港食物」封面圖
+  // Use "Hong Kong food" cover image
   static const List<String> _heroUrls = [
     'assets/images/recipes/r2.jpg',
     'assets/images/recipes/r7.jpg',
@@ -38,7 +38,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
     'assets/images/recipes/r16.jpg',
   ];
 
-  /// Hero 圖載入失敗 / 未載入時，用一個「一定睇到」嘅食物 icon 當 fallback。
+  /// When Hero image fails to load / not yet loaded, use a food icon as fallback.
   Widget _heroFallback() {
     return Container(
       decoration: BoxDecoration(
@@ -102,7 +102,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
     final mq = MediaQuery.of(context);
     final h = mq.size.height;
 
-    // 參考 JSX：上方圖片約 56% 高度
+    // Reference JSX: top image approx 56% height
     final imageH = max(260.0, h * 0.56);
 
     return Scaffold(
@@ -113,7 +113,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
             constraints: const BoxConstraints(maxWidth: 460),
             child: Column(
               children: [
-                // 上方封面圖
+                // Top cover image
                 SizedBox(
                   height: min(imageH, h * 0.62),
                   width: double.infinity,
@@ -140,14 +140,14 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                   ),
                 ),
 
-                // 下方內容（標題 + 兩個按鈕）
+                // Bottom content (title + two buttons)
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // 玻璃卡片（類似 JSX 底部白色面板）
+                        // Glass card (similar to JSX bottom white panel)
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: .78),
@@ -192,7 +192,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Start using（主按鈕）—— 文字強制白色 ✅
+                        // Start using (primary button) — text forced white ✅
                         SizedBox(
                           height: 54,
                           child: FilledButton(
@@ -214,7 +214,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Login（次按鈕）
+                        // Login (secondary button)
                         SizedBox(
                           height: 54,
                           child: OutlinedButton(
@@ -239,7 +239,7 @@ class _IntroStartScreenState extends State<IntroStartScreen> {
                           ),
                         ),
 
-                        // 底部細字（參考 JSX footer）
+                        // Bottom small text (reference JSX footer)
                         const SizedBox(height: 12),
                         const Text(
                           'By continuing, you agree to our Terms & Privacy Policy.',

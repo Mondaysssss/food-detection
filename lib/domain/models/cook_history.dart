@@ -1,4 +1,4 @@
-// [OOP] 資料模型：完成煮食後的歷史紀錄（時間、菜式、用到/缺少食材等）。
+// [OOP] Data model: history record after completing a cooking session (time, dish, used/missing ingredients, etc.).
 
 class CookHistory {
   final String title;

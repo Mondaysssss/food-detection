@@ -1,4 +1,4 @@
-// [OOP] 全域狀態：管理已偵測食材、購物車、收藏、煮食紀錄等；透過 ChangeNotifier 通知 UI 更新。
+// [OOP] Global state: manages detected ingredients, cart, favorites, cooking history, etc.; notifies UI via ChangeNotifier.
 
 import 'dart:collection';
 
@@ -14,7 +14,7 @@ class AppState extends ChangeNotifier {
   // Persona / Profile (for Settings display)
   // =========================================================
 
-  // login 未做，所以先用固定字
+  // Login not yet implemented, using a placeholder string for now
   String userName = 'User name';
 
   String? gender; // from PersonaWizard
@@ -113,7 +113,7 @@ class AppState extends ChangeNotifier {
     if (newAppliances != null) {
       for (final k in _appliances.keys) {
         final v = newAppliances[k] ?? _appliances[k] ?? 0;
-        setAppliance(k, v); // 內部會 notify
+        setAppliance(k, v); // internally calls notifyListeners
       }
       return;
     }
@@ -211,7 +211,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-
   static const int maxMenuSuggestionCount = 5;
 
   int cartCountOf(String menuId) => _cart[menuId] ?? 0;
@@ -234,7 +233,6 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
   }
-
 
   void setCartCount(String menuId, int count) {
     if (count <= 0)

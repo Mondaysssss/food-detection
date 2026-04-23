@@ -1,6 +1,6 @@
 // lib/app/my_app.dart
-//  App 最外層 MaterialApp：設定 Theme / Title / 初始頁（IntroStartScreen）
-// 你之後要加 route table / i18n / deep link，都係由呢個檔開始擴展。
+//  Outermost MaterialApp: sets Theme / Title / initial page (IntroStartScreen)
+// Any future additions of route table / i18n / deep link should start expanding from this file.
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';

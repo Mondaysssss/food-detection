@@ -1,7 +1,7 @@
-// [OOP] 歷史頁：列出過往 CookSession / CookHistory。
-// ✅ sessions: 顯示長方形卡片（完成幾多道 / 完成時間 / 總完成時間）
-// ✅ 點卡片：Bottom Sheet 詳情
-// ✅ Bottom Sheet 入面每道菜：長按 → 彈出食譜詳細 (showRecipeDetailSheet)
+// [OOP] History page: lists previous CookSession / CookHistory records.
+// ✅ sessions: display rectangular cards (dishes completed / completion time / total time)
+// ✅ Tap card: Bottom Sheet details
+// ✅ Each dish in Bottom Sheet: long press → show recipe details (showRecipeDetailSheet)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -128,7 +128,7 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     final rawSessions = context.watch<AppState>().sessions;
 
-    // 排序
+    // sort
     final sessions = _newestFirst
         ? rawSessions.toList()
         : rawSessions.reversed.toList();
@@ -136,7 +136,7 @@ class _HistoryPageState extends State<HistoryPage> {
     if (sessions.isNotEmpty) {
       return Column(
         children: [
-          // 排序按鈕列
+          // sort button row
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Align(
@@ -152,12 +152,15 @@ class _HistoryPageState extends State<HistoryPage> {
                         Text(_newestFirst ? 'Recent' : 'Oldest'),
                         const SizedBox(width: 4),
                         Icon(
-                          _newestFirst ? Icons.arrow_downward : Icons.arrow_upward,
+                          _newestFirst
+                              ? Icons.arrow_downward
+                              : Icons.arrow_upward,
                           size: 16,
                         ),
                       ],
                     ),
-                    onPressed: () => setState(() => _newestFirst = !_newestFirst),
+                    onPressed: () =>
+                        setState(() => _newestFirst = !_newestFirst),
                   ),
                   if (!_isSelectionMode)
                     ActionChip(
@@ -182,7 +185,7 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
             ),
           ),
-          // 列表
+          // list
           Expanded(
             child: ListView.separated(
               itemCount: sessions.length,
@@ -195,12 +198,12 @@ class _HistoryPageState extends State<HistoryPage> {
                   (sum, v) => sum + v,
                 );
 
-                // 取第一個食譜的封面圖
+                // use the first recipe's cover image
                 final firstMenuId = s.items.keys.first;
                 final firstRecipe = kRecipeById[firstMenuId];
                 final cover = firstRecipe?.cover;
 
-                // 拼所有食譜名字，用 " + " 連接
+                // join all recipe names with " + "
                 final names = s.items.keys
                     .map((id) => kRecipeById[id]?.name ?? id)
                     .join(' + ');
@@ -270,15 +273,21 @@ class _HistoryPageState extends State<HistoryPage> {
                                   const SizedBox(height: 4),
                                   Text(
                                     'Completed $totalDishes dishes',
-                                    style: const TextStyle(color: Colors.white70),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                    ),
                                   ),
                                   Text(
                                     '${s.totalMinutes} minutes',
-                                    style: const TextStyle(color: Colors.white70),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                    ),
                                   ),
                                   Text(
                                     _fmtDone(s.completedAt),
-                                    style: const TextStyle(color: Colors.white70),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -319,13 +328,13 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 );
               },
-            ), // ListView.separated 結尾
+            ), // ListView.separated end
           ), // Expanded
         ],
       ); // Column
     }
 
-    // ✅ 冇 sessions：fallback 用單菜 history grid（你原本嗰套）
+    // ✅ No sessions: fallback to single-dish history grid (original layout)
     final list = context.watch<AppState>().history;
     if (list.isEmpty) {
       return glass(
@@ -465,7 +474,7 @@ class _SessionDetailSheet extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 10),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        // ✅ 單按：彈出食譜詳細
+                        // ✅ Single tap: show recipe details
                         onTap: r == null
                             ? null
                             : () {
@@ -476,7 +485,7 @@ class _SessionDetailSheet extends StatelessWidget {
                                 );
                               },
 
-                        // ✅ 長按：同樣彈出食譜詳細
+                        // ✅ Long press: also show recipe details
                         onLongPress: r == null
                             ? null
                             : () {

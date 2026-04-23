@@ -1,4 +1,4 @@
-// [OOP] 主殼：底部導覽（推薦/相機/購物車/歷史/設定等）與各分頁。
+// [OOP] Main shell: bottom navigation (recommend/camera/cart/history/settings, etc.) and sub-pages.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,22 +25,14 @@ class _HomeShellState extends State<HomeShell> {
     _index = widget.initialIndex;
   }
 
-  final _pages = const [
-    AiCameraPage(),
-    HistoryPage(),
-    SettingsPage(),
-  ];
+  final _pages = const [AiCameraPage(), HistoryPage(), SettingsPage()];
 
-  final _titles = const [
-    'Ingredient scanner',
-    'History',
-    'Settings',
-  ];
+  final _titles = const ['Ingredient scanner', 'History', 'Settings'];
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      // ✅ 攔截系統返回鍵：唔直接 pop（防止回到登入頁）
+      // ✅ Intercept system back button: do not pop directly (prevents navigating back to login page)
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
@@ -78,7 +70,7 @@ class _HomeShellState extends State<HomeShell> {
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
-            automaticallyImplyLeading: false, // ✅ 移除返回鍵
+            automaticallyImplyLeading: false, // ✅ remove back button
             title: Text(_titles[_index]),
             actions: const [SizedBox(width: 8)],
           ),

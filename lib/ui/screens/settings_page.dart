@@ -1,5 +1,5 @@
-// [OOP] 設定頁：顯示使用者資訊 + Preference(推到新頁修改 appliance 數目 + allergies，按 Confirm 才套用) + 重設資料。
-// ✅ Confirm 固定在最底（bottomNavigationBar），唔需要捲到最底先見到。
+// [OOP] Settings page: displays user info + Preferences (navigates to a sub-page to adjust appliance counts + allergies, applied on Confirm) + reset data.
+// ✅ Confirm is pinned to the bottom (bottomNavigationBar), no scrolling required to see it.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,8 +44,8 @@ class SettingsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
 
-                      // ✅ Age / Gender 同 user name 一樣大小(18)
-                      // ✅ "Age:" / "Gender:" 白色；xxxx 黑色
+                      // ✅ Age / Gender same font size as user name (18)
+                      // ✅ "Age:" / "Gender:" white; value text black
                       Text.rich(
                         TextSpan(
                           children: [
@@ -172,8 +172,8 @@ class SettingsPage extends StatelessWidget {
 
 // =========================================================
 // Preference page (same dart file)
-// ✅ 所有改動先存在 temp，按 Confirm 才寫入 AppState
-// ✅ Confirm 固定底部（bottomNavigationBar）
+// ✅ All changes stored in temp first, only written to AppState after pressing Confirm
+// ✅ Confirm pinned to bottom (bottomNavigationBar)
 // =========================================================
 class _PreferencePage extends StatefulWidget {
   const _PreferencePage();
@@ -204,7 +204,7 @@ class _PreferencePageState extends State<_PreferencePage> {
 
   bool _inited = false;
 
-  // temp (未 Confirm 前只改呢度)
+  // temp (only modified here before Confirm)
   final Map<String, int> _tempAppliances = {
     'cookware': 0,
     'stove': 0,

@@ -1,6 +1,6 @@
-// [OOP] 靜態資料：食譜分類/標籤/顯示用的輔助資訊。
+// [OOP] Static data: auxiliary info for recipe categories/tags/display.
 
-//每道菜幾多人份
+// Servings per dish
 const Map<String, int> kRecipeServings = {
   'r1': 2, // Tomato & Egg Stir-fry
   'r2': 2, // Garlic Butter Shrimp
@@ -28,7 +28,7 @@ const Map<String, int> kRecipeServings = {
   'r24': 3, // Chicken and Broccoli Fried Rice
 };
 
-//難度等級(1-5)
+// Difficulty level (1-5)
 const Map<String, int> kRecipeDifficulty = {
   'r1': 1, // Tomato & Egg Stir-fry
   'r2': 2, // Garlic Butter Shrimp
@@ -56,7 +56,7 @@ const Map<String, int> kRecipeDifficulty = {
   'r24': 2, // Chicken and Broccoli Fried Rice
 };
 
-//主要烹調方法
+// Primary cooking method
 const Map<String, String> kRecipeMethod = {
   'r1': 'Stir-fry', // Tomato & Egg Stir-fry
   'r2': 'Sear', // Garlic Butter Shrimp
@@ -84,8 +84,8 @@ const Map<String, String> kRecipeMethod = {
   'r24': 'Stir-fry', // Chicken and Broccoli Fried Rice
 };
 
-/// tot需要器材：每個食譜「所有步驟」會用到嘅器材總表
-/// - 值要同你 recipes_data.dart 的 requiredEquipment 用同一套字串（例如: 'stove' / 'pot' / 'oven'）
+/// Total required equipment: complete list of equipment used across all steps of each recipe
+/// - Values must use the same string set as requiredEquipment in recipes_data.dart (e.g. 'stove' / 'pot' / 'oven')
 const Map<String, List<String>> kRecipeTotalEquipment = {
   'r1': ['stove'], // Tomato & Egg Stir-fry
   'r2': ['stove'], // Garlic Butter Shrimp
@@ -113,7 +113,7 @@ const Map<String, List<String>> kRecipeTotalEquipment = {
   'r24': ['stove', 'electric'], // Chicken and Broccoli Fried Rice
 };
 
-//賣點 好似和recipes_data.dart的taste一樣,但沒太大問題,到時在看看
+// Selling points — similar to taste in recipes_data.dart, not a major issue, review later
 const Map<String, List<String>> kSellingPoints = {
   'r1': ['Quick home-style', 'High-protein, low-cost', 'One-pan meal'],
   'r2': ['Garlicky & rich', 'Great with rice', 'Fast to cook'],
@@ -141,7 +141,7 @@ const Map<String, List<String>> kSellingPoints = {
   'r24': ['High-protein', 'Colorful', 'Rice cooker'],
 };
 
-//更詳細版本步驟
+// More detailed step descriptions
 const Map<String, List<String>> kStepsVerbose = {
   'r1': [
     'Wash tomatoes and cut each into 6–8 wedges.',

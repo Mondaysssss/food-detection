@@ -1,4 +1,4 @@
-// [OOP] 購物車頁：顯示已加入的食譜與數量，彙總所需食材，並開始煮食流程。
+// [OOP] Cart page: displays added recipes and quantities, summarises required ingredients, and starts the cooking flow.
 
 import 'dart:math';
 

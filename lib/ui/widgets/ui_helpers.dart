@@ -1,10 +1,13 @@
-// [OOP] UI 小工具：常用文字/標籤/格式化 helper（例如 prettyName、sectionTitle、kvPill）。
+// [OOP] UI utilities: common text/label/formatting helpers (e.g. prettyName, sectionTitle, kvPill).
 
 import 'package:flutter/material.dart';
 
 Widget titleText(String t) => Padding(
   padding: const EdgeInsets.only(bottom: 6),
-  child: Text(t, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+  child: Text(
+    t,
+    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+  ),
 );
 
 InputDecoration inputDecoration(String hint, {IconData? icon}) {
@@ -29,10 +32,8 @@ InputDecoration inputDecoration(String hint, {IconData? icon}) {
   );
 }
 
-Widget sectionTitle(String t) => Text(
-  t,
-  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-);
+Widget sectionTitle(String t) =>
+    Text(t, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700));
 
 Widget kvPill(String k, String v) => Container(
   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -66,9 +67,13 @@ Widget qtyList(List<MapEntry<String, String>> items) {
 
 String prettyName(String key) {
   switch (key) {
-    case 'soy_sauce': return 'Soy sauce';
-    case 'sesame': return 'Sesame';
-    case 'pasta': return 'Pasta';
-    default: return key.replaceAll('_', ' ');
+    case 'soy_sauce':
+      return 'Soy sauce';
+    case 'sesame':
+      return 'Sesame';
+    case 'pasta':
+      return 'Pasta';
+    default:
+      return key.replaceAll('_', ' ');
   }
 }

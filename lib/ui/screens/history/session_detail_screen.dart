@@ -1,4 +1,4 @@
-// [OOP] 歷史詳情：顯示某次 CookSession 的詳細步驟/耗時/食材。
+// [OOP] Session detail: shows detailed steps/duration/ingredients of a CookSession.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

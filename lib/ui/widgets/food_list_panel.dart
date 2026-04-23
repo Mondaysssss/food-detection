@@ -1,4 +1,4 @@
-// [OOP] 面板：顯示目前食材清單（已偵測/已選擇），並提供新增/移除入口。
+// [OOP] Panel: displays the current ingredient list (detected/selected) and provides add/remove entry points.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

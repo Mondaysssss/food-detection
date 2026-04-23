@@ -1,5 +1,5 @@
 // lib/ui/screens/create_account_screen.dart
-// [OOP] 建立帳號頁：純 UI + 基本表單驗證（暫無後端）。
+// [OOP] Create account page: UI only + basic form validation (no backend yet).
 // Create account screen: UI + basic form validation (no backend yet).
 
 import 'package:flutter/material.dart';
@@ -29,7 +29,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   bool _obscure1 = true;
   bool _obscure2 = true;
-  bool _agree = true; // 你想要條款 checkbox 就保留；唔要就可以刪
+  bool _agree =
+      true; // Keep this if you want a terms checkbox; remove if not needed
 
   @override
   void dispose() {
@@ -70,7 +71,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         appState.userName = _name.text.trim();
 
         if (appState.gender != null) {
-          // 已做過 Wizard → 存 Firestore → 去首頁
+          // Already completed Wizard → save to Firestore → go to home
           await _auth.savePreferences(
             uid: user.uid,
             gender: appState.gender,
@@ -87,7 +88,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             _goHome();
           }
         } else {
-          // 沒做過 Wizard → 去 Wizard（完成後存 Firestore + 去首頁）
+          // Haven't completed Wizard → go to Wizard (save to Firestore + go home after finish)
           if (mounted) {
             ScaffoldMessenger.of(
               context,

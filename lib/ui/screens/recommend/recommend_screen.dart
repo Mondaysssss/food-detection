@@ -1,4 +1,4 @@
-// [OOP] 推薦清單：根據目前食材與偏好計算匹配，顯示可煮食譜。
+// [OOP] Recommendation list: computes matches based on current ingredients and preferences, displays cookable recipes.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

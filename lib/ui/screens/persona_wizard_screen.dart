@@ -1,4 +1,4 @@
-// [OOP] Wizard：收集使用者偏好並存入 AppState。
+// [OOP] Wizard: collects user preferences and saves to AppState.
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,11 +8,11 @@ import '../../state/app_state.dart';
 import '../widgets/page_frame.dart';
 import '../widgets/glass.dart';
 import 'login_screen.dart';
-import '../../domain/services/auth_service.dart'; // 新增
-import 'home_shell.dart'; // 新增
+import '../../domain/services/auth_service.dart'; // added
+import 'home_shell.dart'; // added
 
 class PersonaWizardScreen extends StatefulWidget {
-  final bool goHomeAfterFinish; // ← 新增
+  final bool goHomeAfterFinish; // ← added
   const PersonaWizardScreen({super.key, this.goHomeAfterFinish = false});
 
   @override
@@ -198,7 +198,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
     if (_index < _questions.length - 1) {
       setState(() => _index++);
     } else {
-      // ✅ 存入 AppState
+      // ✅ save to AppState
       context.read<AppState>().setPersona(
         newGender: _gender,
         newBirthYear: _birthYear,
@@ -209,7 +209,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
       context.read<AppState>().setAllergies(Set<String>.from(_allergies));
 
       if (widget.goHomeAfterFinish) {
-        // 從登入/建帳流程過來 → 存 Firestore → 去 HomeShell
+        // Arriving from login/account creation flow → save to Firestore → go to HomeShell
         final auth = AuthService();
         final user = auth.currentUser;
         if (user != null) {
@@ -233,7 +233,7 @@ class _PersonaWizardScreenState extends State<PersonaWizardScreen> {
           );
         }
       } else {
-        // 從 IntroStartScreen 過來 → 去 LoginScreen（現有行為）
+        // Arriving from IntroStartScreen → go to LoginScreen (existing behaviour)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),

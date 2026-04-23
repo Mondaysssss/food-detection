@@ -1,9 +1,9 @@
-/// ✅ Cook Flow Screen（單菜 / 多菜合併版）
+/// ✅ Cook Flow Screen (single dish / multi-dish unified version)
 ///
-/// ✅ 兩種計時同時存在：
-/// A) Step 倒數（人手時間）：顯示喺 Step 卡右上角；倒數完先可以 Next
-/// B) Tile 倒數（器具時間）：顯示喺上面 6 格工具 Tile（scrim + 鬧鐘搖擺 + badge）
-///    -> 可離手：你可以去下一步照做；時間到會彈 "is ok"
+/// ✅ Two concurrent timers:
+/// A) Step countdown (manual time): shown in the top-right of the Step card; must reach 0 before Next
+/// B) Tile countdown (appliance time): shown in the 6 equipment tiles above (scrim + alarm shake + badge)
+///    -> Hands-free: you can proceed to the next step; alerts "is ok" when time is up
 ///
 import 'dart:async';
 import 'dart:math';
@@ -22,13 +22,13 @@ import '../../../domain/services/auth_service.dart';
 import '../../widgets/cooking_gantt_chart.dart';
 import '../home_shell.dart';
 
-// ✅ 供全檔使用（包括 Bottom Sheet / Menu Modal）
+// ✅ Used throughout the file (including Bottom Sheet / Menu Modal)
 String _fmtLeft(int ms) {
   final s = (ms / 1000).ceil();
   return '${max(0, s)}s';
 }
 
-/// ✅ 兼容：RecipeStep 內部欄位名可能係 requiredEquipment 或 requiredEq
+/// ✅ Compatibility: RecipeStep internal field name may be requiredEquipment or requiredEq
 String _readRequiredEquipment(RecipeStep st) {
   final d = st as dynamic;
   try {
@@ -42,12 +42,12 @@ String _readRequiredEquipment(RecipeStep st) {
   return '';
 }
 
-/// ✅ 兼容：RecipeStep 內部欄位名可能係 durationSec / durationSeconds / durationMin ...
-/// 需求：一律以「秒」為單位返回（對齊 recipes_data.dart 第二參數，例如 3600=1hr）。
+/// ✅ Compatibility: RecipeStep internal field name may be durationSec / durationSeconds / durationMin ...
+/// Requirement: always return duration in seconds (aligned to recipes_data.dart 2nd arg, e.g. 3600=1hr).
 int _readDurationSec(RecipeStep st) {
   final d = st as dynamic;
 
-  // 1) 優先讀「秒」命名
+  // 1) Prefer "seconds" field name
   try {
     final v = d.durationSec;
     if (v is int) return v < 0 ? 0 : v;
@@ -59,7 +59,7 @@ int _readDurationSec(RecipeStep st) {
     if (v is double) return v < 0 ? 0 : v.round();
   } catch (_) {}
 
-  // 2) 退回舊命名（你原本 CookFlowScreen 用緊）
+  // 2) Fall back to old field name (originally used in CookFlowScreen)
   try {
     final v = d.durationMin;
     if (v is int) return v < 0 ? 0 : v;
@@ -94,27 +94,27 @@ class _FlowStep {
   final String menuName;
   final String? menuCover;
 
-  // ✅ 時間軸資料（ipynb 排程用：秒）
+  // ✅ Timeline data (ipynb scheduling: seconds)
   final int startSec;
   final int endSec;
 
   final int globalNo; // 1-based
   final int globalTotal;
 
-  final int dishNo; // 1-based within dish（用 stepNumber）
+  final int dishNo; // 1-based within dish (using stepNumber)
   final int dishTotal;
 
-  final int stepNumber; // 原始 stepNumber（1-based）
-  final String requiredEquipment; // 來自 RecipeStep.requiredEquipment（trim 後）
-  final bool isContinuous; // 來自 RecipeStep.isContinuous
-  final bool isConcurrent; // 來自 RecipeStep.isConcurrent（= 不需要 attention）
+  final int stepNumber; // original stepNumber (1-based)
+  final String requiredEquipment; // from RecipeStep.requiredEquipment (trimmed)
+  final bool isContinuous; // from RecipeStep.isContinuous
+  final bool isConcurrent; // from RecipeStep.isConcurrent (= no attention needed)
   final bool isPrep;
 
   final String text;
 
-  /// ✅ 來源：排程結果（endSec - startSec）
-  /// - isConcurrent=true：用作 Tile 倒數（可離手）
-  /// - isConcurrent=false：用作 Step 倒數（要做完先 Next）
+  /// ✅ Source: scheduling result (endSec - startSec)
+  /// - isConcurrent=true: used as Tile countdown (hands-free)
+  /// - isConcurrent=false: used as Step countdown (must complete before Next)
   final int durationMs;
 
   final _ToolKey? tool;
@@ -143,9 +143,9 @@ class _FlowStep {
   bool get isHandStep => isConcurrent && tool == null;
 }
 
-/// 器具倒數狀態（Tile）
+/// Equipment countdown state (Tile)
 class _ToolTimerState {
-  final int ownerGlobalNo; // ✅ 呢個 timer 屬於邊一個 global step（用嚟決定 ✓）
+  final int ownerGlobalNo; // ✅ which global step this timer belongs to (used to determine ✓)
   final int totalMs;
   final DateTime startAt;
   int leftMs;
@@ -164,7 +164,7 @@ class _ToolTimerState {
   });
 }
 
-// ---------- ipynb 排程器需要的最小資料結構（只放喺本檔，唔改其他檔案） ----------
+// ---------- Minimal data structures needed by ipynb scheduler (kept in this file only, no other files modified) ----------
 
 class _IpynbEvent {
   final int recipeIndex;
@@ -214,20 +214,20 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   int _idx = 0;
 
-  // ✅ 真正完成（倒數完成 + 用戶確認/前進）先算 ✓
+  // ✅ Truly complete (countdown done + user confirmed/advanced) counts as ✓
   final Set<int> _doneGlobalNos = <int>{};
 
   late Map<int, int> _prevSameRecipe = {};
   // ---------------------------
-  // A) Step countdown（人手）
+  // A) Step countdown (manual/hand)
   // ---------------------------
   bool _flowStarted = false;
   bool _running = false;
   bool _finished = false;
   int _leftMs = 0;
-  bool _stepTimerStarted = false; // ✅ 用戶手動按 Start Timer 後才 true
-  bool _stepManuallyCompleted = false; // ✅ 用戶按 Complete 後才 true
-  // _ToolKey? _peekedTool; // ✅ 正在 peek 的 tile（null = 無 peek 模式）
+  bool _stepTimerStarted = false; // ✅ true only after user manually presses Start Timer
+  bool _stepManuallyCompleted = false; // ✅ true only after user presses Complete
+  // _ToolKey? _peekedTool; // ✅ currently peeked tile (null = no peek mode)
   Object? _peekedTile; // either _ToolKey or int (hand globalNo), or null
 
   Timer? _tick;
@@ -235,12 +235,12 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   int _stepMs = 0;
 
   // ---------------------------
-  // B) Tool countdown（器具 Tile）
+  // B) Tool countdown (equipment Tile)
   // ---------------------------
   final Map<_ToolKey, _ToolTimerState> _toolTimers = {};
   Timer? _toolTick;
   final Map<int, _ToolTimerState> _handTimers = {}; // keyed by globalNo
-  // is ok queue（避免同一刻多個 timer 完成爆 dialog）
+  // is ok queue (prevents multiple simultaneous timer completions from flooding dialogs)
   //final List<_ToolKey> _okQueue = [];
   final List<Object> _okQueue = []; // _ToolKey, int (hand globalNo), or 'human'
   bool _okShowing = false;
@@ -318,7 +318,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   // ---------- data: menus & steps ----------
 
   List<Recipe> _resolveMenus() {
-    // 依 snapshot insertion order
+    // by snapshot insertion order
     final out = <Recipe>[];
     widget.snapshot.forEach((menuId, qty) {
       if (qty <= 0) return;
@@ -326,12 +326,12 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       if (r != null) out.add(r);
     });
 
-    // fallback：如果 snapshot 冇中任何 recipe
+    // fallback: if snapshot matches no recipe
     if (out.isEmpty && kRecipes.isNotEmpty) {
       out.add(kRecipes.first);
     }
 
-    // ✅ 固定 menu 排序（按 menuId: r1,r2,...），令同一批食譜次次排程一致
+    // ✅ Fixed menu order (by menuId: r1,r2,...), ensures consistent scheduling for the same recipe set
     int _menuOrderKey(String id) {
       final m = RegExp(r'^r(\d+)$').firstMatch(id.trim());
       if (m == null) return 1 << 30;
@@ -366,12 +366,12 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     return null; // no equipment — human/hand step
   }
 
-  // ---------- ipynb 對齊：從 RecipeStep 取設備/並把「第二參數」視為秒 ----------
+  // ---------- ipynb alignment: get equipment from RecipeStep, treat second parameter as seconds ----------
 
   String _normEquipment(String raw) => raw.trim().toLowerCase();
 
   int _stepDurationSec(RecipeStep st) {
-    // ✅ 以 recipes_data.dart 的 RecipeStep "秒" 為準
+    // ✅ Use the RecipeStep seconds from recipes_data.dart
     return _readDurationSec(st);
   }
 
@@ -391,11 +391,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   }
 
   List<_FlowStep> _buildFlowSteps(List<Recipe> menus) {
-    // ✅ 新規則（依你最新要求）：
-    // 1) 每道菜必須「上一 step 完成」先可以開始下一 step（用 endTime 形成 chain）
-    // 2) isConcurrent=true 代表「6 格 Tile 背景計時」，可去做其他食譜 step；但同一食譜下一步要等 timer 完成
-    // 3) 排程優先開 Tile timer（盡量減少空窗期），再做需要 attention 的 step
-    // 4) 全部仍然按每道菜 step 次序（1->2->3...），UI 版面不變
+    // ✅ New rules (based on latest requirements):
+    // 1) Each dish must wait for the previous step to complete before starting the next (chain via endTime)
+    // 2) isConcurrent=true means "6-tile background timer"; can do other recipe steps, but next step in same recipe waits for timer
+    // 3) Scheduling prioritises opening Tile timers (minimise idle gaps), then handles attention steps
+    // 4) All steps still follow each dish's step order (1->2->3...), UI layout unchanged
     if (menus.isEmpty) return const [];
 
     final stepsByRecipe = <List<RecipeStep>>[];
@@ -406,10 +406,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     final n = menus.length;
     final idx = List<int>.filled(n, 0);
 
-    // ✅ 每道菜：下一步最早可開始時間（上一 step 結束後）
+    // ✅ Per dish: earliest start time for next step (after previous step ends)
     final readyAt = List<int>.filled(n, 0);
 
-    // ✅ LRPT：預先計算每道菜的剩餘 prep / cook 時間（秒）
+    // ✅ LRPT: pre-compute remaining prep / cook time (seconds) per dish
     final remainingPrepSec = List<int>.filled(n, 0);
     final remainingCookSec = List<int>.filled(n, 0);
     for (int r = 0; r < n; r++) {
@@ -423,7 +423,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       }
     }
 
-    // ✅ 資源用量（cookware/electric/oven + attention）
+    // ✅ Resource usage (cookware/electric/oven + attention)
     final usage = <String, int>{};
 
     int capOf(String res) {
@@ -457,7 +457,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       for (final k in cands) {
         if ((slotBusyUntil[k] ?? 0) <= startSec) return k;
       }
-      // 理論上唔會發生（cap 已限制），但保底：揀最早釋放
+      // Should not happen (cap already enforced), but fallback: pick earliest release
       _ToolKey best = cands.first;
       int bestEnd = slotBusyUntil[best] ?? 0;
       for (final k in cands.skip(1)) {
@@ -490,7 +490,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       return true;
     }
 
-    // ✅ 事件：用嚟釋放資源 & 推進時間
+    // ✅ Events: used to release resources & advance time
     final eventQ = <_IpynbEvent>[];
     int peekMinEnd() {
       int best = eventQ[0].endSec;
@@ -524,7 +524,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     int t = 0;
 
     while (hasRemaining()) {
-      // A) 收割完成事件（end <= t）
+      // A) Process completed events (end <= t)
       while (eventQ.isNotEmpty) {
         final minEnd = peekMinEnd();
         if (minEnd > t) break;
@@ -538,14 +538,14 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         }
       }
 
-      // B) 盡量喺同一個 t 塞得幾多得幾多
+      // B) Pack as many steps as possible at the same time t
       bool scheduledAny = false;
       bool loopAgain = true;
 
       while (loopAgain) {
         loopAgain = false;
 
-        // (1) 先開 Tile timer：isConcurrent=true
+        // (1) Open Tile timers first: isConcurrent=true
         for (int r = 0; r < n; r++) {
           if (idx[r] >= stepsByRecipe[r].length) continue;
           if (readyAt[r] > t) continue;
@@ -612,7 +612,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             usage[group] = useOf(group) + 1;
           }
 
-          // ✅ LRPT: 扣減剩餘時間
+          // ✅ LRPT: deduct remaining time
           if (st.isPrep) {
             remainingPrepSec[r] -= dur;
           } else {
@@ -625,9 +625,9 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
           loopAgain = true;
         }
 
-        // (2) 再做需要 attention 的 step（一次只會開到 1 個，因為 attention=1）
-        //     ✅ 優先選擇 isPrep=true 的步驟（準備步驟排前面）
-        //     ✅ LRPT：同類型（都是 prep 或都是 cook）時，選剩餘時間最長的食譜
+        // (2) Then handle attention steps (at most 1 at a time, since attention=1)
+        //     ✅ Prioritise isPrep=true steps (prep steps go first)
+        //     ✅ LRPT: among same type (both prep or both cook), pick recipe with longest remaining time
         if (useOf('attention') < capOf('attention')) {
           int bestR = -1;
           bool bestIsPrep = false;
@@ -642,10 +642,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             final group = _groupOf(st);
             if (!_canStart(group: group, needsAttention: true)) continue;
 
-            // LRPT: prep 用 remainingPrepSec, cook 用 remainingCookSec
+            // LRPT: prep uses remainingPrepSec, cook uses remainingCookSec
             final rem = st.isPrep ? remainingPrepSec[r] : remainingCookSec[r];
 
-            // 優先 isPrep=true；同優先級按 LRPT（剩餘時間最長優先）
+            // Prioritise isPrep=true; same priority uses LRPT (longest remaining time first)
             if (bestR == -1 ||
                 (st.isPrep && !bestIsPrep) ||
                 (st.isPrep == bestIsPrep && rem > bestRemaining)) {
@@ -693,7 +693,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
             }
             usage['attention'] = useOf('attention') + 1;
 
-            // ✅ LRPT: 扣減剩餘時間
+            // ✅ LRPT: deduct remaining time
             if (st.isPrep) {
               remainingPrepSec[r] -= dur;
             } else {
@@ -708,7 +708,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         }
       }
 
-      // C) 如果呢個時間點完全塞唔到，就跳去下一個最早完成事件
+      // C) If nothing can be scheduled at this time, advance to next earliest completion event
       if (!scheduledAny) {
         if (eventQ.isNotEmpty) {
           t = peekMinEnd();
@@ -772,8 +772,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   // ---------- rules: human vs tool ----------
 
   bool _isToolTimerStep(_FlowStep s) {
-    // ✅ 對齊 ipynb：isConcurrent=true => 不需要 attention => 當器具/背景 timer（可離手）
-    // （UI 不改：仍然用 Tile timer 呈現，Step timer 就鎖 Next）
+    // ✅ ipynb alignment: isConcurrent=true => no attention needed => runs as equipment/background timer (hands-free)
+    // (UI unchanged: still displayed as Tile timer, Step timer locks Next)
     return s.isConcurrent;
   }
 
@@ -803,8 +803,8 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     if (_doneGlobalNos.contains(prev)) return true;
 
-    // ✅ 允許：prev 就係而家呢一步，而且係「人手步」已倒數完
-    // （因為人手步係按 Next 先入 _doneGlobalNos）
+    // ✅ Allowed: prev is the current step and it is a "hand step" that has finished countdown
+    // (because hand steps are added to _doneGlobalNos only after pressing Next)
     if (prev == cur.globalNo &&
         !_isToolTimerStep(cur) &&
         _isCurrentHumanDone(cur)) {
@@ -816,7 +816,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
   // ---------- equipment contention helpers ----------
 
-  /// 返回 _ToolKey 所屬設備分組（與排程器保持一致）
+  /// Returns the equipment group that a _ToolKey belongs to (consistent with scheduler)
   String _equipmentGroupOf(_ToolKey k) {
     switch (k) {
       case _ToolKey.pot:
@@ -828,7 +828,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       case _ToolKey.oven:
         return 'oven';
       default:
-        return ''; // prep / hands：無設備，不佔用
+        return ''; // prep / hands: no equipment, no resource use
     }
   }
 
@@ -858,21 +858,21 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     }
   }
 
-  /// 若當前 tile step 所需設備已被佔滿，返回提示字串；否則返回 null（可按）
+  /// Returns a hint string if the current tile step's required equipment is full; null if available
   String? _startTimerBlockReason() {
     if (_steps.isEmpty) return null;
     final cur = _steps[_idx];
-    // ✅ 同食譜有前置 tile timer 跑緊：任何步驟都要等（concurrent 或 non-concurrent）
+    // ✅ Same recipe has a preceding tile timer running: all steps must wait (concurrent or non-concurrent)
     if (_hasPrecedingRunningTileTimer()) return 'Waiting for previous step…';
-    if (!_isToolTimerStep(cur)) return null; // human step：唔受設備限制
+    if (!_isToolTimerStep(cur)) return null; // human step: not subject to equipment constraints
 
     // Hand step: no equipment contention
     if (cur.tool == null) return null;
 
     final group = _equipmentGroupOf(cur.tool!);
-    if (group.isEmpty) return null; // 無設備：唔阻
+    if (group.isEmpty) return null; // no equipment: no blocking
 
-    // 數算正在跑緊嘅 timer 中屬於同一分組嘅數量
+    // Count running timers belonging to the same equipment group
     int running = 0;
     _toolTimers.forEach((k, t) {
       if (t.running && _equipmentGroupOf(k) == group) running++;
@@ -885,7 +885,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     return null;
   }
 
-  /// 若當前 step 所屬食譜有「前置」tile timer 仍在跑中，Next 應被阻挡
+  /// Returns true if a preceding tile timer from the same recipe is still running (Next should be blocked)
   bool _hasPrecedingRunningTileTimer() {
     if (_steps.isEmpty) return false;
     final cur = _steps[_idx];
@@ -924,18 +924,18 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     final cur = _steps[_idx];
 
-    // ✅ 同食譜有前置 tile timer 仍在跑：Next 鎖住
+    // ✅ Same recipe has preceding tile timer still running: Next locked
     if (_hasPrecedingRunningTileTimer()) return false;
 
     if (_isToolTimerStep(cur)) {
-      // ✅ Concurrent step：開始 timer 後即可 Next
+      // ✅ Concurrent step: can proceed to Next after timer starts
       if (_idx >= _steps.length - 1) {
-        // 最後一步：需要 Complete 或自然倒數完成（OK dialog）
+        // Last step: requires Complete or natural countdown finish (OK dialog)
         return _stepManuallyCompleted || _doneGlobalNos.contains(cur.globalNo);
       }
       return _stepTimerStarted || _stepManuallyCompleted;
     } else {
-      // ✅ Non-concurrent step：只有按 Complete 才能 Next
+      // ✅ Non-concurrent step: Next is only allowed after pressing Complete
       return _stepManuallyCompleted;
     }
   }
@@ -956,7 +956,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     _finished = false;
     _startAt = null;
 
-    // human duration=0：當完成（可 Next）
+    // human duration=0: considered complete (can Next)
     if (ms <= 0) {
       _finished = true;
       _leftMs = 0;
@@ -985,7 +985,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       final elapsed = DateTime.now().difference(start).inMilliseconds;
       final left = max(0, _stepMs - elapsed);
 
-      // 少啲 rebuild
+      // minimise rebuilds
       if ((left - _leftMs).abs() >= 180 || left == 0) {
         setState(() => _leftMs = left);
       }
@@ -1013,7 +1013,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     final existing = _toolTimers[tool];
     if (existing != null && existing.running) {
-      // 已經跑緊：唔重開（避免你跳回步驟又 reset）
+      // Already running: do not restart (prevents reset when navigating back to step)
       return;
     }
 
@@ -1114,7 +1114,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
       if (needSetState)
         setState(() {
-          // ✅ 設備釋放 / timer 完成時，同步更新 Next 按鈕與 Start Timer 狀態
+          // ✅ On equipment release / timer completion, sync Next button and Start Timer state
           _finished = _calcCanNext();
         });
     });
@@ -1253,12 +1253,12 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
 
     final isTool = _isToolTimerStep(s);
 
-    // ✅ 人手倒數：isConcurrent=false — 永遠唔自動開始，等用戶按 Start Timer
+    // ✅ Manual countdown: isConcurrent=false — never auto-starts, waits for user to press Start Timer
     final humanMs = isTool ? 0 : s.durationMs;
     _resetToStepHuman(humanMs, startIfFlowStarted: false);
 
-    // ✅ Tile step：唔自動啟動 timer；但如果呢個 tile 已經喺跑緊（或已完成等用戶 Complete），
-    //    就把 _stepTimerStarted 設 true，令按鈕顯示 Complete
+    // ✅ Tile step: does not auto-start timer; but if tile is already running (or done, awaiting Complete),
+    //    set _stepTimerStarted = true so the button shows Complete
     if (isTool) {
       if (s.tool != null) {
         // Equipment tile
@@ -1277,11 +1277,11 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
       _stepTimerStarted = false;
     }
 
-    // ✅ 換步重置 manually-completed 及 peek 狀態
-    _stepManuallyCompleted = s.durationMs <= 0; // 零時長步驟自動完成
+    // ✅ Reset manually-completed and peek state when switching steps
+    _stepManuallyCompleted = s.durationMs <= 0; // zero-duration steps auto-complete
     _peekedTile = null;
 
-    // ✅ Next Step 是否可按
+    // ✅ Whether Next Step button is enabled
     _finished = _calcCanNext();
   }
 
@@ -1295,18 +1295,18 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     });
   }
 
-  // ✅ 用戶手動按「Start Timer」：啟動當前步的計時器
+  // ✅ User manually presses "Start Timer": starts the current step's timer
   void _startStepTimer() {
     if (!_flowStarted || _stepTimerStarted) return;
     if (_steps.isEmpty) return;
-    if (_hasPrecedingRunningTileTimer()) return; // ✅ 前置 tile 仍在跑：不可開始
+    if (_hasPrecedingRunningTileTimer()) return; // ✅ preceding tile still running: cannot start
 
     final s = _steps[_idx];
     final isTool = _isToolTimerStep(s);
 
     setState(() {
       _stepTimerStarted = true;
-      _stepManuallyCompleted = false; // ✅ 重啟 timer 時重置 complete 狀態
+      _stepManuallyCompleted = false; // ✅ reset complete state when restarting timer
       _doneGlobalNos.remove(s.globalNo); // ✅ undo accidental complete
       if (isTool) {
         if (s.durationMs > 0) {
@@ -1423,10 +1423,10 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     final cur = _steps[_idx];
     final isTool = _isToolTimerStep(cur);
 
-    // ✅ 最後一步 + tile：仍需等 OK（由 _finished / _calcCanNext 控制按鈕 enabled）
+    // ✅ Last step + tile: still needs to wait for OK (button enabled state controlled by _finished / _calcCanNext)
     if (!_finished) return;
 
-    // ✅ 完成當前步（不論 timer 有冇已完成，按 Next 就算 done）
+    // ✅ Complete current step (regardless of timer state, pressing Next counts as done)
     if (!isTool) {
       _doneGlobalNos.add(cur.globalNo);
     }
@@ -1483,26 +1483,26 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     if (!_flowStarted || _idx <= 0) return;
 
     setState(() {
-      // ✅ 離開當前步：取消「已完成」標記
+      // ✅ Leaving current step: remove "completed" mark
       _doneGlobalNos.remove(_steps[_idx].globalNo);
       _idx--;
-      // ✅ 回到上一步：也取消該步的「已完成」標記（讓 ✓ 消失，允許重做）
+      // ✅ Going back to previous step: also remove its "completed" mark (hides ✓, allows redo)
       _doneGlobalNos.remove(_steps[_idx].globalNo);
       _applyStep(_idx, startIfFlowStarted: true);
     });
   }
 
-  // ---------- sheet ratio / right menu hide (修 flicker) ----------
+  // ---------- sheet ratio / right menu hide (fix flicker) ----------
 
   void _onSheetOpenRatio(double ratio) {
     final r = ratio.clamp(0.0, 1.0);
 
-    // throttle：變化細就唔 setState，避免拖少少就閃
+    // throttle: skip setState for small changes to avoid flickering on slight drag
     if ((r - _sheetOpenRatio).abs() < 0.03) return;
 
     _sheetOpenRatio = r;
 
-    // ✅ 唔再因為拉底部 sheet 而隱藏菜單按鈕（避免「拉小小就消失一下」）
+    // ✅ No longer hide menu buttons when pulling bottom sheet (avoids briefly disappearing on slight drag)
     if (_hideRightMenus) {
       setState(() => _hideRightMenus = false);
     }
@@ -1551,7 +1551,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   int _toolShakeMs(_ToolKey k) {
     final t = _toolTimers[k];
     if (t == null) return 420;
-    // ✅ Tile 自然完成後 alarm 繼續響（提醒用戶去 peek → Complete）
+    // ✅ Alarm keeps ringing after Tile naturally completes (reminds user to peek → Complete)
     if (t.finished) return 500;
     return _calcShakeMs(
       totalMs: t.totalMs,
@@ -1592,7 +1592,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   }
 
   Future<void> _openMenuStepsDialog(Recipe r) async {
-    // 找出此菜在 global flow 內所有 steps
+    // Find all steps for this dish within the global flow
     final items = <_FlowStep>[];
     for (final s in _steps) {
       if (s.menuId == r.menuId) items.add(s);
@@ -1674,7 +1674,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                             ),
                           ),
 
-                          // ✅ 菜單步驟：綠色
+                          // ✅ Menu step: green
                           subtitle: Text(
                             s.text,
                             maxLines: 2,
@@ -1685,7 +1685,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                             ),
                           ),
 
-                          // ✅ 時間：藍色 + ✓：黑色
+                          // ✅ Time: blue + ✓: black
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -1735,7 +1735,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         : null;
     final title = widget.titleOverride ?? 'Cooking';
 
-    // ✅ Step 卡倒數文字
+    // ✅ Step card countdown text
     final bool isCurrTool = step != null && _isToolTimerStep(step);
     String stepTimeText;
     if (_stepManuallyCompleted) {
@@ -1801,7 +1801,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     final displayCountdownDone = isPeeking
         ? _peekedFinished()
         : currentTileFinished || (_stepMs > 0 && _leftMs <= 0);
-    // 右邊菜單最多 5 個（已改為上方橫向 Row）
+    // Max 5 right-side menus (changed to horizontal Row at top)
     final menusForRight = _menus.take(5).toList(growable: false);
 
     final toolItems = <(_ToolKey, IconData)>[
@@ -1868,7 +1868,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ✅ 菜單「圖按鈕」橫向：放喺 6 個器具 icon 上面
+                      // ✅ Menu image buttons horizontal: placed above the 6 equipment icons
                       _MenuRow(
                         menus: menusForRight,
                         hidden: _hideRightMenus,
@@ -1920,7 +1920,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
                         countdownDone: displayCountdownDone,
                         canPrev: _idx > 0,
                         timerStarted: isPeeking ? true : _stepTimerStarted,
-                        // ✅ 如果 timer 已啟動，就展示 Complete，不要變回「Waiting for area」
+                        // ✅ If timer has started, show Complete, do not revert to "Waiting for area"
                         startTimerBlockReason: (_stepTimerStarted || isPeeking)
                             ? null
                             : _startTimerBlockReason(),
@@ -2401,7 +2401,7 @@ class _AlarmOverlayState extends State<_AlarmOverlay>
   }
 }
 
-// ✅ 脈動橙色邊緣光暈 — 提示用戶 tile 已完成但尚未 Complete
+// ✅ Pulsing orange edge glow — reminds user that tile is done but not yet Completed
 class _FinishedPulseOverlay extends StatefulWidget {
   final BorderRadius borderRadius;
 
@@ -2461,18 +2461,18 @@ class _StepCard extends StatelessWidget {
   final _FlowStep? step;
   final bool flowStarted;
   final bool running;
-  final bool canNext; // ✅ Next/Finish 按鈕 enabled
-  final bool countdownDone; // ✅ 倒數已歸零（顏色轉紅）
+  final bool canNext; // ✅ Next/Finish button enabled
+  final bool countdownDone; // ✅ countdown reached zero (color turns red)
   final bool canPrev;
-  final bool timerStarted; // ✅ 當前 step 的 timer 已啟動
-  final String? startTimerBlockReason; // ✅ 非 null = 設備被佔滿，禁用 + 顯示原因
+  final bool timerStarted; // ✅ timer for current step has started
+  final String? startTimerBlockReason; // ✅ non-null = equipment full, disabled + show reason
   final String leftText;
-  final bool isPeeking; // ✅ 正在 peek 一個 background tile
-  final bool stepManuallyCompleted; // ✅ 用戶已按 Complete
+  final bool isPeeking; // ✅ currently peeking a background tile
+  final bool stepManuallyCompleted; // ✅ user has pressed Complete
   final VoidCallback onNext;
   final VoidCallback onPrev;
-  final VoidCallback? onStartTimer; // null = 此 step 無時長，隱藏按鈕
-  final VoidCallback onComplete; // ✅ Complete 按鈕 callback
+  final VoidCallback? onStartTimer; // null = this step has no duration, hide button
+  final VoidCallback onComplete; // ✅ Complete button callback
 
   const _StepCard({
     required this.step,
@@ -2573,7 +2573,7 @@ class _StepCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ✅ Peek 模式提示橫幅
+          // ✅ Peek mode hint banner
           if (isPeeking) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -2606,13 +2606,13 @@ class _StepCard extends StatelessWidget {
             const SizedBox(height: 10),
           ],
 
-          // ✅ Timer 按鈕區（三種互斥狀態）
-          // 顯示條件：有時長，且（peek 模式 OR 此步有 timer 可操作）
+          // ✅ Timer button area (three mutually exclusive states)
+          // Display condition: has duration, and (peek mode OR this step has an operable timer)
           if (onStartTimer != null || isPeeking) ...[
             SizedBox(
               height: 48,
               child: startTimerBlockReason != null && !isPeeking
-                  // ── 狀態 1：前置步驟未完成 / 設備佔滿 → disabled amber 按鈕
+                  // ── State 1: preceding step not done / equipment full → disabled amber button
                   ? FilledButton.icon(
                       onPressed: null,
                       icon: const Icon(Icons.hourglass_empty, size: 18),
@@ -2643,7 +2643,7 @@ class _StepCard extends StatelessWidget {
                       ),
                     )
                   : timerStarted
-                  // ── 狀態 2：timer 已啟動（或 peek 中）→ "Complete" 綠色按鈕
+                  // ── State 2: timer started (or peeking) → "Complete" green button
                   ? FilledButton.icon(
                       onPressed: flowStarted ? onComplete : null,
                       icon: const Icon(Icons.check_circle_outline, size: 18),
@@ -2665,7 +2665,7 @@ class _StepCard extends StatelessWidget {
                         ),
                       ),
                     )
-                  // ── 狀態 3：尚未 start → "Start Timer" 按鈕
+                  // ── State 3: not yet started → "Start Timer" button
                   : FilledButton.icon(
                       onPressed: flowStarted ? onStartTimer : null,
                       icon: const Icon(Icons.timer_outlined, size: 18),
@@ -2694,7 +2694,7 @@ class _StepCard extends StatelessWidget {
             const SizedBox(height: 8),
           ],
 
-          // ✅ 導航列：← Last step | Next step →
+          // ✅ Navigation bar: ← Last step | Next step →
           SizedBox(
             height: 54,
             child: Row(
@@ -2796,7 +2796,7 @@ class _StartOnceBar extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           started ? ' ' : ' ',
-          //started ? 'Step 卡係人手倒數；器具倒數會留喺 Tile（到時彈 is ok）。' : '按 Start 一次開始；人手步驟要等完先 Next。',
+          //started ? 'Step card is a manual countdown; equipment countdown stays in Tile (will pop ok dialog when done).' : 'Press Start once to begin; manual steps must finish before Next.',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.55),
@@ -3053,7 +3053,7 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                           ),
                         ),
 
-                        // ✅ 菜單步驟：綠色
+                        // ✅ Menu step: green
                         subtitle: Text(
                           s.text,
                           maxLines: 2,
@@ -3064,7 +3064,7 @@ class _CookStepsSheetState extends State<_CookStepsSheet> {
                           ),
                         ),
 
-                        // ✅ 時間：藍色 + ✓：黑色
+                        // ✅ Time: blue + ✓: black
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

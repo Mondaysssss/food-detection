@@ -1,4 +1,4 @@
-// [OOP] 登入頁：示範用的登入流程/跳過，進入主頁。
+// [OOP] Login page: demo login flow / skip, navigates to home.
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // add
@@ -10,7 +10,7 @@ import 'forgot_password_screen.dart';
 import '../../domain/services/auth_service.dart'; // add
 import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
-import 'persona_wizard_screen.dart'; // 新增
+import 'persona_wizard_screen.dart'; // added
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
           appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
         } else if (appState.gender != null) {
-          // 本機有 Wizard 資料，但 Firestore 沒有 → 上傳
+          // Local Wizard data exists, but not in Firestore → upload
           await _auth.savePreferences(
             uid: user.uid,
             gender: appState.gender,
@@ -115,13 +115,13 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         } catch (_) {}
 
-        // ── 三路判斷 ──
+        // ── Three-way check ──
         if (!mounted) return;
         if (appState.gender != null) {
-          _goHome(); // Firestore 或本機都有資料
+          _goHome(); // Firestore or local data exists
         } else {
           Navigator.pushReplacement(
-            // 兩邊都沒資料 → 去 Wizard
+            // Neither side has data → go to Wizard
             context,
             MaterialPageRoute(
               builder: (_) =>
@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         }
-        return; // ← 避免跑到下面的 _goHome()
+        return; // ← prevent falling through to _goHome() below
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -176,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
           appState.setAllergies(Set<String>.from(data['allergies'] ?? []));
         } else if (appState.gender != null) {
-          // 本機有 Wizard 資料，但 Firestore 沒有 → 上傳
+          // Local Wizard data exists, but not in Firestore → upload
           await _auth.savePreferences(
             uid: user.uid,
             gender: appState.gender,
@@ -207,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         } catch (_) {}
 
-        // ── 三路判斷 ──
+        // ── Three-way check ──
         if (!mounted) return;
         if (appState.gender != null) {
           _goHome();

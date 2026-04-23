@@ -1,4 +1,4 @@
-// [OOP] 相機/偵測頁：模擬 AI 偵測食材，寫入 AppState，並顯示結果。
+// [OOP] Camera/detection page: uses AI to detect ingredients, writes to AppState, and displays results.
 
 import 'dart:async';
 import 'dart:io';

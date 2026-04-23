@@ -1,4 +1,4 @@
-// [OOP] 對話框：顯示 AI 偵測結果，讓使用者確認/編輯後寫入 AppState。
+// [OOP] Dialog: displays AI detection results for user confirmation/editing before writing to AppState.
 
 import 'package:flutter/material.dart';
 

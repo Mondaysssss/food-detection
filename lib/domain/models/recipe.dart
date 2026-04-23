@@ -1,22 +1,22 @@
-// [OOP] 資料模型：一個菜式/食譜（步驟、所需食材、封面等）.
+// [OOP] Data model: a dish/recipe (steps, required ingredients, cover image, etc.).
 
 class Recipe {
   final String menuId;
   final String name;
   final String type;
   final List<String> taste;
-  // final List<String> ingredientsRequired;//要改
+  // final List<String> ingredientsRequired; // TODO: update
   final String cover;
   final List<RecipeStep> steps;
 
-  /// totalTimeMinutes（排程/顯示用）
-  /// - 先做成「可選 + 預設 0」：避免你其他地方有新建 Recipe 時要全部改晒
+  /// totalTimeMinutes (used for scheduling/display)
+  /// - Made optional with default 0 to avoid breaking other Recipe constructors
   final int totalTimeMinutes;
 
-  /// 真正食材資料來源（全系統只用呢個）
+  /// The actual ingredient data source (used exclusively across the entire system)
   final List<RecipeIngredient> recipeIngredients;
 
-  /// 需要嘅廚房器材類別，對應 AppState._appliances 嘅 key：
+  /// Required kitchen appliance categories, corresponding to AppState._appliances keys:
   /// 'cookware' | 'stove' | 'electric' | 'bake'
   final List<String> requiredAppliances;
 
@@ -25,7 +25,7 @@ class Recipe {
     required this.name,
     required this.type,
     required this.taste,
-    // required this.ingredientsRequired,//要改
+    // required this.ingredientsRequired, // TODO: update
     required this.cover,
     required this.steps,
     required this.totalTimeMinutes,
@@ -36,23 +36,25 @@ class Recipe {
   List<String> get ingredientIds =>
       recipeIngredients.map((e) => e.ingredientId).toList(growable: false);
 
-  /// 準備步驟總秒數（isPrep == true）
+  /// Total seconds for preparation steps (isPrep == true)
   int get prepTimeSec =>
       steps.where((s) => s.isPrep).fold(0, (sum, s) => sum + s.durationSec);
 
-  /// 烹飪步驟總秒數（isPrep == false）
+  /// Total seconds for cooking steps (isPrep == false)
   int get cookTimeSec =>
       steps.where((s) => !s.isPrep).fold(0, (sum, s) => sum + s.durationSec);
 
-  /// 總時間（準備 + 烹飪）
+  /// Total time (prep + cooking)
   int get combinedTimeSec => prepTimeSec + cookTimeSec;
 }
 
-// 每個食譜的「食材 + 份量 + 單位」
+// Per-recipe ingredient entry with quantity and unit
 class RecipeIngredient {
   final String ingredientId; // e.g. 'salt', 'soy_sauce'
-  final String quantity; // e.g. '1/2', '2' (可空字串代表未知/不提供)
-  final String unit; // e.g. 'tsp', 'tbsp', 'g', 'ml', 'pcs' (可空字串)
+  final String
+  quantity; // e.g. '1/2', '2' (empty string means unknown/not provided)
+  final String
+  unit; // e.g. 'tsp', 'tbsp', 'g', 'ml', 'pcs' (empty string allowed)
 
   const RecipeIngredient({
     required this.ingredientId,
@@ -64,25 +66,25 @@ class RecipeIngredient {
 }
 
 class RecipeStep {
-  /// 英文描述（你原本用 text）
+  /// Step description (originally named text)
   final String text;
 
-  /// 你原本用嘅秒
+  /// Duration in seconds (original field)
   final int durationSec;
 
-  /// 第幾步（由 1 開始）
+  /// Step number (starting from 1)
   final int stepNumber;
 
-  /// 需要器材（例如: stove / oven / knife）
+  /// Required equipment (e.g. stove / oven / knife)
   final String? requiredEquipment;
 
-  /// 是否「持續性」動作（例如要一路攪拌/照看）
+  /// Whether this is a "continuous" action (e.g. must keep stirring/watching)
   final bool isContinuous;
 
-  /// 是否可與其他步驟同時進行（例如燜/焗/浸）
+  /// Whether this step can run concurrently with others (e.g. simmering/soaking)
   final bool isConcurrent;
 
-  /// 是否屬於「準備步驟」（切菜、醃製、洗菜、打蛋等），排程時優先執行
+  /// Whether this is a "prep step" (chopping, marinating, washing, beating eggs, etc.), executed first in scheduling
   final bool isPrep;
 
   const RecipeStep(
@@ -95,6 +97,6 @@ class RecipeStep {
     this.isPrep = false,
   });
 
-  /// （可選）UI 想顯示分鐘就用
+  /// (Optional) Use this to display duration in minutes in the UI
   int get durationMin => (durationSec / 60).ceil();
 }

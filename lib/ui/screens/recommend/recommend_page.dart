@@ -1,4 +1,4 @@
-// [OOP] 推薦頁容器：包裝 RecommendScreen，處理頁面結構/滾動。
+// [OOP] Recommend page container: wraps RecommendScreen, handles page structure/scrolling.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -137,7 +137,7 @@ class _RecommendPageState extends State<RecommendPage> {
                     labelStyle: const TextStyle(color: Colors.white),
                   ),
                   FilterChip(
-                    // ← 加這個
+                    // ← add this
                     label: const Text('Show allergy recipes'),
                     selected: showAllergyRecipes,
                     onSelected: (v) => setState(() => showAllergyRecipes = v),

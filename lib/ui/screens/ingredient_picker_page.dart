@@ -1,4 +1,4 @@
-// [OOP] 食材選擇頁：由清單選擇食材（通常會排除調味料），確認後寫入 AppState。
+// [OOP] Ingredient picker page: select ingredients from a list (usually excluding seasonings), then write to AppState.
 
 import 'package:flutter/material.dart';
 

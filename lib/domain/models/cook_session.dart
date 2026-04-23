@@ -1,4 +1,4 @@
-// [OOP] 資料模型：一次煮食流程/Session（多道菜、目前步驟、計時等）。
+// [OOP] Data model: a single cooking flow/session (multiple dishes, current step, timers, etc.).
 
 class CookSession {
   final String id;

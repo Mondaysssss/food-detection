@@ -1,4 +1,4 @@
-// [OOP] 共用元件：食譜卡片（封面、名稱、匹配分數、加入購物車等）。
+// [OOP] Shared widget: recipe card (cover image, name, match score, add to cart, etc.).
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +10,7 @@ import 'favorite_star.dart';
 import 'glass.dart';
 import 'recipe_detail_sheet.dart';
 
-/// 格式化秒數：≥1h → "1h 30min"；<1h → "5min 30sec"；0 → "0min"
+/// Format seconds: ≥1h → "1h 30min"; <1h → "5min 30sec"; 0 → "0min"
 String _fmtTime(int totalSec) {
   if (totalSec <= 0) return '0min';
   final h = totalSec ~/ 3600;

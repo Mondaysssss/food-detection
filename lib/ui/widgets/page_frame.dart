@@ -1,4 +1,4 @@
-// [OOP] 共用版面：統一頁面邊距/背景，避免每頁重複寫 Padding/Container。
+// [OOP] Shared layout: uniform page margins/background, avoids repeating Padding/Container on every page.
 
 import 'package:flutter/material.dart';
 
