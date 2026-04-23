@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:vibration/vibration.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:provider/provider.dart';
 import '../../../state/app_state.dart';
 
@@ -275,6 +276,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     _tick?.cancel();
     _toolTick?.cancel();
     _stopVibrationLoop();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -358,7 +360,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
         t.contains('boil') ||
         t.contains('fry') ||
         t.contains('pan'))
-      return _ToolKey.stove;
+      return _cookwareCap >= 2 ? _ToolKey.stove : _ToolKey.pot;
     if (t.contains('pot') || t.contains('soup') || t.contains('simmer'))
       return _ToolKey.pot;
     return null; // no equipment — human/hand step
@@ -376,7 +378,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   _ToolKey? _toolFromRecipeStep(RecipeStep st) {
     final eq = _normEquipment(_readRequiredEquipment(st));
 
-    if (eq == 'stove') return _ToolKey.stove;
+    if (eq == 'stove') return _cookwareCap >= 2 ? _ToolKey.stove : _ToolKey.pot;
     if (eq == 'oven') return _ToolKey.oven;
     if (eq == 'pot') return _ToolKey.pot;
     if (eq == 'electric') return _ToolKey.electric;
@@ -1121,11 +1123,14 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
   // ---------- vibration helpers ----------
   Timer? _vibrationTimer;
   bool _vibrating = false;
+  final _audioPlayer = AudioPlayer();
 
   void _startVibrationLoop() {
     if (_vibrating) return;
     _vibrating = true;
     Vibration.vibrate(duration: 500);
+    _audioPlayer.setReleaseMode(ReleaseMode.loop);
+    _audioPlayer.play(AssetSource('sounds/alarm.mp3'));
     _vibrationTimer = Timer.periodic(const Duration(milliseconds: 1000), (_) {
       if (!_vibrating) return;
       Vibration.vibrate(duration: 500);
@@ -1137,6 +1142,7 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     _vibrationTimer?.cancel();
     _vibrationTimer = null;
     Vibration.cancel();
+    _audioPlayer.stop();
   }
 
   // ---------- timer-finished message builder (Approach C) ----------
@@ -1807,126 +1813,156 @@ class _CookFlowScreenState extends State<CookFlowScreen> {
     ];
     final handItems = _handTimers.keys
         .toList(); // List<int> of active globalNos
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: _bg,
-        foregroundColor: _ink,
-        title: Text(title),
-        actions: [
-          // ← add this
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
-            tooltip: 'Schedule',
-            onPressed: _showGanttChart,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 110),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ✅ 菜單「圖按鈕」橫向：放喺 6 個器具 icon 上面
-                    _MenuRow(
-                      menus: menusForRight,
-                      hidden: _hideRightMenus,
-                      onTap: _openMenuStepsDialog,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _ToolIconsFrame(
-                      activeTool: activeTool,
-                      permanentHandActive:
-                          _flowStarted &&
-                          _stepTimerStarted &&
-                          !_stepManuallyCompleted &&
-                          step != null &&
-                          !step.isConcurrent &&
-                          step.tool == null,
-                      permanentHandFinished:
-                          _flowStarted &&
-                          _stepTimerStarted &&
-                          !_running &&
-                          !_stepManuallyCompleted &&
-                          step != null &&
-                          !step.isConcurrent &&
-                          step.tool == null,
-                      glowEnabled: _flowStarted,
-                      items: toolItems,
-                      handItems: handItems,
-                      timerActiveOf: _toolTimerActive,
-                      finishedOf: _toolTimerFinished,
-                      shakeMsOf: _toolShakeMs,
-                      countTextOf: _toolCountText,
-                      handTimerActiveOf: _handTimerActive,
-                      handFinishedOf: _handTimerFinished,
-                      handShakeMsOf: _handShakeMs,
-                      handCountTextOf: _handCountText,
-                      peekedTile: _peekedTile,
-                      onEquipmentTileTap: _togglePeekEquipment,
-                      onHandTileTap: _togglePeekHand,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _StepCard(
-                      step: isPeeking ? _stepForPeeked(_peekedTile!) : step,
-                      flowStarted: _flowStarted,
-                      running: _running,
-                      canNext: _finished,
-                      countdownDone: displayCountdownDone,
-                      canPrev: _idx > 0,
-                      timerStarted: isPeeking ? true : _stepTimerStarted,
-                      // ✅ 如果 timer 已啟動，就展示 Complete，不要變回「Waiting for area」
-                      startTimerBlockReason: (_stepTimerStarted || isPeeking)
-                          ? null
-                          : _startTimerBlockReason(),
-                      leftText: displayTimerText,
-                      isPeeking: isPeeking,
-                      stepManuallyCompleted: _stepManuallyCompleted,
-                      onNext: _goNext,
-                      onPrev: _goPrev,
-                      onStartTimer:
-                          ((isPeeking ? _stepForPeeked(_peekedTile!) : step)
-                                      ?.durationMs ??
-                                  0) >
-                              0
-                          ? (isPeeking ? null : _startStepTimer)
-                          : null,
-                      onComplete: _completeCurrentStep,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _StartOnceBar(started: _flowStarted, onStart: _startOnce),
-                  ],
-                ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Leave cooking?'),
+            content: const Text('Your cooking progress will be lost.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
               ),
-            ),
-
-            _CookStepsSheet(
-              steps: _steps,
-              currentGlobalNo: step?.globalNo ?? 0,
-              currentFinished: _finished,
-              isDone: (g) => _doneGlobalNos.contains(g),
-              onOpenRatio: _onSheetOpenRatio,
-              onJumpToGlobalIndex: (globalNo) {
-                if (globalNo <= 0 || globalNo > _steps.length) return;
-                setState(() {
-                  _idx = globalNo - 1;
-                  _applyStep(_idx, startIfFlowStarted: true);
-                });
-              },
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Leave'),
+              ),
+            ],
+          ),
+        );
+        if (confirm == true && context.mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 0)),
+            (route) => false,
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: _bg,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: _bg,
+          foregroundColor: _ink,
+          title: Text(title),
+          actions: [
+            // ← add this
+            IconButton(
+              icon: const Icon(Icons.bar_chart),
+              tooltip: 'Schedule',
+              onPressed: _showGanttChart,
             ),
           ],
+        ),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 110),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // ✅ 菜單「圖按鈕」橫向：放喺 6 個器具 icon 上面
+                      _MenuRow(
+                        menus: menusForRight,
+                        hidden: _hideRightMenus,
+                        onTap: _openMenuStepsDialog,
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _ToolIconsFrame(
+                        activeTool: activeTool,
+                        permanentHandActive:
+                            _flowStarted &&
+                            _stepTimerStarted &&
+                            !_stepManuallyCompleted &&
+                            step != null &&
+                            !step.isConcurrent &&
+                            step.tool == null,
+                        permanentHandFinished:
+                            _flowStarted &&
+                            _stepTimerStarted &&
+                            !_running &&
+                            !_stepManuallyCompleted &&
+                            step != null &&
+                            !step.isConcurrent &&
+                            step.tool == null,
+                        glowEnabled: _flowStarted,
+                        items: toolItems,
+                        handItems: handItems,
+                        timerActiveOf: _toolTimerActive,
+                        finishedOf: _toolTimerFinished,
+                        shakeMsOf: _toolShakeMs,
+                        countTextOf: _toolCountText,
+                        handTimerActiveOf: _handTimerActive,
+                        handFinishedOf: _handTimerFinished,
+                        handShakeMsOf: _handShakeMs,
+                        handCountTextOf: _handCountText,
+                        peekedTile: _peekedTile,
+                        onEquipmentTileTap: _togglePeekEquipment,
+                        onHandTileTap: _togglePeekHand,
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _StepCard(
+                        step: isPeeking ? _stepForPeeked(_peekedTile!) : step,
+                        flowStarted: _flowStarted,
+                        running: _running,
+                        canNext: _finished,
+                        countdownDone: displayCountdownDone,
+                        canPrev: _idx > 0,
+                        timerStarted: isPeeking ? true : _stepTimerStarted,
+                        // ✅ 如果 timer 已啟動，就展示 Complete，不要變回「Waiting for area」
+                        startTimerBlockReason: (_stepTimerStarted || isPeeking)
+                            ? null
+                            : _startTimerBlockReason(),
+                        leftText: displayTimerText,
+                        isPeeking: isPeeking,
+                        stepManuallyCompleted: _stepManuallyCompleted,
+                        onNext: _goNext,
+                        onPrev: _goPrev,
+                        onStartTimer:
+                            ((isPeeking ? _stepForPeeked(_peekedTile!) : step)
+                                        ?.durationMs ??
+                                    0) >
+                                0
+                            ? (isPeeking ? null : _startStepTimer)
+                            : null,
+                        onComplete: _completeCurrentStep,
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _StartOnceBar(started: _flowStarted, onStart: _startOnce),
+                    ],
+                  ),
+                ),
+              ),
+
+              _CookStepsSheet(
+                steps: _steps,
+                currentGlobalNo: step?.globalNo ?? 0,
+                currentFinished: _finished,
+                isDone: (g) => _doneGlobalNos.contains(g),
+                onOpenRatio: _onSheetOpenRatio,
+                onJumpToGlobalIndex: (globalNo) {
+                  if (globalNo <= 0 || globalNo > _steps.length) return;
+                  setState(() {
+                    _idx = globalNo - 1;
+                    _applyStep(_idx, startIfFlowStarted: true);
+                  });
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2033,9 +2069,7 @@ class _ToolIconsFrame extends StatelessWidget {
 
     // Green when: running bg timer, OR this exact tool is the current step tool.
     final active =
-        glowEnabled &&
-        !isFinished &&
-        (timerActive || activeTool == k);
+        glowEnabled && !isFinished && (timerActive || activeTool == k);
 
     final borderColor = isFinished
         ? _finishedAccent.withValues(alpha: 0.90)

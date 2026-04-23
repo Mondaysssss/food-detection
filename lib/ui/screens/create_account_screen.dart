@@ -158,6 +158,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             prefixIcon: Icon(Icons.badge_outlined),
                             border: OutlineInputBorder(),
                           ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty)
+                              return 'Please enter username';
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
